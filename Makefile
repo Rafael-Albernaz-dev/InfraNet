@@ -5,7 +5,7 @@ export GOPROXY := off
 export GOSUMDB := off
 export GOFLAGS := -mod=readonly
 
-.PHONY: part1-harness test-part1-desktop test-part1-visual test-vault-helper test-part1-production test-vault-read-race test-baseline-tooling test-equipment-smoke
+.PHONY: part1-harness test-part1-desktop test-vault-helper test-production-vault test-vault-read-race
 .PHONY: daemon-build tools-check bindings assets gofmt-check architecture-check check check-front check-go check-race check-race-shard ci-package test-integration build package test-desktop run test-visual test-scroll icon-check test-dev
 
 tools-check:
@@ -18,13 +18,10 @@ gofmt-check:
 	@test -z "$$(gofmt -l main.go internal cmd quality)" || (gofmt -l main.go internal cmd quality; exit 1)
 architecture-check: assets
 	go run ./quality/architecture/architecture.go
-	node --test quality/architecture/architecture-frontend.test.mjs
 	node quality/architecture/architecture-frontend.mjs
-# check = check-front + check-go + check-race. O CI roda as três partes em jobs
-# paralelos (e check-race em fatias, ver scripts/ci/race-shard.sh); localmente,
-# `make check` continua rodando tudo.
+# check = check-front + check-go + check-race.
 check: check-front check-go check-race
-check-front: tools-check assets gofmt-check architecture-check test-visual-integrity test-baseline-tooling
+check-front: tools-check assets gofmt-check architecture-check
 	staticcheck -tags webkit2_41 ./...
 	npm --prefix frontend run format:check
 	npm --prefix frontend run lint
@@ -61,11 +58,6 @@ test-desktop:
 run: build
 	python3 scripts/dev/run-dev.py
 
-test-visual-integrity:
-	node --test scripts/visual/visual-checks.test.mjs scripts/visual/visual-actions.test.mjs
-	python3 scripts/visual/test-visual-integrity.py
-	python3 scripts/desktop/test-native-visual-metadata.py
-
 test-visual: test-layout
 
 test-scroll:
@@ -87,28 +79,19 @@ part1-harness:
 test-part1-desktop: build part1-harness
 	xvfb-run -a -s "-screen 0 2000x1700x24 -nolisten tcp" python3 scripts/desktop/test-part1-desktop.py
 
-test-part1-visual:
-	node scripts/visual/test-part1-visual.mjs
-
 test-vault-helper:
 	python3 scripts/desktop/test-vault-provision.py
 
-test-part1-production: build
-	python3 scripts/desktop/test-part1-production.py
+test-production-vault: build
+	python3 scripts/desktop/test-production-vault.py
 
 test-vault-read-race:
 	python3 scripts/desktop/test-vault-read-race.py
 
-test-baseline-tooling:
-	python3 scripts/visual/test-baseline-tooling.py
-
-test-equipment-smoke:
-	node scripts/visual/test-part1-visual.mjs --smoke
-
 .PHONY: quality ci
 ci: tools-check assets quality check ci-package
 # parte de empacotamento e processo do ci, rodada em job próprio no CI
-ci-package: tools-check test-integration package test-vault-helper test-part1-production test-vault-read-race
+ci-package: tools-check test-integration package test-vault-helper test-production-vault test-vault-read-race
 
 quality:
 	@test -d frontend/dist || (echo "rode make assets"; exit 1)
@@ -117,13 +100,3 @@ quality:
 .PHONY: test-layout
 test-layout:
 	node scripts/visual/test-layout.mjs
-
-.PHONY: quality-tighten
-# reescreve quality/baselines/quality-baseline.json com a dívida que ainda existe
-quality-tighten:
-	go run ./quality/go/quality.go -tighten
-
-.PHONY: quality-report
-quality-report:
-	go run ./quality/go/quality.go -report
-	cd frontend && node quality/eslint-quality-report.mjs

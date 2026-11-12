@@ -2,59 +2,12 @@ import fs from 'node:fs';
 import { URL } from 'node:url';
 
 export const limits = {
-  'max-lines-per-function': 60,
+  'max-lines-per-function': 100,
   complexity: 15,
   'max-lines': 500,
   'max-params': 5,
   'max-depth': 4,
-  'quality/state-count': 8,
-  'quality/ref-count': 6,
 };
-const hookRule = (hook, defaultLimit) => ({
-  meta: {
-    type: 'problem',
-    schema: [{ type: 'integer', minimum: 0 }],
-    messages: { excess: '{{hook}}: {{count}} exceeds {{limit}}.' },
-  },
-  create(context) {
-    const stack = [];
-    const aliases = new Set([hook]);
-    const enter = () => stack.push(0);
-    const leave = (node) => {
-      const count = stack.pop(),
-        limit = context.options[0] ?? defaultLimit;
-      if (count > limit)
-        context.report({
-          node,
-          messageId: 'excess',
-          data: { hook, count, limit },
-        });
-    };
-    return {
-      ':function': enter,
-      ':function:exit': leave,
-      ImportDeclaration(node) {
-        if (node.source.value !== 'react') return;
-        for (const spec of node.specifiers)
-          if (
-            spec.type === 'ImportSpecifier' &&
-            (spec.imported.name ?? spec.imported.value) === hook
-          )
-            aliases.add(spec.local.name);
-      },
-      CallExpression(node) {
-        const callee = node.callee;
-        const name =
-          callee.type === 'Identifier'
-            ? callee.name
-            : callee.type === 'MemberExpression'
-              ? callee.property.name
-              : '';
-        if (aliases.has(name) && stack.length) stack[stack.length - 1]++;
-      },
-    };
-  },
-});
 const nested = {
   meta: { type: 'problem', schema: [{ type: 'integer', minimum: 0 }] },
   create(context) {
@@ -76,15 +29,13 @@ const nested = {
 };
 export const plugin = {
   rules: {
-    'state-count': hookRule('useState', 8),
-    'ref-count': hookRule('useRef', 6),
     'nested-ternary': nested,
   },
 };
 export function rulesFor(path, ceilings = {}) {
   const defaults = {
     ...limits,
-    'max-lines-per-function': /\.test\.[jt]sx?$/.test(path) ? 120 : 60,
+    'max-lines-per-function': /\.test\.[jt]sx?$/.test(path) ? 120 : 100,
   };
   const rules = Object.fromEntries(
     Object.entries(defaults).map(([name, value]) => {

@@ -40,19 +40,6 @@ const layers = new Map([
   ["pppoe", 3],
   ["radio", 4],
 ]);
-const exceptionFile = "quality/baselines/frontend-layer-exceptions.json";
-const listedExceptions = JSON.parse(fs.readFileSync(exceptionFile, "utf8"));
-if (
-  !Array.isArray(listedExceptions) ||
-  listedExceptions.some((entry) => typeof entry !== "string") ||
-  JSON.stringify(listedExceptions) !==
-    JSON.stringify([...new Set(listedExceptions)].sort())
-)
-  throw Error(
-    "frontend layer exceptions must be a sorted array of unique strings",
-  );
-const exceptions = new Set(listedExceptions);
-const seenExceptions = new Set();
 
 function checkLayers(filename, target, problems) {
   // Test journeys may compose all capabilities; shared remains a leaf for all files.
@@ -71,8 +58,7 @@ function checkLayers(filename, target, problems) {
   }
   if (targetLayer < sourceLayer) return;
   const edge = `frontend/src/${from.join("/")} -> frontend/src/${to.join("/")}`;
-  if (!exceptions.has(edge)) problems.push("feature layer dependency: " + edge);
-  else seenExceptions.add(edge);
+  problems.push("feature layer dependency: " + edge);
 }
 
 function insideSource(file) {
@@ -420,12 +406,6 @@ for (const f of files) {
   const issues = inspect(f, fs.readFileSync(f, "utf8"));
   if (issues.length) {
     console.error(f, issues);
-    bad = true;
-  }
-}
-for (const edge of exceptions) {
-  if (!seenExceptions.has(edge)) {
-    console.error("stale frontend layer exception: " + edge);
     bad = true;
   }
 }

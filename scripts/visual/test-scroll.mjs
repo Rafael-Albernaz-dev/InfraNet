@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, expect } from '../../frontend/node_modules/@playwright/test/index.mjs';
 import { createServer } from '../../frontend/node_modules/vite/dist/node/index.js';
-const out=path.resolve('docs/evidence/l-base-1b/scroll');fs.mkdirSync(out,{recursive:true});
+const out=path.resolve('build/scroll');fs.mkdirSync(out,{recursive:true});
 const server=await createServer({root:path.resolve('frontend'),server:{host:'127.0.0.1',port:0,strictPort:true}});await server.listen();
 const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true});const records=[];
 try {

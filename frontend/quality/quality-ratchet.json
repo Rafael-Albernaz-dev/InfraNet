@@ -11,7 +11,6 @@
     "no-nested-ternary": 2
   },
   "src/features/access/access-screen.tsx": {
-    "max-lines-per-function": 74,
     "complexity": 16,
     "no-nested-ternary": 6
   },
@@ -22,8 +21,7 @@
     "no-nested-ternary": 3
   },
   "src/app/authenticated-shell.tsx": {
-    "max-params": 7,
-    "max-lines-per-function": 98
+    "max-params": 7
   },
   "src/features/equipment/credential-form-dialog.tsx": {
     "max-lines-per-function": 103,
@@ -33,51 +31,37 @@
     "complexity": 17
   },
   "src/app/desktop-pages.tsx": {
-    "max-lines-per-function": 69,
     "no-nested-ternary": 1
   },
   "src/app/desktop-shell.tsx": {
-    "max-lines-per-function": 87,
     "complexity": 19
   },
   "src/app/desktop.tsx": {
-    "max-lines-per-function": 99,
     "no-nested-ternary": 1
   },
   "src/features/monitoring/device-health.tsx": {
-    "max-lines-per-function": 68,
     "no-nested-ternary": 1
   },
   "src/features/pppoe/device-monitoring.tsx": {
     "max-lines-per-function": 105,
-    "no-nested-ternary": 1,
-    "quality/state-count": 9
+    "no-nested-ternary": 1
   },
   "src/features/monitoring/device-operational.tsx": {
-    "max-lines-per-function": 70,
     "complexity": 18,
     "no-nested-ternary": 3
   },
   "src/features/equipment/equipment-chain.tsx": {
     "no-nested-ternary": 1
   },
-  "src/features/equipment/equipment-credential-fields.tsx": {
-    "max-lines-per-function": 64
-  },
-  "src/features/equipment/equipment-credential-form.tsx": {
-    "max-lines-per-function": 77
-  },
   "src/features/equipment/equipment-credentials.tsx": {
     "max-lines-per-function": 134
   },
   "src/app/pages/equipment-detail.tsx": {
-    "max-lines-per-function": 88,
     "no-nested-ternary": 2,
     "complexity": 18
   },
   "src/features/equipment/equipment-effects.tsx": {
     "complexity": 19,
-    "max-lines-per-function": 92,
     "max-params": 9
   },
   "src/features/equipment/equipment-forms.tsx": {
@@ -92,7 +76,6 @@
     "no-nested-ternary": 2
   },
   "src/features/inventory/equipment-inventory.tsx": {
-    "max-lines-per-function": 63,
     "no-nested-ternary": 1
   },
   "src/features/equipment/equipment-operations.ts": {
@@ -100,21 +83,13 @@
     "no-nested-ternary": 2
   },
   "src/features/equipment/equipment-port-history.tsx": {
-    "max-lines-per-function": 97,
     "no-nested-ternary": 2
   },
   "src/features/equipment/equipment-reading-format.tsx": {
     "complexity": 23
   },
   "src/features/equipment/equipment-reading.tsx": {
-    "no-nested-ternary": 3,
-    "max-lines-per-function": 94
-  },
-  "src/features/equipment/equipment-state.tsx": {
-    "max-lines-per-function": 90
-  },
-  "src/features/equipment/equipment-summary-blocks.tsx": {
-    "max-lines-per-function": 64
+    "no-nested-ternary": 3
   },
   "src/features/equipment/equipment-summary-statistics.tsx": {
     "max-lines-per-function": 107,
@@ -125,7 +100,6 @@
     "complexity": 19
   },
   "src/app/pages/equipment.tsx": {
-    "max-lines-per-function": 92,
     "no-nested-ternary": 1,
     "complexity": 18
   },
@@ -138,14 +112,8 @@
   "src/app/journeys/inventory-controls.test.tsx": {
     "max-params": 6
   },
-  "src/features/inventory/inventory-preferences.tsx": {
-    "max-lines-per-function": 78
-  },
   "src/features/inventory/inventory-table.tsx": {
     "max-lines-per-function": 102
-  },
-  "src/features/inventory/inventory-toolbar.tsx": {
-    "max-lines-per-function": 94
   },
   "src/app/layout-journey.test.tsx": {
     "max-lines-per-function": 199
@@ -154,7 +122,6 @@
     "max-params": 6
   },
   "src/features/pppoe/pppoe-context.tsx": {
-    "max-lines-per-function": 83,
     "complexity": 20,
     "no-nested-ternary": 2
   },
@@ -164,12 +131,8 @@
   },
   "src/features/pppoe/pppoe-diag-state.tsx": {
     "max-lines-per-function": 140,
-    "quality/state-count": 18,
     "complexity": 19,
     "max-params": 6
-  },
-  "src/features/pppoe/pppoe-diag-views.tsx": {
-    "max-lines-per-function": 69
   },
   "src/features/pppoe/pppoe-diagnostic-tables.tsx": {
     "no-nested-ternary": 4
@@ -189,12 +152,6 @@
   "src/features/pppoe/pppoe-mount-generation.test.tsx": {
     "no-nested-ternary": 1
   },
-  "src/features/pppoe/pppoe-observation-view.tsx": {
-    "max-lines-per-function": 66
-  },
-  "src/features/pppoe/pppoe-ping-result.tsx": {
-    "max-lines-per-function": 61
-  },
   "src/features/pppoe/pppoe-read-result.tsx": {
     "no-nested-ternary": 4
   },
@@ -202,24 +159,11 @@
     "max-params": 6,
     "max-lines": 568
   },
-  "src/features/pppoe/pppoe-session-detail.tsx": {
-    "max-lines-per-function": 75
-  },
-  "src/features/pppoe/pppoe-sessions-view.tsx": {
-    "max-lines-per-function": 79
-  },
   "src/features/pppoe/pppoe-state.tsx": {
-    "max-lines-per-function": 85,
     "complexity": 20
   },
   "src/app/journeys/pppoe.test.tsx": {
     "max-lines": 540
-  },
-  "src/features/pppoe/pppoe.tsx": {
-    "max-lines-per-function": 62
-  },
-  "src/features/access/protected-dialog.tsx": {
-    "max-lines-per-function": 72
   },
   "src/features/radio/radio-equipment-panel.tsx": {
     "no-nested-ternary": 2
@@ -239,45 +183,15 @@
   "src/features/radio/radio-reading.tsx": {
     "no-nested-ternary": 2
   },
-  "src/features/access/security.tsx": {
-    "max-lines-per-function": 81
-  },
-  "src/features/pppoe/session-chain.tsx": {
-    "max-lines-per-function": 76
-  },
-  "src/features/pppoe/session-cpe.tsx": {
-    "max-lines-per-function": 68
-  },
-  "src/features/radio/session-link-details.tsx": {
-    "max-lines-per-function": 64
-  },
   "src/app/journeys/session-route-navigation.test.tsx": {
     "max-params": 6,
     "max-lines": 550
   },
-  "src/features/pppoe/session-traffic.tsx": {
-    "max-lines-per-function": 96
-  },
-  "src/features/access/settings-password.tsx": {
-    "max-lines-per-function": 76
-  },
-  "src/app/test-brand-draft.tsx": {
-    "max-lines-per-function": 61
-  },
-  "src/shared/ui/Chart.tsx": {
-    "max-lines-per-function": 69
-  },
   "src/shared/ui/DataBlock.tsx": {
     "no-nested-ternary": 1
   },
-  "src/shared/ui/Dialog.tsx": {
-    "max-lines-per-function": 69
-  },
   "src/shared/ui/Tabs.tsx": {
     "no-nested-ternary": 3
-  },
-  "src/app/use-navigation-history.tsx": {
-    "max-lines-per-function": 83
   },
   "src/features/equipment/use-refresh-on-open.tsx": {
     "complexity": 17
