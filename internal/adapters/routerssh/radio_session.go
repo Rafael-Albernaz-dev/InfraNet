@@ -8,12 +8,18 @@ import (
 	"infradesktop/internal/adapters/routerssh/radioparse"
 	"infradesktop/internal/modules/equipment"
 	"net"
+	"net/netip"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"sync"
 	"time"
+)
+
+var (
+	pingCountsPattern = regexp.MustCompile(`([0-9]+) packets transmitted, ([0-9]+) received`)
+	pingRTTPattern    = regexp.MustCompile(`time[=<]([0-9.]+) ms`)
 )
 
 // Model A only. No remote loop is enabled without the real v6 channel-close
@@ -133,38 +139,51 @@ func (r *radioSession) Close() {
 	}
 }
 
+func parsePingProbe(out []byte) (int, int, []float64, equipment.Code) {
+	counts := pingCountsPattern.FindSubmatch(out)
+	if len(counts) != 3 {
+		return 0, 0, nil, equipment.Partial
+	}
+	sent, sentErr := strconv.Atoi(string(counts[1]))
+	received, recvErr := strconv.Atoi(string(counts[2]))
+	var values []float64
+	code := equipment.OK
+	if sentErr != nil || recvErr != nil {
+		code = equipment.Partial
+	}
+	for _, m := range pingRTTPattern.FindAllSubmatch(out, -1) {
+		v, e := strconv.ParseFloat(string(m[1]), 64)
+		if e != nil {
+			code = equipment.Partial
+		}
+		values = append(values, v)
+	}
+	if sent != 1 || received < 0 || received > 1 || len(values) != received {
+		code = equipment.Partial
+	}
+	return sent, received, values, code
+}
+
 // ICMP is local, one probe per second, no SSH observer or TCP probe. Results
 // are consumed once and include loss and permission/parse failures explicitly.
 func (r *radioSession) probeLoop() {
 	defer close(r.probeExited)
+	addr, addrErr := netip.ParseAddr(r.d.Address)
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for r.ctx.Err() == nil {
 		started := time.Now()
-		p := exec.CommandContext(r.ctx, "/usr/bin/ping", "-n", "-c", "1", "-W", "1", r.d.Address)
-		p.Env = append(os.Environ(), "LC_ALL=C")
-		out, _ := p.Output()
-		ended := time.Now()
-		counts := regexp.MustCompile(`([0-9]+) packets transmitted, ([0-9]+) received`).FindSubmatch(out)
-		code := equipment.OK
 		sent, received := 0, 0
 		var values []float64
-		if len(counts) != 3 {
-			code = equipment.Partial
-		} else {
-			sent, _ = strconv.Atoi(string(counts[1]))
-			received, _ = strconv.Atoi(string(counts[2]))
-			for _, m := range regexp.MustCompile(`time[=<]([0-9.]+) ms`).FindAllSubmatch(out, -1) {
-				v, e := strconv.ParseFloat(string(m[1]), 64)
-				if e != nil {
-					code = equipment.Partial
-				}
-				values = append(values, v)
-			}
-			if sent != 1 || received < 0 || received > 1 || len(values) != received {
-				code = equipment.Partial
-			}
+		code := equipment.Invalid
+		if addrErr == nil {
+			p := exec.CommandContext(r.ctx, "/usr/bin/ping", "-n", "-c", "1", "-W", "1", "--", addr.String())
+			p.Env = append(os.Environ(), "LC_ALL=C")
+			// ignored: ping exits non-zero when packets are lost; stdout summary carries status.
+			out, _ := p.Output()
+			sent, received, values, code = parsePingProbe(out)
 		}
+		ended := time.Now()
 		r.probeMu.Lock()
 		load := &r.probe.load
 		if load.Started.IsZero() {
