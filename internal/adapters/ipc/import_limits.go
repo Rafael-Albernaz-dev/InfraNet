@@ -15,11 +15,15 @@ func equipmentFrameLimit(op string) int {
 	}
 	return MaxFrame
 }
-
 func isTablePage(op string) bool {
-	return op == "inventory.list" || op == "pppoe.current" || op == "pppoe.observation-get" || op == "pppoe.sessions-list"
+	return op == "pppoe.read-status" ||
+		op == "pppoe.read-page" ||
+		op == "pppoe.session-history" ||
+		op == "inventory.list" ||
+		op == "pppoe.current" ||
+		op == "pppoe.observation-get" ||
+		op == "pppoe.sessions-list"
 }
-
 func equipmentResponseLimit(op string) int {
 	if op == "inventory.list" {
 		return MaxBrandFrame - 4096

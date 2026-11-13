@@ -36,9 +36,13 @@ function completeRead(c: ReadContext, r: PPResult) {
       error: ppReadMessage(job.code),
       reason: r.error?.reason,
     });
-    if (scope === 'traffic') void c.failed(job.code);
+    if (scope === 'traffic' || c.latest.current.automaticLive)
+      void c.failed(job.code);
   } else if (scope === 'operations') c.latest.current.onRead?.();
-  else if (scope === 'traffic' && l.window) {
+  else if (
+    (scope === 'traffic' && l.window) ||
+    c.latest.current.automaticLive
+  ) {
     l.history = l.window;
     l.retries = 0;
     if (l.operatorStopped) c.send({ type: 'parado' });
@@ -48,7 +52,8 @@ function completeRead(c: ReadContext, r: PPResult) {
 }
 async function pollFailure(c: ReadContext, code: string) {
   c.send({ type: 'falhou', error: ppReadMessage(code) });
-  if (c.state.current.scope === 'traffic') await c.failed(code);
+  if (c.state.current.scope === 'traffic' || c.latest.current.automaticLive)
+    await c.failed(code);
 }
 export async function pollRead(c: ReadContext, g: number) {
   const p = c.latest.current,
@@ -86,7 +91,7 @@ export async function pollRead(c: ReadContext, g: number) {
         error:
           'Estado da leitura indisponível. Consulte o estado ou cancele a solicitação.',
       });
-      if (c.state.current.scope === 'traffic')
+      if (c.state.current.scope === 'traffic' || c.latest.current.automaticLive)
         await c.failed('SERVICE_UNAVAILABLE');
     }
   }

@@ -8,6 +8,7 @@ import (
 	"infradesktop/internal/adapters/routerssh"
 	"infradesktop/internal/modules/access"
 	"infradesktop/internal/modules/equipment"
+	"infradesktop/internal/modules/inventory"
 	"infradesktop/internal/modules/pulse"
 )
 
@@ -67,6 +68,7 @@ func (i liveInventory) eligible(ctx context.Context, profile string, d equipment
 type liveDialer struct {
 	inventory liveInventory
 	vault     equipment.Vault
+	clock     *inventory.Service
 }
 
 func (d liveDialer) Dial(ctx context.Context, want pulse.ReadTarget) (pulse.ReadSession, pulse.ReadFault) {
@@ -93,16 +95,24 @@ func (d liveDialer) Dial(ctx context.Context, want pulse.ReadTarget) (pulse.Read
 	session, fault := routerssh.OpenLive(ctx, target.Device, target.Credential.Metadata.User, secret)
 	secret = ""
 	if fault == pulse.ReadOK {
-		return &identityReadSession{ReadSession: session, inventory: d.inventory, profile: profile, target: target}, fault
+		return &identityReadSession{ReadSession: session, inventory: d.inventory, profile: profile, target: target, clock: d.clock}, fault
 	}
 	return session, fault
 }
-func composeLiveReader(server *ipc.Server, inv liveInventory, vault equipment.Vault, ping *pulse.Collector) *pulse.ReadCollector {
+func composeLiveReader(server *ipc.Server,
+	inv liveInventory,
+	vault equipment.Vault,
+	ping *pulse.Collector,
+	clock ...*inventory.Service) *pulse.ReadCollector {
 	reachable := func(profile, id string, now time.Time) bool {
 		snapshot, ok := ping.Snapshot(profile, now)
 		return ok && snapshot.Devices[id].State == pulse.Online
 	}
-	collector := pulse.NewReadCollector(inv, liveDialer{inv, vault}, reachable, 4)
+	dialer := liveDialer{inventory: inv, vault: vault}
+	if len(clock) > 0 {
+		dialer.clock = clock[0]
+	}
+	collector := pulse.NewReadCollector(inv, dialer, reachable, 4)
 	server.StartBackground(collector.Run)
 	return collector
 }

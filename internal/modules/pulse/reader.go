@@ -23,9 +23,13 @@ type ReadTarget struct {
 	Stamp string
 }
 type Reading struct {
-	Identity     string
-	CPU, Clients int
-	Uptime       time.Duration
+	Identity        string
+	Firmware, Model string
+	Observation     *equipment.PPObservation
+	Tunnels         []equipment.PPTunnel
+	Started, At     time.Time
+	CPU, Clients    int
+	Uptime          time.Duration
 }
 type ReadFault string
 

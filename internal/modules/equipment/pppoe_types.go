@@ -11,6 +11,7 @@ const (
 	TrafficRetention             = 5 * time.Minute
 	PPScope                      = "pppoe-active-v1"
 	PPMaxRows                    = 2048
+	PPPageTrafficRows            = 200
 	PPWireBytes                  = 448 * 1024
 	PPObservationBytes           = 512 * 1024
 	PPRowBytes                   = 2048
@@ -27,8 +28,8 @@ type PPInterval struct {
 	Max   int64 `json:"max"`
 	Known bool  `json:"known"`
 }
-
 type PPProvenance struct {
+	Automatic          bool       `json:"automatic,omitempty"`
 	Projection         string     `json:"projection"`
 	Codec              string     `json:"codec"`
 	Capabilities       string     `json:"capabilities"`
@@ -59,8 +60,9 @@ type PPQuality struct {
 	Terminated        bool   `json:"terminated"`
 	MembershipChecked bool   `json:"membership_checked"`
 }
-
 type PPRow struct {
+	Download         *PPRate    `json:"download,omitempty"`
+	Upload           *PPRate    `json:"upload,omitempty"`
 	LinkedDeviceName string     `json:"linked_device_name,omitempty"`
 	Context          *PPContext `json:"context,omitempty"`
 	State            string     `json:"state,omitempty"`
@@ -127,6 +129,10 @@ type PPQuery struct {
 	Category   string `json:"category,omitempty"`
 }
 type PPInput struct {
+	HistoryGeneration    string   `json:"-"`
+	Login                string   `json:"login,omitempty"`
+	HistoryReason        string   `json:"history_reason,omitempty"`
+	HistoryDays          int      `json:"history_days,omitempty"`
 	MonitoringGeneration string   `json:"-"`
 	RowIDs               []string `json:"row_ids,omitempty"`
 	Scope                string   `json:"scope,omitempty"`
@@ -184,8 +190,9 @@ type PPGroup struct {
 	VLAN    *int   `json:"vlan,omitempty"`
 	Count   int    `json:"count"`
 }
-
 type PPView struct {
+	HistoryGeneration    string              `json:"-"`
+	History              []PPSessionHistory  `json:"history,omitempty"`
 	Options              map[string][]string `json:"options,omitempty"`
 	MonitoringGeneration string              `json:"-"`
 	Read                 *PPReadResult       `json:"read,omitempty"`
@@ -245,4 +252,14 @@ type PPStore interface {
 	SavePPReference(context.Context, string, PPInput, string) (PPView, Code)
 	PPReferences(context.Context, string, PPInput) (PPView, Code)
 	DeletePPReference(context.Context, string, PPInput, string) (PPView, Code)
+}
+type PPSessionHistory struct {
+	ID           int64  `json:"id"`
+	Kind         string `json:"kind"`
+	DeviceID     string `json:"device_id"`
+	Login        string `json:"login"`
+	Connected    string `json:"connected_at"`
+	Disconnected string `json:"disconnected_at"`
+	Reason       string `json:"reason"`
+	Row          PPRow  `json:"row"`
 }

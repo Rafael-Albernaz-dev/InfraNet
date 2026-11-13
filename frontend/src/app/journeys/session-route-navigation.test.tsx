@@ -1,4 +1,11 @@
 import {
+  sessionAccount as account,
+  sessionDevice as device,
+  sessionRows as rows,
+  sessionPP as pp,
+  sessionEquipment as equip,
+} from '../../shared/testing/session-account-fixture';
+import {
   sessionTable,
   sessionSearch,
 } from '../../shared/testing/session-ready';
@@ -20,17 +27,9 @@ import {
   pppoeReadAPI,
   radioAPI,
 } from '../../platform/wails/presentation';
-import type { Device } from '../../features/equipment/equipment-api';
-import type {
-  PPResult,
-  Result,
-  PPRow,
-} from '../../platform/wails/presentation';
+import type { PPResult } from '../../platform/wails/presentation';
 
-import {
-  RadioRoles,
-  RadioTransports,
-} from '../../features/equipment/radio-contract';
+import { RadioRoles } from '../../features/equipment/radio-contract';
 import { link as syntheticLink } from '../../shared/testing/radio-test-fixtures';
 import { PPPoE } from '../pages/pppoe-with-link';
 import { SessionRoute } from '../../features/equipment/session-navigation';
@@ -57,63 +56,6 @@ vi.mock('../../platform/wails/presentation', async (importOriginal) =>
     ),
   ),
 );
-const device = {
-  id: 'ccr-fixture',
-  name: 'CCR fixture',
-  role: 'concentrator',
-  address: '192.0.2.1',
-  port: 22,
-  transport: RadioTransports.ssh,
-  revision: 1,
-  active: true,
-  fingerprint: 'pinned',
-} as Device;
-const rows: PPRow[] = ['primeiro', 'segundo'].map((login, i) => ({
-  row_id: `row-${i}`,
-  remote_id: `*${i}`,
-  session_id: `${i}`,
-  login,
-  address: `192.0.2.${i + 20}`,
-  caller_id: '02:00:00:00:00:01',
-  uptime: { known: true, min: 1e9, max: 1e9 },
-  duplicates: 0,
-}));
-const account = (company = 'company'): Result => ({
-  code: 'OK',
-  request_id: 'fixture',
-  instance_id: 'one',
-  activation_id: company === 'company-two' ? 'activation-two' : 'activation',
-  profile_id: company,
-  heartbeat: 0,
-  setup: false,
-  authenticated: true,
-  name: 'fixture',
-  theme: 'light',
-  recovery: '',
-  companies: [
-    { id: 'company', name: 'Empresa um' },
-    { id: 'company-two', name: 'Empresa dois' },
-  ],
-});
-const pp = (data: PPResult['data'] = { total: 0 }): PPResult => ({
-  code: 'OK',
-  profile_id: 'company',
-  activation_id: 'activation',
-  data,
-});
-const equip = {
-  code: 'OK',
-  profile_id: 'company',
-  activation_id: 'activation',
-  data: {
-    devices: [device],
-    device,
-    credentials: [],
-    next_cursor: 0,
-    total_devices: 1,
-    vault_available: true,
-  },
-};
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(access.status).mockResolvedValue(account());
@@ -227,7 +169,13 @@ it('cancels a live observation on leaving and starts it again on return', async 
     pp({ job: { id: 'live-fixture', state: 'RUNNING', code: 'OK' }, total: 0 }),
   );
   await openFirstSession();
-  await waitFor(() => expect(pppoeReadAPI.start).toHaveBeenCalledOnce());
+  await waitFor(() =>
+    expect(
+      vi
+        .mocked(pppoeReadAPI.start)
+        .mock.calls.filter((args) => args[4] === 'traffic'),
+    ).toHaveLength(1),
+  );
   await waitFor(() => expect(pppoeReadAPI.status).toHaveBeenCalled());
   fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
   await waitFor(() =>
@@ -241,7 +189,13 @@ it('cancels a live observation on leaving and starts it again on return', async 
     await screen.findByRole('button', { name: /Detalhar primeiro/ }),
   );
   await screen.findByRole('heading', { name: 'primeiro' });
-  await waitFor(() => expect(pppoeReadAPI.start).toHaveBeenCalledTimes(2));
+  await waitFor(() =>
+    expect(
+      vi
+        .mocked(pppoeReadAPI.start)
+        .mock.calls.filter((args) => args[4] === 'traffic'),
+    ).toHaveLength(2),
+  );
 });
 
 it('cancels live on a tab change and starts it on returning to traffic', async () => {
@@ -262,7 +216,13 @@ it('cancels live on a tab change and starts it on returning to traffic', async (
     ),
   );
   fireEvent.click(screen.getByRole('tab', { name: 'Tráfego' }));
-  await waitFor(() => expect(pppoeReadAPI.start).toHaveBeenCalledTimes(2));
+  await waitFor(() =>
+    expect(
+      vi
+        .mocked(pppoeReadAPI.start)
+        .mock.calls.filter((args) => args[4] === 'traffic'),
+    ).toHaveLength(2),
+  );
   expect(
     screen.queryByRole('button', { name: 'Ver ao vivo' }),
   ).not.toBeInTheDocument();
@@ -281,7 +241,11 @@ it('shows an offline session without initiating traffic', async () => {
   expect(
     within(session).queryByRole('button', { name: 'Ver ao vivo' }),
   ).not.toBeInTheDocument();
-  expect(pppoeReadAPI.start).not.toHaveBeenCalled();
+  expect(
+    vi
+      .mocked(pppoeReadAPI.start)
+      .mock.calls.filter((args) => args[4] === 'traffic'),
+  ).toHaveLength(0);
 });
 
 it('clears the visible session and its URL when changing company', async () => {
@@ -316,14 +280,43 @@ it('clears the visible session and its URL when changing company', async () => {
   ).not.toContain('#sessao/');
 });
 
-it('shows the unbuilt history without a simulated table', async () => {
+it('shows saved history and its collection gap without inventing subscriber data', async () => {
+  vi.mocked(pppoeAPI.history).mockResolvedValue(
+    pp({
+      total: 1,
+      history: [
+        {
+          id: 1,
+          kind: 'gap',
+          device_id: device.id,
+          login: '',
+          connected_at: '2026-11-06T10:00:00Z',
+          disconnected_at: '2026-11-06T10:10:00Z',
+          reason: 'Lacuna de coleta',
+          row: rows[0],
+        },
+      ],
+    }),
+  );
   await openFirstSession();
   fireEvent.click(screen.getByRole('tab', { name: 'Histórico' }));
-  const session = screen.getByRole('region', { name: 'Detalhes da sessão' });
-  expect(
-    within(session).getByText('Não feito · Ainda não existe (L-PULSO)'),
-  ).toBeVisible();
-  expect(within(session).queryByRole('table')).not.toBeInTheDocument();
+  const table = await screen.findByRole('table', {
+    name: 'Histórico de conexões',
+  });
+  const cells = within(table).getAllByRole('cell');
+  expect(cells[3]).toHaveTextContent('Lacuna de coleta');
+  expect(cells.slice(4).every((c) => c.textContent === '—')).toBe(true);
+  expect(screen.getByRole('combobox', { name: 'Motivo' })).toBeVisible();
+  expect(screen.getByRole('combobox', { name: 'Período' })).toHaveValue('30');
+  expect(pppoeAPI.history).toHaveBeenCalledWith(
+    'company',
+    'activation',
+    device.id,
+    'primeiro',
+    '',
+    30,
+    '',
+  );
 });
 
 it('keeps link review and manual fields available in the session screen', async () => {

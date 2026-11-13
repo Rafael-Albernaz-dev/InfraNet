@@ -23,6 +23,7 @@ var (
 	companyRadioJourneySchema      = companyMigration("013_radio_journey.sql")
 	companyInventoryBlockSchema    = companyMigration("014_inventory_block.sql")
 	companyTablePreferencesSchema  = companyMigration("015_table_preferences.sql")
+	companyPulseHistorySchema      = companyMigration("017_pulse_history.sql")
 	companyGroupsIdentitySchema    = companyMigration("016_groups_identity.sql")
 )
 
@@ -39,9 +40,13 @@ func companySchemas() []string {
 	return []string{companySchema, companyBrandSchema, companyEquipmentSchema, companyOperationalSchema,
 		companyPPPoESchema, companyPPDiagnosticSchema, companySessionsOfflineSchema, companySessionContextSchema,
 		companyDeviceMonitoringSchema, companyEquipmentInsightsSchema, companyContextPeaksSchema,
-		companyRadioSchema, companyRadioJourneySchema, companyInventoryBlockSchema, companyTablePreferencesSchema, companyGroupsIdentitySchema}
+		companyRadioSchema,
+		companyRadioJourneySchema,
+		companyInventoryBlockSchema,
+		companyTablePreferencesSchema,
+		companyGroupsIdentitySchema,
+		companyPulseHistorySchema}
 }
-
 func applyCompanyMigrations(db *sql.DB, current int, schemas []string) error {
 	for version := current + 1; version <= len(schemas); version++ {
 		if err := applyCompanyMigration(db, version, schemas[version-1]); err != nil {

@@ -123,7 +123,10 @@ func (t *Tracker) deviceStatus(d *observation, now time.Time, network Network) D
 	if network != NetworkOK || d.outcome == ProbeUnavailable || stale(status.CheckedAt, now) {
 		status.State = Unknown
 	} else if d.failures >= 3 && t.otherReplied(d) {
-		status.State, status.Since = Offline, d.thirdFailure
+		status.State, status.Since = Offline, status.LastReply
+		if status.Since.IsZero() {
+			status.Since = d.thirdFailure
+		}
 	}
 	return status
 }

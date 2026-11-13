@@ -157,19 +157,19 @@ it('Resumo abre pelo StartQuery e mantém identidade, idade e motivo na falha', 
   expect(block).toHaveTextContent(/há/);
   expect(bindings.StartQuery).toHaveBeenCalledOnce();
 });
-it('Sessões abre pelo StartPPPoECollection e duas aberturas durante a leitura não duplicam o início', async () => {
+it('Sessões abre a projeção do serviço e duas aberturas não iniciam coleta da lista', async () => {
   const { device, bindings } = fixtures();
   show(device);
   await screen.findByRole('heading', { name: device.name });
   fireEvent.click(screen.getByRole('tab', { name: 'Sessões' }));
   await waitFor(() =>
-    expect(bindings.StartPPPoECollection).toHaveBeenCalledOnce(),
+    expect(bindings.StartPPPoECollection).not.toHaveBeenCalled(),
   );
   expect(await screen.findByText('cliente-sintético')).toBeVisible();
   fireEvent.click(screen.getByRole('tab', { name: 'Comparação' }));
   fireEvent.click(screen.getByRole('tab', { name: 'Lista' }));
   await screen.findByText('cliente-sintético');
-  expect(bindings.StartPPPoECollection).toHaveBeenCalledOnce();
+  expect(bindings.StartPPPoECollection).not.toHaveBeenCalled();
   expect(bindings.StartQuery).not.toHaveBeenCalled();
 });
 it.each([RadioRoles.ap, RadioRoles.cpe, RadioRoles.ptp])(

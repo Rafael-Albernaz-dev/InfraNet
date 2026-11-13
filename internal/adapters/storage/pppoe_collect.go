@@ -37,6 +37,7 @@ func (s *Store) FinishPPCollection(
 				return equipment.Unavailable
 			}
 		}
+		// ignored: The same immutable row was serialized successfully by the quota check above.
 		b, _ := json.Marshal(a)
 		_, e := tx.ExecContext(
 			ctx,
@@ -100,6 +101,12 @@ func (s *Store) persistPPCollection(
 	if code = finalizePPObservationCascade(ctx, tx, previous, o); code != equipment.OK {
 		return code
 	}
+	if err := recordSessionHistory(ctx, tx, o); err != nil {
+		return equipment.Unavailable
+	}
+	if err := s.removeOfflinePeers(ctx, tx, o); err != nil {
+		return equipment.Unavailable
+	}
 	s.observe("pp-phase-cascade-end")
 	return equipment.OK
 }
@@ -123,7 +130,7 @@ func loadPreviousPPObservation(
 		return nil, "", code
 	}
 	rows, e := tx.QueryContext(
-		ctx, "SELECT row_json FROM pppoe_rows WHERE observation_id=? ORDER BY ordinal", previousID,
+		ctx, "SELECT row_json FROM pppoe_row_values WHERE observation_id=? ORDER BY ordinal", previousID,
 	)
 	if e != nil {
 		return nil, "", equipment.Unavailable
@@ -185,6 +192,7 @@ func enforcePPObservationQuota(
 func (s *Store) insertPPObservationAndRows(
 	ctx context.Context, tx *sql.Tx, o *equipment.PPObservation,
 ) equipment.Code {
+	// ignored: The same immutable row was serialized successfully by the quota check above.
 	b, _ := json.Marshal(o)
 	_, err := tx.ExecContext(
 		ctx, "INSERT INTO pppoe_observations VALUES(?,?,?,?,?,?,?)",
@@ -238,7 +246,8 @@ func buildPPRowBatchArgs(o *equipment.PPObservation, start, end int) []any {
 	args := make([]any, 0, (end-start)*10)
 	for i := start; i < end; i++ {
 		r := o.Rows[i]
-		body, _ := json.Marshal(r)
+		// ignored: The same immutable row was serialized successfully by the quota check above.
+		body, _ := marshalStoredPPRow(o, r)
 		var uptime any
 		if r.Uptime.Known {
 			uptime = r.Uptime.Min
@@ -287,7 +296,7 @@ func ppWithinBudget(o *equipment.PPObservation) bool {
 		o.Quality.Status != "complete" || !o.Quality.Terminated || !o.Quality.MembershipChecked {
 		return false
 	}
-	rowsBytes, oversized, ok := measurePPRowBytes(o.Rows)
+	rowsBytes, oversized, ok := measurePPRowBytes(o)
 	if !ok {
 		return false
 	}
@@ -299,17 +308,20 @@ func ppWithinBudget(o *equipment.PPObservation) bool {
 	}
 	return solvePPObservationSize(o, rowsBytes)
 }
-
-func measurePPRowBytes(rows []equipment.PPRow) (int, bool, bool) {
+func measurePPRowBytes(o *equipment.PPObservation) (int, bool, bool) {
 	rowsBytes := 0
 	oversized := false
 	seen := map[string]bool{}
-	for _, r := range rows {
-		b, e := json.Marshal(r)
+	for _, r := range o.Rows {
+		logical, e := json.Marshal(r)
+		if e != nil {
+			return 0, false, false
+		}
+		b, e := marshalStoredPPRow(o, r)
 		if e != nil || seen[r.ID] || r.ID == "" {
 			return 0, false, false
 		}
-		oversized = oversized || len(b) > equipment.PPRowBytes
+		oversized = oversized || len(logical) > equipment.PPRowBytes
 		seen[r.ID] = true
 		rowsBytes += len(b)
 	}
@@ -332,7 +344,8 @@ func solvePPObservationSize(o *equipment.PPObservation, rowsBytes int) bool {
 		if o.Offline == 0 || len(o.Rows) == 0 || o.Rows[len(o.Rows)-1].State != "OFFLINE" {
 			return false
 		}
-		last, _ := json.Marshal(o.Rows[len(o.Rows)-1])
+		// ignored: The same immutable row was serialized successfully by the quota check above.
+		last, _ := marshalStoredPPRow(o, o.Rows[len(o.Rows)-1])
 		rowsBytes -= len(last)
 		o.Rows = o.Rows[:len(o.Rows)-1]
 		o.Offline--
@@ -411,7 +424,7 @@ func (s *Store) PPContextCounts(
 
 func loadPPObservationRows(ctx context.Context, q queryer, o *equipment.PPObservation) bool {
 	rows, e := q.QueryContext(
-		ctx, "SELECT row_json FROM pppoe_rows WHERE observation_id=? ORDER BY ordinal", o.ID,
+		ctx, "SELECT row_json FROM pppoe_row_values WHERE observation_id=? ORDER BY ordinal", o.ID,
 	)
 	if e != nil {
 		return false
@@ -446,7 +459,7 @@ func (s *Store) queryLivePPContextGroups(
 	ctx context.Context, v equipment.PPView, in equipment.PPInput,
 ) (equipment.PPView, equipment.Code) {
 	query := `SELECT COALESCE(json_extract(row_json,'$.context.service'),''),` +
-		`json_extract(row_json,'$.context.vlan'),count(*) FROM pppoe_rows ` +
+		`json_extract(row_json,'$.context.vlan'),count(*) FROM pppoe_row_values ` +
 		`WHERE observation_id=? AND COALESCE(json_extract(row_json,'$.state'),'ONLINE')='ONLINE' ` +
 		`GROUP BY 1,2 ORDER BY 1,2`
 	rows, e := s.unit.QueryContext(ctx, query, in.ObservationID)

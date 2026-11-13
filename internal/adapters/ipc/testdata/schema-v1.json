@@ -619,6 +619,13 @@
     ],
     "pppoe.read-stop": [
       "job_id"
+    ],
+    "pppoe.session-history": [
+      "device_id",
+      "login",
+      "history_reason",
+      "history_days",
+      "cursor"
     ]
   },
   "pppoe": {

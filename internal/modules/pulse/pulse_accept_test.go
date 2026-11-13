@@ -47,7 +47,7 @@ func TestOfflineOnlyAfterThreeConsecutiveFailures(t *testing.T) {
 			t.Fatalf("failure %d: state = %s, want %s", i+1, got, want)
 		}
 	}
-	if d := tr.Snapshot(at(31)).Devices["a"]; !d.Since.Equal(at(30)) {
+	if d := tr.Snapshot(at(31)).Devices["a"]; !d.Since.Equal(at(0)) {
 		t.Fatalf("since = %s", d.Since)
 	}
 }

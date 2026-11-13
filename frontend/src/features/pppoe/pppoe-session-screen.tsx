@@ -1,3 +1,6 @@
+import { usePPReadState, type ReadState } from './pppoe-read-state';
+import { ReadPanelBody } from './pppoe-read-panel-body';
+import { SessionHistory } from './session-history';
 import type { PPRow } from '../../platform/wails/presentation';
 import type { Device } from '../equipment/equipment-api';
 import { PPPoEReadPanel } from './pppoe-diagnostics';
@@ -88,57 +91,39 @@ function SessionDetailNav({
     />
   );
 }
-function SessionTrafficTab(p: PPPoESessionDetailProps) {
-  const { selected, current, profile, activation, device, disabled } = p;
-  if (selected.state === 'OFFLINE')
+function SessionTrafficTab(p: PPPoESessionDetailProps & { live: ReadState }) {
+  if (p.selected.state === 'OFFLINE')
     return (
       <DataBlock
         title="Tráfego"
-        source={`SSH (${device.name})`}
-        data={{
-          state: 'ready',
-          content: <p>Sem leitura: sessão OFFLINE</p>,
-        }}
+        source={`SSH (${p.device.name})`}
+        data={{ state: 'ready', content: <p>Sem leitura: sessão OFFLINE</p> }}
       />
     );
+  const props = {
+    profile: p.profile,
+    activation: p.activation,
+    device: p.device,
+    observation: p.current.observation_id,
+    rows: [p.selected.row_id],
+    traffic: true,
+    panel: true,
+    blocked: p.disabled,
+  };
   return (
-    <>
-      <PPPoEReadPanel
-        profile={profile}
-        activation={activation}
-        device={device}
-        observation={current.observation_id}
-        rows={[selected.row_id]}
-        traffic
-        panel
-        blocked={disabled}
-      />
-      <div className="session-grid">
-        <PPPoEReadPanel
-          profile={profile}
-          activation={activation}
-          device={device}
-          observation={current.observation_id}
-          rows={[selected.row_id]}
-          panel
-          bandwidthOnly
-          blocked={disabled}
-        />
-        <PPPoEReadPanel
-          profile={profile}
-          activation={activation}
-          device={device}
-          observation={current.observation_id}
-          rows={[]}
-          panel
-          allowTop
-          blocked={disabled}
-        />
-      </div>
-    </>
+    <DataBlock
+      title="Tráfego"
+      source={`SSH (${p.device.name})`}
+      data={{
+        state: 'ready',
+        content: <ReadPanelBody s={p.live} props={props} />,
+      }}
+    />
   );
 }
-function SessionDetailContent(p: PPPoESessionDetailProps) {
+function SessionDetailContent(
+  p: PPPoESessionDetailProps & { live: ReadState },
+) {
   const {
     selected,
     current,
@@ -151,10 +136,11 @@ function SessionDetailContent(p: PPPoESessionDetailProps) {
   } = p;
   if (p.detailTab === 'history')
     return (
-      <DataBlock
-        title="Histórico de conexões"
-        source="coleta local"
-        data={{ state: 'unbuilt', slice: 'L-PULSO', label: 'Não feito' }}
+      <SessionHistory
+        profile={profile}
+        activation={activation}
+        device={device}
+        login={selected.login}
       />
     );
   if (p.detailTab === 'traffic') return <SessionTrafficTab {...p} />;
@@ -185,6 +171,14 @@ function SessionDetailContent(p: PPPoESessionDetailProps) {
   );
 }
 export function PPPoESessionDetail(p: PPPoESessionDetailProps) {
+  return (
+    <SessionDetailLive
+      key={[p.profile, p.activation, p.selected.row_id, p.detailTab].join('|')}
+      {...p}
+    />
+  );
+}
+function SessionDetailLive(p: PPPoESessionDetailProps) {
   const {
     current,
     profile,
@@ -195,9 +189,30 @@ export function PPPoESessionDetail(p: PPPoESessionDetailProps) {
     detailTab,
     setDetailTab,
   } = p;
+  const { setRoot, ...live } = usePPReadState({
+    profile,
+    activation,
+    device,
+    observation: current.observation_id,
+    rows: [selected.row_id],
+    traffic: detailTab === 'traffic',
+    automaticLive: detailTab !== 'traffic',
+    blocked: p.disabled || selected.state === 'OFFLINE',
+  });
   return (
-    <section className="session-screen" aria-label="Detalhes da sessão">
-      <SessionHeader {...p} />
+    <section
+      ref={setRoot}
+      className="session-screen"
+      aria-label="Detalhes da sessão"
+    >
+      <SessionHeader
+        {...p}
+        sample={
+          live.sampleAge < 6000 && !live.error
+            ? live.result?.rows[0]
+            : undefined
+        }
+      />
       <SessionChain
         profile={profile}
         activation={activation}
@@ -207,7 +222,7 @@ export function PPPoESessionDetail(p: PPPoESessionDetailProps) {
         open={openEquipment}
       />
       <SessionDetailNav detailTab={detailTab} setDetailTab={setDetailTab} />
-      <SessionDetailContent {...p} />
+      <SessionDetailContent {...p} live={live} />
     </section>
   );
 }

@@ -46,7 +46,7 @@ export function canResumeTraffic(c: ReadContext) {
   const p = c.latest.current,
     l = c.life.current;
   return Boolean(
-    p.traffic &&
+    (p.traffic || p.automaticLive) &&
     !p.blocked &&
     p.rows.length &&
     !l.disposed &&

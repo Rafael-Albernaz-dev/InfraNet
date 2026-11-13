@@ -19,6 +19,8 @@ func ppTableColumn(key string) string {
 		return "CASE WHEN " + ppSessionStateSQL + "='OFFLINE' THEN NULL ELSE r.uptime_ns END"
 	case "duplicates":
 		return "CASE WHEN " + ppSessionStateSQL + "='OFFLINE' OR r.login='' THEN 0 ELSE " + ppOnlineDuplicateCount + " END"
+	case "download", "upload":
+		return "CASE WHEN " + ppSessionStateSQL + "='OFFLINE' THEN NULL ELSE json_extract(r.row_json,'$." + key + ".min') END"
 	case "plan":
 		return "CASE WHEN json_extract(r.row_json,'$.context.secret_state') IN ('active','disabled') " +
 			"THEN json_extract(r.row_json,'$.context.profile') END"
@@ -42,7 +44,7 @@ func (s *Store) ppTableOptions(ctx context.Context, observation string, v *equip
 	v.Options = map[string][]string{}
 	for _, key := range []string{"state", "plan", "vlan", "service"} {
 		column := ppTableColumn(key)
-		rows, err := s.unit.QueryContext(ctx, "SELECT DISTINCT CAST("+column+" AS TEXT) AS value FROM pppoe_rows r "+
+		rows, err := s.unit.QueryContext(ctx, "SELECT DISTINCT CAST("+column+" AS TEXT) AS value FROM pppoe_row_values r "+
 			"WHERE r.observation_id=? AND "+column+" IS NOT NULL AND CAST("+column+" AS TEXT)<>'' ORDER BY value COLLATE table_portuguese LIMIT 200",
 			observation)
 		if err != nil {

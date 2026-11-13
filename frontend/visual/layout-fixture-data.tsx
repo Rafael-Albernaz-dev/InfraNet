@@ -25,6 +25,8 @@ export const sessions = Array.from({ length: 25 }, (_, i) => ({
     known: true,
   },
   duplicates: 1,
+  download: { min: 78e6, max: 78e6 },
+  upload: { min: 8e6, max: 8e6 },
   context: {
     association: 'associated',
     profile: ['Plano 100M', 'Plano 50M', 'Plano 200M'][i % 3],
@@ -66,3 +68,24 @@ export const curve = [
   97,
   99,
 ];
+
+export function liveSessionRows() {
+  return sessions
+    .filter((r) => r.state !== 'OFFLINE')
+    .map((r) => ({
+      kind: 'session',
+      row_id: r.row_id,
+      login: r.login,
+      download: r.download,
+      upload: r.upload,
+    }));
+}
+
+export const layoutWave = (i: number, base: number, amp: number) =>
+  +(
+    base +
+    amp *
+      (0.55 * Math.sin(i / 2.3) +
+        0.3 * Math.sin(i / 1.1 + 1) +
+        0.15 * Math.sin(i * 1.7))
+  ).toFixed(2);

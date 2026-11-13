@@ -13,6 +13,7 @@ export type PPReadPanelProps = {
   onRead?: () => void;
   summaryOnly?: boolean;
   traffic?: boolean;
+  automaticLive?: boolean;
   bandwidthOnly?: boolean;
   pageBandwidth?: boolean;
   panel?: boolean;

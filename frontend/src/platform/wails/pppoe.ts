@@ -7,6 +7,7 @@ import {
   ComparePPPoE,
   DeletePPPoEReference,
   ExportPPPoE,
+  ExportSessionHistory,
   ExportPPPoEOperational,
   GetDeviceMonitoring,
   GetPPPoECurrent,
@@ -21,6 +22,7 @@ import {
   PPPoEDiagnosticStatus,
   PPPoEReadPage,
   PPPoEReadStatus,
+  PPPoESessionHistory,
   SavePPPoEReference,
   StartPPPoECatalog,
   StartPPPoECollection,
@@ -78,6 +80,17 @@ export const pppoeDiagnosticAPI: {
   ) => Promise<PPResult>;
 } = pdBindings;
 const ppBindings = {
+  history: (
+    ...[p, a, d, login, reason, days, cursor]: [
+      string,
+      string,
+      string,
+      string,
+      string,
+      number,
+      string,
+    ]
+  ) => PPPoESessionHistory(p, a, d, { login, reason, days, cursor }),
   start: StartPPPoECollection,
   status: PPPoECollectionStatus,
   cancel: CancelPPPoECollection,
@@ -114,10 +127,12 @@ export const pppoeAPI: {
     ...args: Parameters<(typeof ppBindings)[K]>
   ) => Promise<PPResult>;
 } & {
+  exportHistory: typeof ExportSessionHistory;
   export: typeof ExportPPPoE;
   exportOperational: typeof ExportPPPoEOperational;
 } = {
   ...ppBindings,
+  exportHistory: ExportSessionHistory,
   export: ExportPPPoE,
   exportOperational: ExportPPPoEOperational,
 };

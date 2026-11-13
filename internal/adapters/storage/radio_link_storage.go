@@ -24,7 +24,7 @@ func encodeRadioLinkEffect(link equipment.RadioLink) ([]byte, string, equipment.
 func readRadioLinkSource(ctx context.Context, tx *sql.Tx,
 	link equipment.RadioLink, source equipment.PPInput) (equipment.PPRow, equipment.Code) {
 	var body string
-	const query = "SELECT r.row_json FROM pppoe_current c JOIN pppoe_rows r ON r.observation_id=c.observation_id " +
+	const query = "SELECT r.row_json FROM pppoe_current c JOIN pppoe_row_values r ON r.observation_id=c.observation_id " +
 		"WHERE c.device_id=? AND c.observation_id=? AND r.row_id=?"
 	if tx.QueryRowContext(ctx, query, link.Concentrator, source.ObservationID, source.RowID).Scan(&body) != nil {
 		return equipment.PPRow{}, equipment.ObservationMissing

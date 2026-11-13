@@ -26,7 +26,8 @@ func diagnosticCommands(t *testing.T) map[string]string {
 	}
 	out := map[string]string{"IdentityCommand": deviceparse.IdentityCommand,
 		"ResourceCommand": deviceparse.ResourceCommand, "InterfacesCommand": deviceparse.InterfacesCommand,
-		"PPPoECommand": pppoeparse.PPPoECommand, "PPContextCommand": pppoeparse.PPContextCommand,
+		"PulseCountersCommand": pppoeparse.PulseCountersCommand,
+		"PPPoECommand":         pppoeparse.PPPoECommand, "PPContextCommand": pppoeparse.PPContextCommand,
 		"PDCatalogCommand": pppoeparse.PDCatalogCommand, "PDRadiusCommand": pppoeparse.PDRadiusCommand,
 		"PPHealthFirstCommand": pppoeparse.PPHealthFirstCommand, "PPHealthCommand": pppoeparse.PPHealthCommand,
 		"DeviceFastTrackCommand": deviceparse.DeviceFastTrackCommand, "DevicePortsCommand": deviceparse.DevicePortsCommand,
@@ -38,7 +39,6 @@ func diagnosticCommands(t *testing.T) map[string]string {
 	}
 	return out
 }
-
 func TestSyntaxDiagnosticsAreStructural(t *testing.T) {
 	for _, s := range []string{"syntax error (line 1 column 1304)\r\n", "expected end of command (line 1 column 1471)",
 		"bad command name health (line 1 column 1)"} {

@@ -166,7 +166,7 @@ func monitoringGC(ctx context.Context, tx *sql.Tx, at time.Time) error {
 		{"DELETE FROM device_monitoring_points WHERE resolution=60 AND bucket<?", minuteCut},
 		{"DELETE FROM device_monitoring_points WHERE bucket<?", hourCut},
 		{"DELETE FROM device_session_transitions WHERE at<?", edgeCut},
-		{"DELETE FROM device_equipment_events WHERE at<?", at.Add(-30 * 24 * time.Hour).Unix()},
+		{"DELETE FROM device_equipment_events WHERE at<?", at.Add(-90 * 24 * time.Hour).Unix()},
 		{"DELETE FROM device_equipment_snapshot WHERE at<?", at.Add(-30 * 24 * time.Hour).Unix()},
 		{"DELETE FROM device_context_samples WHERE at<?", at.Add(-7 * 24 * time.Hour).Unix()},
 	} {
@@ -255,7 +255,7 @@ func (s *Store) SaveDeviceMonitoring(
 		if code != equipment.OK {
 			return code
 		}
-		if err := saveEquipmentInsights(ctx, tx, d, credentialRevision, result, health, insightAt); err != nil {
+		if err := saveEquipmentInsights(ctx, tx, equipmentInsights{d, credentialRevision, result, health, insightAt}); err != nil {
 			return equipment.Unavailable
 		}
 		if code = persistMonitoringPointAndPackages(ctx, tx, d.ID, at, health, result); code != equipment.OK {
@@ -416,7 +416,7 @@ func (s *Store) countSecretHygiene(
 	ctx context.Context, observationID string,
 ) (uint64, uint64, bool) {
 	q, err := s.unit.QueryContext(
-		ctx, "SELECT row_json FROM pppoe_rows WHERE observation_id=?", observationID,
+		ctx, "SELECT row_json FROM pppoe_row_values WHERE observation_id=?", observationID,
 	)
 	if err != nil {
 		return 0, 0, false

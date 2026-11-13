@@ -1,7 +1,11 @@
+import { formatRate, formatDate } from '../equipment/network-format';
+import type { PPReadRow } from '../../platform/wails/presentation';
 import { formatPPUptime } from '../equipment/pppoe-format';
 import type { PPPoESessionDetailProps } from './pppoe-session-props';
 import { Button } from '../../shared/ui/Button';
-export function SessionHeader(p: PPPoESessionDetailProps) {
+export function SessionHeader(
+  p: PPPoESessionDetailProps & { sample?: PPReadRow },
+) {
   const { selected, device, detailIntentRef, select, detailHeadingRef } = p;
   return (
     <div className="head">
@@ -15,6 +19,15 @@ export function SessionHeader(p: PPPoESessionDetailProps) {
           {selected.context?.profile && ` · ${selected.context.profile}`}
           {selected.state !== 'OFFLINE' &&
             ` · conectado há ${formatPPUptime(selected.uptime)}`}
+          {selected.state === 'OFFLINE' ? (
+            ` · desconectou em ${formatDate(selected.absent_end || '')}`
+          ) : (
+            <span className="st-on">
+              {' '}
+              · Ao vivo ↓ {formatRate(p.sample?.download)} ↑{' '}
+              {formatRate(p.sample?.upload)}
+            </span>
+          )}
         </div>
       </div>
       <Button

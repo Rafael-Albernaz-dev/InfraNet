@@ -1,3 +1,4 @@
+import { RadioModes } from '../equipment/radio-contract';
 import { useEffect } from 'react';
 import type { ReadContext } from './pppoe-read-lifecycle';
 import { canResumeTraffic } from './pppoe-read-lifecycle';
@@ -10,7 +11,10 @@ export function scheduleTraffic(c: ReadContext, delay: number) {
   c.send({ type: 'renovando' });
   l.renewalTimer = setTimeout(() => {
     if (!canResumeTraffic(c)) return;
-    void c.start('traffic', true);
+    void c.start(
+      c.latest.current.automaticLive ? RadioModes.live : 'traffic',
+      true,
+    );
   }, delay);
 }
 export async function trafficFailed(c: ReadContext, code: string) {
@@ -40,7 +44,11 @@ async function pauseTraffic(c: ReadContext) {
   try {
     if (await releaseRead(c)) {
       c.send({ type: 'pausado' });
-      if (canResumeTraffic(c)) void c.start('traffic', true);
+      if (canResumeTraffic(c))
+        void c.start(
+          c.latest.current.automaticLive ? RadioModes.live : 'traffic',
+          true,
+        );
     }
   } catch {
     c.send({
@@ -53,7 +61,11 @@ function syncVisibility(c: ReadContext, doc: Document, resume: boolean) {
   const l = c.life.current;
   l.hidden = doc.visibilityState === 'hidden';
   if (l.hidden) void pauseTraffic(c);
-  else if (resume && canResumeTraffic(c)) void c.start('traffic', true);
+  else if (resume && canResumeTraffic(c))
+    void c.start(
+      c.latest.current.automaticLive ? RadioModes.live : 'traffic',
+      true,
+    );
 }
 export function useTrafficRenewal(
   c: ReadContext,

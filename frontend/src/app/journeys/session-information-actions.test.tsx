@@ -1,3 +1,4 @@
+import { RadioModes } from '../../features/equipment/radio-contract';
 import type { PPRow } from '../../platform/wails/presentation';
 import { createRef } from 'react';
 import {
@@ -154,8 +155,16 @@ it('starts log and secret evidence from the new session screen for its selected 
   fireEvent.click(
     screen.getByRole('button', { name: 'Ver evidência do secret' }),
   );
-  await waitFor(() => expect(pppoeReadAPI.start).toHaveBeenCalledTimes(2));
-  const calls = vi.mocked(pppoeReadAPI.start).mock.calls;
+  await waitFor(() =>
+    expect(
+      vi
+        .mocked(pppoeReadAPI.start)
+        .mock.calls.filter((args) => args[4] !== RadioModes.live),
+    ).toHaveLength(2),
+  );
+  const calls = vi
+    .mocked(pppoeReadAPI.start)
+    .mock.calls.filter((args) => args[4] !== RadioModes.live);
   expect(calls.map((args) => args.slice(4, 8))).toEqual([
     ['log', 'obs-fixture', ['row-fixture'], 1],
     ['secret', 'obs-fixture', ['row-fixture'], 1],

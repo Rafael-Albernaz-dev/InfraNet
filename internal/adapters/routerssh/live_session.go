@@ -5,6 +5,7 @@ import (
 	"errors"
 	"golang.org/x/crypto/ssh"
 	"infradesktop/internal/adapters/routerssh/deviceparse"
+	"infradesktop/internal/adapters/routerssh/pppoeparse"
 	"infradesktop/internal/modules/equipment"
 	"infradesktop/internal/modules/pulse"
 	"net"
@@ -90,32 +91,64 @@ func (s *liveSession) Read(ctx context.Context, t pulse.ReadTarget) (pulse.Readi
 	default:
 		return pulse.Reading{}, pulse.ReadLost
 	}
+	started := time.Now()
+	output, fault := s.runLive(ctx, command, 4096)
+	if fault != pulse.ReadOK {
+		return pulse.Reading{}, fault
+	}
+	reading, fault := deviceparse.ParseLiveReading(output)
+	if fault != pulse.ReadOK {
+		return reading, fault
+	}
+	reading.Started, reading.At = started, time.Now()
+	if t.Role == equipment.RoleConcentrator {
+		output, fault = s.runLive(ctx, pppoeparse.PPPoECommand, equipment.PPWireBytes)
+		if fault != pulse.ReadOK {
+			return pulse.Reading{}, fault
+		}
+		observation, code := pppoeparse.ParsePPPoE(output)
+		if code != equipment.OK || observation.Quality.Status != "complete" {
+			return pulse.Reading{}, pulse.ReadLost
+		}
+		output, fault = s.runLive(ctx, pppoeparse.PulseCountersCommand, equipment.PPWireBytes)
+		if fault != pulse.ReadOK {
+			return pulse.Reading{}, fault
+		}
+		tunnels, code := pppoeparse.ParsePulseCounters(output)
+		if code != equipment.OK {
+			return pulse.Reading{}, pulse.ReadLost
+		}
+		reading.Observation, reading.Tunnels, reading.At = observation, tunnels, time.Now()
+	}
+	return reading, pulse.ReadOK
+}
+func (s *liveSession) runLive(ctx context.Context, command string, limit int) (string, pulse.ReadFault) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	// ignored: WithTimeout always establishes a deadline.
 	deadline, _ := ctx.Deadline()
 	if err := s.conn.SetDeadline(deadline); err != nil {
-		return pulse.Reading{}, pulse.ReadLost
+		return "", pulse.ReadLost
 	}
 	stop := context.AfterFunc(ctx, func() { s.conn.Close() })
 	defer stop()
 	session, err := s.client.NewSession()
 	if err != nil {
-		return pulse.Reading{}, pulse.ReadLost
+		return "", pulse.ReadLost
 	}
 	defer session.Close()
-	budget := &outputBudget{conn: s.conn, limit: 4096}
+	budget := &outputBudget{conn: s.conn, limit: limit}
 	stdout, stderr := &limitedOutput{budget: budget}, &limitedOutput{budget: budget}
 	session.Stdout, session.Stderr = stdout, stderr
 	err = session.Run(command)
 	if err != nil || ctx.Err() != nil || budget.overflow || stderr.buf.Len() != 0 {
-		return pulse.Reading{}, pulse.ReadLost
+		return "", pulse.ReadLost
 	}
 	if !stop() {
-		return pulse.Reading{}, pulse.ReadLost
+		return "", pulse.ReadLost
 	}
 	if err := s.conn.SetDeadline(time.Time{}); err != nil {
-		return pulse.Reading{}, pulse.ReadLost
+		return "", pulse.ReadLost
 	}
-	return deviceparse.ParseLiveReading(stdout.buf.String())
+	return stdout.buf.String(), pulse.ReadOK
 }

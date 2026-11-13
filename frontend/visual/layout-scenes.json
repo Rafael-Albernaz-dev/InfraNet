@@ -15,13 +15,7 @@
     "route": "ficha",
     "device": "CCR-CENTRO",
     "tab": "Sessões",
-    "sub": null,
-    "prepare": [
-      {
-        "button": "Medir banda da página",
-        "ready": "78 Mbps"
-      }
-    ]
+    "sub": null
   },
   {
     "id": "login",

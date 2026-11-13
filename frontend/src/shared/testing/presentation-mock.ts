@@ -70,6 +70,8 @@ const pppoeDiagnosticAPIMock = (fallback: Record<string, unknown> = {}) => ({
   list: mockMethod(fallback.list),
 });
 const pppoeAPIMock = (fallback: Record<string, unknown> = {}) => ({
+  history: mockMethod(fallback.history),
+  exportHistory: mockMethod(fallback.exportHistory),
   start: mockMethod(fallback.start),
   status: mockMethod(fallback.status),
   cancel: mockMethod(fallback.cancel),

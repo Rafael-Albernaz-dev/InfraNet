@@ -1,3 +1,4 @@
+import { ContextCounts } from '../../features/pppoe/pppoe-context';
 import { waitForSessionReady } from '../../shared/testing/session-ready';
 import {
   fireEvent,
@@ -110,13 +111,8 @@ it('stable context shows negotiated IPv6 and unavailable fields without invented
       .find((element) => element.closest('.kv')),
   ).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
-  expect(
-    within(
-      (await screen.findByRole('cell', { name: 'service' })).closest('tr')!,
-    )
-      .getAllByRole('cell')
-      .map((cell) => cell.textContent),
-  ).toEqual(['100', 'service', '2', 'Não informado nesta leitura']);
+  expect(api.groups).not.toHaveBeenCalled();
+  expect(screen.queryByLabelText('Queda local')).not.toBeInTheDocument();
 });
 it.each([
   ['ambiguous', 'Vários secrets locais ativos: perfil ambíguo'],
@@ -163,13 +159,14 @@ it.each([
     screen.getAllByRole('button', { name: 'Ver evidência do secret' }),
   ).toHaveLength(1);
 });
-it('a concentrator with no stored observation can request fresh top', async () => {
+it('a concentrator without an observation has no obsolete manual top or page measurement', async () => {
   vi.mocked(api.current).mockResolvedValue(result({ total: 0 }));
   showPP();
   await screen.findByText(/Nenhuma leitura de sessões disponível/);
-  expect(screen.getAllByRole('button', { name: 'Top consumo' })).toHaveLength(
-    1,
-  );
+  expect(
+    screen.queryByRole('button', { name: 'Top consumo' }),
+  ).not.toBeInTheDocument();
+  expect(readAPI.start).not.toHaveBeenCalled();
   expect(
     screen.queryByRole('button', { name: 'Medir banda da página' }),
   ).not.toBeInTheDocument();
@@ -295,6 +292,15 @@ it('VLAN peak uses raw counts, a configurable drop threshold and optional plan c
     }),
   );
   showPP();
+  render(
+    <ContextCounts
+      profile="company"
+      activation="active"
+      device={device.id}
+      observation={obs.observation_id}
+      at={obs.provenance.ended_at}
+    />,
+  );
   const group = (
     await screen.findByRole('cell', { name: 'X-service' })
   ).closest('tr')!;

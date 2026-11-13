@@ -1,3 +1,4 @@
+import { RadioModes } from '../../features/equipment/radio-contract';
 import { waitForSessionReady } from '../../shared/testing/session-ready';
 import {
   act,
@@ -33,13 +34,17 @@ function journey() {
     activation_id: 'active',
     data: { total: rows.length, ...data },
   });
-  const status = (state = 'SUCCEEDED', id = 'bandwidth', selected = rows) =>
+  const status = (
+    state = 'RUNNING',
+    id: string = RadioModes.live,
+    selected = rows,
+  ) =>
     result({
       job: { id, state, code: 'OK' },
-      ...(state === 'SUCCEEDED'
+      ...(state === 'SUCCEEDED' || state === 'RUNNING'
         ? {
             read: {
-              scope: 'bandwidth',
+              scope: id === 'traffic' ? 'traffic' : RadioModes.live,
               started_at: '2026-11-04T12:00:00Z',
               ended_at: '2026-11-04T12:00:02Z',
               duration_ns: 2e9,
@@ -78,7 +83,7 @@ function journey() {
     StopPPPoETraffic: vi.fn(async () => result()),
   };
   vi.stubGlobal('go', { presentation: { App: bindings } });
-  render(
+  const view = render(
     <PPPoE
       profile="company"
       activation="active"
@@ -86,16 +91,14 @@ function journey() {
       back={() => {}}
     />,
   );
-  return { rows, bindings, status };
+  return { rows, bindings, status, view };
 }
 afterEach(() => {
   cleanup();
   vi.stubGlobal('go', undefined);
 });
-async function pageAction() {
-  return screen.findByRole('button', { name: 'Medir banda da página' });
-}
-it('mede as linhas da página, mostra progresso e resultado e libera busy', async () => {
+
+it('lê automaticamente somente a página e publica o instante depois da resposta', async () => {
   const { bindings, status } = journey();
   let finish!: (r: ReturnType<typeof status>) => void;
   bindings.PPPoEReadStatus.mockImplementationOnce(
@@ -104,36 +107,29 @@ it('mede as linhas da página, mostra progresso e resultado e libera busy', asyn
         finish = resolve;
       }),
   );
-  const button = await pageAction();
-  await act(async () => fireEvent.click(button));
-  expect(
-    await screen.findByText('Aguardando duas amostras do concentrador…'),
-  ).toBeVisible();
-  expect(button).toBeDisabled();
-  expect(bindings.StartPPPoERead).toHaveBeenCalledWith(
+  await screen.findByRole('columnheader', { name: 'Download' });
+  await waitFor(() => expect(bindings.PPPoEReadStatus).toHaveBeenCalledOnce());
+  expect(bindings.StartPPPoERead).toHaveBeenCalledExactlyOnceWith(
     'company',
     'active',
     device.id,
     expect.any(String),
-    'bandwidth',
+    'live',
     'saved',
     ['row-1', 'row-2'],
     1,
   );
-  await waitFor(() => expect(bindings.PPPoEReadStatus).toHaveBeenCalledOnce(), {
-    timeout: 5000,
-  });
+  expect(
+    screen.queryByRole('button', { name: 'Medir banda da página' }),
+  ).not.toBeInTheDocument();
   await act(async () => finish(status()));
-  const result = within(
-    screen.getByRole('region', { name: 'Banda por sessão' }),
-  );
-  expect(await result.findAllByText('2 Mbps')).toHaveLength(2);
-  expect(result.getAllByText('500 Kbps')).toHaveLength(2);
-  expect(button).toBeEnabled();
+  const table = within(screen.getByRole('table', { name: 'Sessões PPPoE' }));
+  expect(await table.findAllByText('2 Mbps')).toHaveLength(2);
+  expect(table.getAllByText('500 Kbps')).toHaveLength(2);
   expect(bindings.StartPPPoERead).toHaveBeenCalledOnce();
 });
-it('cancelar medição encerra o job da página e ignora resultado tardio', async () => {
-  const { bindings, status } = journey();
+it('sair da página cancela a leitura e ignora sua resposta tardia', async () => {
+  const { bindings, status, view } = journey();
   let finish!: (r: ReturnType<typeof status>) => void;
   bindings.PPPoEReadStatus.mockImplementationOnce(
     () =>
@@ -141,61 +137,66 @@ it('cancelar medição encerra o job da página e ignora resultado tardio', asyn
         finish = resolve;
       }),
   );
-  const button = await pageAction();
-  fireEvent.click(button);
-  await waitFor(() => expect(bindings.PPPoEReadStatus).toHaveBeenCalledOnce(), {
-    timeout: 5000,
-  });
-  fireEvent.click(
-    await screen.findByRole('button', { name: 'Cancelar medição' }),
+  await waitFor(() => expect(bindings.PPPoEReadStatus).toHaveBeenCalledOnce());
+  view.unmount();
+  await waitFor(() =>
+    expect(bindings.CancelPPPoERead).toHaveBeenCalledWith(
+      'company',
+      'active',
+      'live',
+    ),
   );
-  await waitFor(
-    () =>
+  await act(async () => finish(status()));
+  expect(screen.queryByText('2 Mbps')).not.toBeInTheDocument();
+  expect(bindings.StartPPPoERead).toHaveBeenCalledOnce();
+});
+it('falha de andamento cancela o job conhecido antes de renovar sem sobreposição', async () => {
+  vi.useFakeTimers();
+  try {
+    const { bindings, status } = journey();
+    bindings.PPPoEReadStatus.mockRejectedValueOnce(
+      new Error('synthetic lost status'),
+    ).mockResolvedValue(status());
+    await vi.waitFor(() =>
       expect(bindings.CancelPPPoERead).toHaveBeenCalledWith(
         'company',
         'active',
-        'bandwidth',
+        'live',
       ),
-    { timeout: 5000 },
-  );
-  await act(async () => finish(status()));
-  expect(button).toBeEnabled();
-  expect(screen.queryByText('2 Mbps')).not.toBeInTheDocument();
+    );
+    expect(bindings.StartPPPoERead).toHaveBeenCalledOnce();
+    await act(async () => vi.advanceTimersByTimeAsync(5000));
+    await vi.waitFor(() =>
+      expect(bindings.StartPPPoERead).toHaveBeenCalledTimes(2),
+    );
+    expect(screen.getAllByText('2 Mbps')).toHaveLength(2);
+  } finally {
+    vi.useRealTimers();
+  }
 });
-it('Conferir andamento reconcilia o mesmo job sem reenviar a medição', async () => {
-  const { bindings, status } = journey();
-  bindings.PPPoEReadStatus.mockRejectedValueOnce(
-    new Error('synthetic lost status'),
-  ).mockResolvedValueOnce(status());
-  fireEvent.click(await pageAction());
-  fireEvent.click(
-    await screen.findByRole('button', { name: 'Conferir andamento' }),
-  );
-  await screen.findAllByText('2 Mbps');
-  expect(bindings.PPPoEReadStatus).toHaveBeenCalledTimes(2);
-  expect(bindings.StartPPPoERead).toHaveBeenCalledOnce();
-});
-it('tela da sessão mede só a linha selecionada e apresenta o resultado', async () => {
+it('a sessão inicia tráfego só para sua linha e mostra o instante no cabeçalho', async () => {
   const { bindings, rows, status } = journey();
   bindings.PPPoEReadStatus.mockImplementation(async () =>
-    status('SUCCEEDED', 'bandwidth', [rows[0]]),
+    status('RUNNING', 'traffic', [rows[0]]),
   );
   fireEvent.click(
     await screen.findByRole('button', { name: 'Detalhar cliente-1 *1' }),
   );
   const panel = within(await waitForSessionReady());
-  fireEvent.click(await panel.findByRole('button', { name: 'Medir banda' }));
   await waitFor(() =>
-    expect(
-      bindings.StartPPPoERead.mock.calls.some(
-        (args) =>
-          args[4] === 'bandwidth' && JSON.stringify(args[6]) === '["row-1"]',
-      ),
-    ).toBe(true),
-  );
-  expect(
-    await within(panel.getByRole('region', { name: 'Banda' })).findAllByText(
-      '2 Mbps',
+    expect(bindings.StartPPPoERead).toHaveBeenCalledWith(
+      'company',
+      'active',
+      device.id,
+      expect.any(String),
+      'traffic',
+      'saved',
+      ['row-1'],
+      1,
     ),
-  ).toHaveLength(1);
+  );
+  expect(await panel.findByText(/Ao vivo ↓ 2 Mbps/)).toBeVisible();
+  expect(
+    panel.queryByRole('button', { name: 'Medir banda' }),
+  ).not.toBeInTheDocument();
 });

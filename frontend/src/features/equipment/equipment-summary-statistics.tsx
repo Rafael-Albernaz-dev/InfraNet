@@ -1,3 +1,4 @@
+import { formatDate } from './network-format';
 import { useEffect, useState } from 'react';
 import type { Device } from './equipment-api';
 import type { PPObservation } from '../../platform/wails/pppoe-types';
@@ -53,31 +54,14 @@ export function EquipmentSummaryStatistics(p: {
   }, [profile, activation, device.id, key]);
   const observation = current?.key === key ? current.observation : undefined;
   const restarts = snapshot?.rows.find((row) => row.kind === 'restarts');
-  const project = (
-    loading: boolean,
-    failed: boolean,
-    present: boolean,
-    content: React.ReactNode,
-  ): DataState =>
-    loading
-      ? { state: 'loading' }
-      : failed
-        ? {
-            state: 'failed',
-            reason: 'Falhou a leitura salva',
-            technical: 'Projeção local não disponível',
-            retry,
-          }
-        : !present
-          ? { state: 'unread', action: retry }
-          : { state: 'ready', content };
   return (
     <>
       <DataBlock
         title="Sessões online"
         source="SSH"
         age={readingAge(observation?.provenance.ended_at)}
-        data={project(
+        data={projectStatistics(
+          retry,
           current?.key !== key,
           Boolean(current?.failed),
           Boolean(observation),
@@ -97,12 +81,14 @@ export function EquipmentSummaryStatistics(p: {
         data={
           restarts?.used === 0
             ? { state: 'empty', message: 'Nenhum reinício encontrado' }
-            : project(
+            : projectStatistics(
+                retry,
                 !snapshot,
                 Boolean(snapshot?.failed),
                 Boolean(restarts),
                 restarts ? (
                   <p>
+                    Último: {lastRestart(device.last_reboot)} ·{' '}
                     {restarts.used ?? 'Não informado nesta leitura'} reinícios
                     em 7 d; {restarts.size ?? 'Não informado nesta leitura'} em
                     30 d
@@ -113,4 +99,26 @@ export function EquipmentSummaryStatistics(p: {
       />
     </>
   );
+}
+
+function projectStatistics(
+  retry: () => void,
+  loading: boolean,
+  failed: boolean,
+  present: boolean,
+  content: React.ReactNode,
+): DataState {
+  if (loading) return { state: 'loading' };
+  if (failed)
+    return {
+      state: 'failed',
+      reason: 'Falhou a leitura salva',
+      technical: 'Projeção local não disponível',
+      retry,
+    };
+  if (!present) return { state: 'unread', action: retry };
+  return { state: 'ready', content };
+}
+function lastRestart(at: string | undefined) {
+  return at ? formatDate(at) : '—';
 }

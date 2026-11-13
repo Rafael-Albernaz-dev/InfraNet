@@ -2,8 +2,12 @@ package composition
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"infradesktop/internal/modules/equipment"
+	"infradesktop/internal/modules/inventory"
+	"infradesktop/internal/modules/pppoe"
 	"infradesktop/internal/modules/pulse"
+	"time"
 )
 
 type identityReadSession struct {
@@ -11,11 +15,21 @@ type identityReadSession struct {
 	inventory liveInventory
 	profile   string
 	target    equipment.PPTarget
+	previous  []equipment.PPTunnel
+	clock     *inventory.Service
 }
 
 func (s *identityReadSession) Read(ctx context.Context, target pulse.ReadTarget) (pulse.Reading, pulse.ReadFault) {
 	reading, fault := s.ReadSession.Read(ctx, target)
-	if fault != pulse.ReadOK || reading.Identity == "" {
+	if fault != pulse.ReadOK {
+		if store, ok := s.inventory.store.(pulseReadingStore); ok {
+			if code := store.MarkPulseGap(ctx, s.profile, s.target, time.Now()); code != equipment.OK {
+				return pulse.Reading{}, fault
+			}
+		}
+		return reading, fault
+	}
+	if reading.Identity == "" {
 		return reading, fault
 	}
 	profile, active := s.inventory.access.ActiveProfile(ctx)
@@ -30,6 +44,16 @@ func (s *identityReadSession) Read(ctx context.Context, target pulse.ReadTarget)
 	if code != equipment.OK {
 		return pulse.Reading{}, pulse.ReadLost
 	}
+	if reading.At.IsZero() {
+		reading.At = time.Now()
+	}
+	s.prepareSessions(&reading)
+	if store, ok := s.inventory.store.(pulseReadingStore); ok {
+		if code := store.SavePulseReading(ctx, profile, s.target, reading); code != equipment.OK {
+			return pulse.Reading{}, pulse.ReadLost
+		}
+	}
+	s.previous = reading.Tunnels
 	if current.Identity == reading.Identity {
 		return reading, fault
 	}
@@ -65,4 +89,44 @@ func liveIdentityDevice(state *equipment.State, target equipment.PPTarget) (*equ
 		return nil, equipment.Revision
 	}
 	return nil, equipment.Changed
+}
+
+type pulseReadingStore interface {
+	SavePulseReading(context.Context, string, equipment.PPTarget, pulse.Reading) equipment.Code
+	MarkPulseGap(context.Context, string, equipment.PPTarget, time.Time) equipment.Code
+}
+
+func (s *identityReadSession) prepareSessions(reading *pulse.Reading) {
+	o := reading.Observation
+	if o == nil {
+		return
+	}
+	o.ID, o.DeviceID = uuid.NewString(), s.target.Device.ID
+	o.Provenance.Installation, o.Provenance.Company = s.target.Installation, s.profile
+	o.Provenance.DeviceID, o.Provenance.Revision = o.DeviceID, s.target.Device.Revision
+	o.Provenance.Connection = equipment.PPConnection(s.target.Device)
+	o.Provenance.CredentialRevision = s.target.Credential.Metadata.Revision
+	o.Provenance.Started, o.Provenance.Ended = equipment.PPTime(reading.Started), equipment.PPTime(reading.At)
+	sample := equipment.PPInterval{}
+	if s.clock != nil {
+		o.Provenance.Epoch = s.clock.Epoch
+		sample = equipment.PPInterval{Known: true,
+			Min: reading.Started.Sub(s.clock.Origin).Nanoseconds(),
+			Max: reading.At.Sub(s.clock.Origin).Nanoseconds()}
+	}
+	o.Provenance.Automatic = true
+	o.Provenance.Sample = sample
+	by := map[string]equipment.PPRow{}
+	for i := range o.Rows {
+		r := &o.Rows[i]
+		r.ID, r.Sample = uuid.NewSHA1(uuid.NameSpaceOID, []byte(o.DeviceID+"\x00"+pppoe.SessionKey(*r))).String(), sample
+		by["<pppoe-"+r.Login+">"] = *r
+	}
+	for i := range reading.Tunnels {
+		tunnel := &reading.Tunnels[i]
+		r := by[tunnel.Name]
+		tunnel.Login, tunnel.Caller, tunnel.Address = r.Login, r.Caller, r.Address
+		tunnel.Uptime, tunnel.RouterUptime, tunnel.Sample = r.Uptime, o.Provenance.RouterUptime, sample
+	}
+	pppoe.AverageSessions(o.Rows, s.previous, reading.Tunnels)
 }

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { Device } from './equipment-api';
 import {
   formatMetric,
+  formatDate,
   formatRouterDuration,
   exactVolume,
   formatVolumePair,
@@ -26,6 +27,16 @@ export function Summary({
     ['Modelo', r.board],
     ['Versão', r.version],
     ['Uptime', formatRouterDuration(r.uptime)],
+    [
+      'Último reinício',
+      device.last_reboot ? formatDate(device.last_reboot) : '—',
+    ],
+    [
+      'Visto online por último',
+      device.pulse?.last_reply
+        ? formatDate(device.pulse.last_reply)
+        : 'Nunca respondeu',
+    ],
   ];
   return (
     <div className="grid">

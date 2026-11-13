@@ -69,6 +69,8 @@ func ppGuardInput(t *testing.T, j *ppJourney, op string, fields []string, observ
 
 func ppGuardValue(op, field string, fields []string, device, observation string) any {
 	switch field {
+	case "history_days":
+		return 30
 	case "revision":
 		return 2
 	case "query":

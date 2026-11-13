@@ -36,6 +36,9 @@ func (i pulseInventory) Targets(ctx context.Context) (string, []pulse.Target, bo
 }
 func composePulse(server *ipc.Server, service *access.Service, store equipment.Store) *pulse.Collector {
 	collector := pulse.NewCollector(pulseInventory{service, store}, icmpprobe.Probe{}, 16)
+	if history, ok := store.(pulse.PresenceStore); ok {
+		collector.SetPresenceStore(history)
+	}
 	server.StartBackground(collector.Run)
 	return collector
 }

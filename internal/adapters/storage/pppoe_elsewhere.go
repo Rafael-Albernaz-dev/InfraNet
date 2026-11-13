@@ -51,7 +51,7 @@ func loadConcentratorReadings(ctx context.Context, q queryer, exclude string) ([
 }
 
 func loadConcentratorRows(ctx context.Context, q queryer, observation string) (map[string][]equipment.PPRow, error) {
-	rows, err := q.QueryContext(ctx, "SELECT row_json FROM pppoe_rows WHERE observation_id=? ORDER BY ordinal", observation)
+	rows, err := q.QueryContext(ctx, "SELECT row_json FROM pppoe_row_values WHERE observation_id=? ORDER BY ordinal", observation)
 	if err != nil {
 		return nil, err
 	}

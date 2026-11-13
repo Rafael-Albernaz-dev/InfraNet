@@ -8,9 +8,8 @@ import (
 	"strings"
 )
 
-const ppOnlineDuplicateCount = "(SELECT count(*) FROM pppoe_rows d WHERE d.observation_id=r.observation_id " +
+const ppOnlineDuplicateCount = "(SELECT count(*) FROM pppoe_row_values d WHERE d.observation_id=r.observation_id " +
 	"AND d.login=r.login AND COALESCE(json_extract(d.row_json,'$.state'),'ONLINE')='ONLINE')"
-
 const ppSessionStateSQL = "COALESCE(json_extract(r.row_json,'$.state'),'ONLINE')"
 
 func ppSessionWhere(observation string, q *equipment.PPQuery) (string, []any) {
@@ -47,7 +46,7 @@ func ppSessionOrder(q *equipment.PPQuery) string {
 		direction = " DESC"
 	}
 	order := column
-	if q.Sort != "uptime" && q.Sort != "vlan" && q.Sort != "duplicates" && q.Sort != "row" {
+	if q.Sort != "download" && q.Sort != "upload" && q.Sort != "uptime" && q.Sort != "vlan" && q.Sort != "duplicates" && q.Sort != "row" {
 		order += " COLLATE table_portuguese"
 	}
 	return "(" + column + " IS NULL OR CAST(" + column + " AS TEXT) IN ('','—')) ASC," + order + direction + ",r.row_id ASC"
@@ -94,7 +93,7 @@ func (s *Store) PPPage(ctx context.Context, company string, in equipment.PPInput
 		return v, c
 	}
 	where, args := ppSessionWhere(in.ObservationID, q)
-	if s.unit.QueryRowContext(ctx, ppTableStatement("SELECT count(*) FROM pppoe_rows r WHERE "+where),
+	if s.unit.QueryRowContext(ctx, ppTableStatement("SELECT count(*) FROM pppoe_row_values r WHERE "+where),
 		append([]any{in.ObservationID}, args...)...).Scan(&v.Total) != nil {
 		return v, equipment.Unavailable
 	}
@@ -109,7 +108,7 @@ func (s *Store) PPPage(ctx context.Context, company string, in equipment.PPInput
 	}
 	args = append(args, size, in.Offset)
 	rows, e := s.unit.QueryContext(ctx, ppTableStatement("SELECT r.row_json,"+ppOnlineDuplicateCount+","+
-		ppTableColumn("linked_device")+" FROM pppoe_rows r WHERE "+where+" ORDER BY "+order+" LIMIT ? OFFSET ?"),
+		ppTableColumn("linked_device")+" FROM pppoe_row_values r WHERE "+where+" ORDER BY "+order+" LIMIT ? OFFSET ?"),
 		append([]any{in.ObservationID}, args...)...)
 	if e != nil {
 		return v, equipment.Unavailable
@@ -153,9 +152,8 @@ func readPPSessionRows(rows *sql.Rows, v *equipment.PPView, q *equipment.PPQuery
 	}
 	return equipment.OK
 }
-
 func ppTableStatement(statement string) string {
-	const counts = "WITH duplicates AS MATERIALIZED (SELECT login,count(*) AS total FROM pppoe_rows " +
+	const counts = "WITH duplicates AS MATERIALIZED (SELECT login,count(*) AS total FROM pppoe_row_values " +
 		"WHERE observation_id=? AND COALESCE(json_extract(row_json,'$.state'),'ONLINE')='ONLINE' GROUP BY login) "
 	return counts + strings.ReplaceAll(statement, ppOnlineDuplicateCount, "COALESCE((SELECT total FROM duplicates WHERE login=r.login),0)")
 }

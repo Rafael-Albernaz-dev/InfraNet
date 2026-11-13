@@ -192,10 +192,7 @@ it('edits only the concentrator group, reopens saved sessions and measures bandw
   ).toHaveTextContent('Torre Sul');
   fireEvent.click(screen.getByRole('tab', { name: 'Sessões' }));
   expect(await screen.findByText('cliente-sintetico')).toBeVisible();
-  fireEvent.click(await screen.findByRole('button', { name: 'Medir banda' }));
-  const result = within(
-    screen.getByRole('region', { name: 'Banda por sessão' }),
-  );
+  const result = within(screen.getByRole('table', { name: 'Sessões PPPoE' }));
   expect(await result.findByText('2 Mbps')).toBeVisible();
   expect(result.getByText('500 Kbps')).toBeVisible();
   expect(reads.StartPPPoERead).toHaveBeenCalledExactlyOnceWith(
@@ -203,7 +200,7 @@ it('edits only the concentrator group, reopens saved sessions and measures bandw
     'active',
     'synthetic-concentrator',
     expect.any(String),
-    'bandwidth',
+    'live',
     'saved-before-block',
     ['saved-row'],
     1,

@@ -4,7 +4,7 @@ func PPValidState(state string) bool { return state == "" || state == "ONLINE" |
 
 func PPValidSort(sort string) bool {
 	switch sort {
-	case "",
+	case "download", "upload", "",
 		"login",
 		"address",
 		"uptime",

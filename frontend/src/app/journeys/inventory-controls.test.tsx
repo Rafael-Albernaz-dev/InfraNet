@@ -217,8 +217,14 @@ it('reorders visible columns and restores the default order', async () => {
   await screen.findByRole('checkbox', { name: 'Selecionar Synthetic AP' });
   fireEvent.click(screen.getByRole('button', { name: 'Colunas' }));
   fireEvent.click(screen.getByRole('button', { name: 'Subir Papel' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Subir Papel' }));
   await waitFor(() =>
-    expect(prefs.saved.slice(0, 3)).toEqual(['role', 'status', 'group']),
+    expect(prefs.saved.slice(0, 4)).toEqual([
+      'role',
+      'status',
+      'last_online',
+      'group',
+    ]),
   );
   const headers = screen
     .getAllByRole('columnheader')
@@ -226,7 +232,12 @@ it('reorders visible columns and restores the default order', async () => {
   expect(headers.indexOf('Papel')).toBeLessThan(headers.indexOf('Estado'));
   fireEvent.click(screen.getByRole('button', { name: 'Restaurar padrão' }));
   await waitFor(() =>
-    expect(prefs.saved.slice(0, 3)).toEqual(['status', 'role', 'group']),
+    expect(prefs.saved.slice(0, 4)).toEqual([
+      'status',
+      'last_online',
+      'role',
+      'group',
+    ]),
   );
 });
 

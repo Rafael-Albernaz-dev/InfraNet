@@ -64,6 +64,8 @@ export type PPTraffic = {
   peak_upload?: PPRate;
 };
 export type PPRow = {
+  download?: PPRate;
+  upload?: PPRate;
   linked_device_name?: string;
   context?: PPContext;
   state?: string;
@@ -207,6 +209,7 @@ export type PPResult = {
     current?: PPObservation;
     diagnostic?: PDDiagnostic;
     diagnostic_rows?: PDRow[];
+    history?: PPSessionHistory[];
     rows?: PPRow[];
     groups?: PPGroup[];
     read?: PPReadResult;
@@ -291,4 +294,15 @@ export type PDRow = {
     context: string;
     probes: { sequence: number; status: string; rtt_ns?: number }[];
   };
+};
+
+export type PPSessionHistory = {
+  id: number;
+  kind: string;
+  device_id: string;
+  login: string;
+  connected_at: string;
+  disconnected_at: string;
+  reason: string;
+  row: PPRow;
 };

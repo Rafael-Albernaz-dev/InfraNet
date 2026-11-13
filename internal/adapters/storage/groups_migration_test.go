@@ -12,6 +12,8 @@ func TestGroupsMigrationPreservesLegacyMembershipIdentityAndTableArrangement(t *
 	j := newJourney(t)
 	j.create(companyX, "X", access.OK)
 	j.selectCompany(companyX, access.OK)
+	dropPulseFixtureSchema(t, j)
+	// ignored: Only the SQL error is consumed; the result carries no required domain value.
 	if _, err := j.st.unit.Exec(`DROP TABLE device_groups; ALTER TABLE devices DROP COLUMN group_id;
  ALTER TABLE devices DROP COLUMN identity; DELETE FROM schema_migrations WHERE version=16`); err != nil {
 		t.Fatal(err)

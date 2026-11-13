@@ -3,6 +3,7 @@ package deviceparse
 import (
 	"encoding/json"
 	"infradesktop/internal/adapters/routerssh/internal/routeros"
+	"infradesktop/internal/adapters/routerssh/pppoeparse"
 	"infradesktop/internal/modules/equipment"
 	"strconv"
 	"strings"
@@ -129,6 +130,9 @@ func populateSummaryObservation(
 	}
 	o.Board = fields["board"]
 	o.Uptime = fields["uptime"]
+	if value := pppoeparse.ParsePPDuration(o.Uptime); value.Known {
+		o.UptimeNS = &value.Min
+	}
 	var e error
 	o.CPU, e = strconv.Atoi(fields["cpu"])
 	if e != nil || o.CPU < 0 || o.CPU > 100 {
@@ -144,7 +148,6 @@ func populateSummaryObservation(
 	}
 	return o, equipment.OK
 }
-
 func appendInterfaceReadings(o *equipment.Observation, ls []string) equipment.Code {
 
 	seen := map[string]bool{}

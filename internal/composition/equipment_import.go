@@ -24,6 +24,9 @@ func composeEquipment(
 	mon := monitoring.New(service, store)
 	inv := inventory.New(service, store, vault.New(provider), routerssh.Adapter{}, equipmentIDs{}, time.Now)
 	inv.Pulse = collector
+	if len(server) > 0 && reader == nil {
+		reader = composeLiveReader(server[0], liveInventory{service, store}, vault.New(provider), collector, inv)
+	}
 	inv.Live = reader
 	inv.Parser, inv.Digester = importfile.Parser{}, importfile.Parser{}
 	if len(server) > 0 {

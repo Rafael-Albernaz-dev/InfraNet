@@ -1,3 +1,4 @@
+import { useSavedSessions } from './use-saved-sessions';
 import { useLatestRef } from '../../shared/hooks/use-latest-ref';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import type { Device } from '../equipment/equipment-api';
@@ -406,6 +407,7 @@ export function usePPPoEState(
   usePPPoEFocusAndSurface(ctx);
   usePPPoEInitialLoad(ctx);
   usePPPoEPageLoad(ctx);
+  useSavedSessions(ctx);
   usePPPoEJobPoll(ctx);
   const { run, runDetail } = usePPPoERunners(ctx);
   function change(q: Partial<PPQuery>) {

@@ -269,6 +269,8 @@ function inspect(name, code) {
           "CancelPPPoEReadOperation",
           "PPPoEReadPage",
           "PPPoEContextCounts",
+          "PPPoESessionHistory",
+          "ExportSessionHistory",
           "ExportPPPoEOperational",
           "Status",
           "Register",

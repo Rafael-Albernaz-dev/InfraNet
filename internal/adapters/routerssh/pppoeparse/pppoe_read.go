@@ -10,7 +10,7 @@ import (
 
 // BuildPPBandCommand generates the bounded RouterOS monitor command from service rows.
 func BuildPPBandCommand(rows []equipment.PPRow) (string, bool) {
-	if len(rows) > equipment.PageSize {
+	if len(rows) > equipment.PPPageTrafficRows {
 		return "", false
 	}
 	selection, ok := buildPPBandSelection(rows)

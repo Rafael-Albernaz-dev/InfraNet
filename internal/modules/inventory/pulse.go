@@ -28,14 +28,22 @@ func (s *Service) withPulse(devices []Device, profile string, v *View) []Device 
 	}
 	for i := range out {
 		d := &out[i]
-		d.Pulse = &equipment.PulseStatus{}
+		last := ""
+		if d.Pulse != nil {
+			last = d.Pulse.LastReply
+		}
+		d.Pulse = &equipment.PulseStatus{LastReply: last}
 		status, ok := snapshot.Devices[d.ID]
 		if !d.Active || !ok || status.Address != d.Address {
 			continue
 		}
+		reply := pulseTime(status.LastReply)
+		if reply == "" {
+			reply = last
+		}
 		d.Pulse = &equipment.PulseStatus{
 			State: string(status.State), Since: pulseTime(status.Since),
-			LastReply: pulseTime(status.LastReply), CheckedAt: pulseTime(status.CheckedAt),
+			LastReply: reply, CheckedAt: pulseTime(status.CheckedAt),
 		}
 	}
 	return out

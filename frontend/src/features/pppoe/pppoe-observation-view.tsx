@@ -39,6 +39,8 @@ function PPPoESessionsSection(p: {
         profile={s.profile}
         activation={s.activation}
         deviceId={s.device.id}
+        device={s.device}
+        blocked={p.disabled}
         observation={s.current.observation_id}
         openEquipment={p.openEquipment}
         fastTrack={s.fastTrack}

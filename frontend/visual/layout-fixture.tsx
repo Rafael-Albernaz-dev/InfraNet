@@ -1,4 +1,10 @@
-import { base5Scenes, sessions, curve } from './layout-fixture-data';
+import {
+  base5Scenes,
+  sessions,
+  curve,
+  liveSessionRows,
+  layoutWave as wave,
+} from './layout-fixture-data';
 import {
   prepareCredentialScene,
   credentialSceneReady,
@@ -16,6 +22,7 @@ import { radioFixtureOperations } from './layout-radio-operations';
 import savedReadings from './layout-readings.json';
 import {
   RadioRoles,
+  RadioModes,
   RadioTransports,
   RadioFamilies,
 } from '../src/features/equipment/radio-contract';
@@ -178,16 +185,8 @@ function radioReading(deviceId: string) {
 function read(scope: string) {
   const at = new Date(time - 360000).toISOString();
   const extra = savedReadings as Record<string, object[]>;
-  const wave = (i: number, base: number, amp: number) =>
-    +(
-      base +
-      amp *
-        (0.55 * Math.sin(i / 2.3) +
-          0.3 * Math.sin(i / 1.1 + 1) +
-          0.15 * Math.sin(i * 1.7))
-    ).toFixed(2);
   const rows =
-    extra[scope] ||
+    (scope === RadioModes.live ? liveSessionRows() : extra[scope]) ||
     (scope === 'traffic'
       ? [
           {

@@ -30,7 +30,7 @@ func (s *Service) dispatchAuthorizedPP(ctx context.Context, q Command, in PPInpu
 	if !ok {
 		return Unavailable
 	}
-	if !PPValidQuery(in.Query) || in.Offset < 0 || in.Offset > 2*PPMaxRows {
+	if !PPValidQuery(in.Query) || in.Offset < 0 || (in.Offset > 2*PPMaxRows && q.Op != "pppoe.session-history") {
 		return Invalid
 	}
 	if strings.HasPrefix(q.Op, "pppoe.read-") {
@@ -90,6 +90,16 @@ func (s *Service) dispatchStorePPOp(
 	ctx context.Context, store PPStore, q Command, in PPInput, v *PPView,
 ) Code {
 	switch q.Op {
+	case "pppoe.session-history":
+		history, ok := s.inv.Store.(interface {
+			PPSessionHistory(context.Context, string, PPInput) (PPView, Code)
+		})
+		if !ok {
+			return Unavailable
+		}
+		var c Code
+		*v, c = history.PPSessionHistory(ctx, q.Scope.Profile, in)
+		return c
 	case "pppoe.monitor-current":
 		if s.mon != nil {
 			res, c := s.mon.Handle(ctx, q, in)

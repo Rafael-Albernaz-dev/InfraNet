@@ -1,4 +1,3 @@
-import { useSessionsTabRefresh } from './sessions-tab-refresh';
 import type { Device } from '../equipment/equipment-api';
 import type { LinkedSessionTarget } from './linked-session-navigation';
 import { PPPoESessionDetail } from './pppoe-session-screen';
@@ -32,7 +31,6 @@ export function PPPoE(p: PPPoEProps) {
   );
   const { navigation, active, selectedMatches, openSession, rememberFocus } =
     usePPPoESessionNavigation(s, refs, p);
-  useSessionsTabRefresh(s, p.refreshAvailable || false);
   const disabled = s.busy || Boolean(s.job);
   if (active && !selectedMatches) {
     return (

@@ -4,9 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"strings"
-
 	"infradesktop/internal/modules/equipment"
+	"strings"
 )
 
 func loadEquipmentCredentials(ctx context.Context, q queryer, st *equipment.State) error {
@@ -48,7 +47,16 @@ func loadEquipmentCredentials(ctx context.Context, q queryer, st *equipment.Stat
 
 const equipmentDeviceQuery = `SELECT d.id,d.name,d.address,d.port,d.transport,COALESCE(d.credential_id,''),
  d.revision,d.active,d.fingerprint,d.trust_origin,d.observation,d.trust_acceptance,d.last_attempt,
- COALESCE(extra.role,radio.role,d.role),d.block,d.group_id,d.identity,h.health_json,h.stamp,o.meta_json,r.body
+ COALESCE(extra.role,radio.role,d.role),d.block,d.group_id,d.identity,h.health_json,h.stamp,o.meta_json,r.body,
+ (SELECT json_object('state',
+'',
+'since',
+p.since,
+'last_reply',
+p.last_online_at,
+'checked_at',
+'') FROM device_presence p WHERE p.device_id=d.id AND p.address=d.address),
+ COALESCE((SELECT max(stamp) FROM device_equipment_events e WHERE e.device_id=d.id AND kind='reboot'),'')
  FROM devices d
  LEFT JOIN device_inventory_roles extra ON extra.device_id=d.id
  LEFT JOIN device_radio_roles radio ON radio.device_id=d.id
@@ -59,7 +67,7 @@ const equipmentDeviceQuery = `SELECT d.id,d.name,d.address,d.port,d.transport,CO
  ORDER BY d.rowid`
 
 type deviceJSONFields struct {
-	observation, acceptance, attempt, health, healthAt, pppoe, radio sql.NullString
+	observation, acceptance, attempt, health, healthAt, pppoe, radio, presence sql.NullString
 }
 
 func scanEquipmentDevice(rows *sql.Rows) (equipment.Device, error) {
@@ -67,7 +75,7 @@ func scanEquipmentDevice(rows *sql.Rows) (equipment.Device, error) {
 	var raw deviceJSONFields
 	err := rows.Scan(&d.ID, &d.Name, &d.Address, &d.Port, &d.Transport, &d.CredentialID, &d.Revision, &d.Active,
 		&d.Fingerprint, &d.TrustOrigin, &raw.observation, &raw.acceptance, &raw.attempt, &d.Role, &d.Block, &d.GroupID, &d.Identity,
-		&raw.health, &raw.healthAt, &raw.pppoe, &raw.radio)
+		&raw.health, &raw.healthAt, &raw.pppoe, &raw.radio, &raw.presence, &d.LastReboot)
 	if err != nil {
 		return d, err
 	}
@@ -77,7 +85,7 @@ func scanEquipmentDevice(rows *sql.Rows) (equipment.Device, error) {
 	return d, nil
 }
 func decodeDeviceJSON(d *equipment.Device, raw deviceJSONFields) error {
-	if err := decodeRadioSummary(d, raw.radio); err != nil {
+	if err := decodeInventoryStatus(d, raw); err != nil {
 		return err
 	}
 	if raw.observation.Valid {
@@ -161,4 +169,17 @@ func loadEquipmentOperations(ctx context.Context, q queryer, st *equipment.State
 		st.Operations = append(st.Operations, op)
 	}
 	return rows.Err()
+}
+
+func decodeInventoryStatus(d *equipment.Device, raw deviceJSONFields) error {
+	if raw.presence.Valid {
+		d.Pulse = &equipment.PulseStatus{}
+		if err := json.Unmarshal([]byte(raw.presence.String), d.Pulse); err != nil {
+			return err
+		}
+	}
+	if err := decodeRadioSummary(d, raw.radio); err != nil {
+		return err
+	}
+	return nil
 }

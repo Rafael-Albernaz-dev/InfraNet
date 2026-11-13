@@ -338,14 +338,12 @@ it('mantém o percurso de conta, empresa, cadastro, credencial, ficha e sessão 
   await waitFor(() =>
     expect(bindings.StopPPPoETraffic).toHaveBeenCalledTimes(2),
   );
-  fireEvent.click(session.getByRole('button', { name: 'Medir banda' }));
-  await waitFor(() =>
-    expect(
-      bindings.StartPPPoERead.mock.calls.some(
-        (call) => call[4] === 'bandwidth',
-      ),
-    ).toBe(true),
-  );
+  expect(
+    session.queryByRole('button', { name: 'Medir banda' }),
+  ).not.toBeInTheDocument();
+  expect(
+    session.queryByRole('button', { name: 'Top consumo' }),
+  ).not.toBeInTheDocument();
   fireEvent.click(session.getByRole('button', { name: 'Voltar' }));
   fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
   expect(

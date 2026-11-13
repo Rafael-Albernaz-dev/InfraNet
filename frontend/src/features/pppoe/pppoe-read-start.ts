@@ -28,7 +28,12 @@ export async function startRead(
 ) {
   const l = c.life.current,
     p = c.latest.current;
-  if (l.operation || l.activeJob || (mode === 'traffic' && l.hidden)) return;
+  if (
+    l.operation ||
+    l.activeJob ||
+    ((mode === 'traffic' || p.automaticLive) && l.hidden)
+  )
+    return;
   const g = prepareRead(c, mode, preserve),
     target = readTarget(p, mode);
   try {
@@ -50,7 +55,8 @@ export async function startRead(
         error:
           'Não foi possível confirmar a solicitação. Cancele a solicitação pendente antes de iniciar outra.',
       });
-      if (mode === 'traffic') await c.failed('SERVICE_UNAVAILABLE');
+      if (mode === 'traffic' || p.automaticLive)
+        await c.failed('SERVICE_UNAVAILABLE');
     }
   } finally {
     if (currentRead(c, g))
@@ -76,7 +82,8 @@ async function acceptStart(
       error: ppReadMessage(r.code),
       pending: Boolean(l.operation),
     });
-    if (validRead(p, r) && mode === 'traffic') await c.failed(r.code);
+    if (validRead(p, r) && (mode === 'traffic' || p.automaticLive))
+      await c.failed(r.code);
     return;
   }
   l.operation = '';

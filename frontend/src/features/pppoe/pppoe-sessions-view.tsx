@@ -1,3 +1,7 @@
+import { useEffect, useState } from 'react';
+import type { PPReadResult } from '../../platform/wails/pppoe-types';
+import type { Device } from '../equipment/equipment-api';
+import { usePPReadState } from './pppoe-read-state';
 import { cloneElement } from 'react';
 import {
   useSessionTable,
@@ -7,6 +11,7 @@ import { sessionPlan, planDiffers, appliedSpeed } from './pppoe-plan';
 import type { PPRow } from '../../platform/wails/presentation';
 import {
   exactRate,
+  formatRate,
   formatDate,
   uptimeTitle,
 } from '../equipment/network-format';
@@ -56,7 +61,8 @@ export function PPPoEObsActions(p: {
       <div className="bar">
         <span className="muted">
           <span>{online} ONLINE</span> · <span>{offline} OFFLINE</span> ·
-          leitura de {formatDate(current.provenance.ended_at)}
+          <span className="st-on">Ao vivo</span> · leitura de{' '}
+          {formatDate(current.provenance.ended_at)}
         </span>
         <span className="grow" />
         <Button
@@ -86,6 +92,10 @@ export function PPPoEObsActions(p: {
           Exportar JSON sanitizado
         </Button>
       </div>
+      <p className="muted">
+        Lista relida a cada 60 s. Download e Upload: média de 60 s para todos e,
+        nas linhas desta página, o instante a cada 2 s
+      </p>
       {current.context_omitted && (
         <p role="status">
           Contexto não incluído por limite. As sessões e seus estados foram
@@ -121,6 +131,8 @@ function SessionPlanCell({
 }
 type SessionsTableProps = {
   rows: PPRow[];
+  device?: Device;
+  blocked?: boolean;
   control?: SessionTableControl;
   fastTrack?: number;
   contextOmitted?: boolean;
@@ -148,6 +160,8 @@ function renderPPPoESessionRow(
       </td>
       <td>{row.address || 'Não informado nesta leitura'}</td>
       {SessionPlanCell({ row, fastTrack: p.fastTrack })}
+      <td>{row.state === 'OFFLINE' ? '—' : formatRate(row.download)}</td>
+      <td>{row.state === 'OFFLINE' ? '—' : formatRate(row.upload)}</td>
       <td title={uptimeTitle(row.uptime)}>
         {row.state === 'OFFLINE' ? '—' : formatPPUptime(row.uptime, true)}
       </td>
@@ -171,6 +185,59 @@ function renderPPPoESessionRow(
   );
 }
 export function PPPoESessionsTable(p: SessionsTableProps) {
+  if (p.device && p.observation)
+    return <LiveSessionsTable {...p} device={p.device} />;
+  return <SessionsTable {...p} />;
+}
+type PageSample = {
+  key: string;
+  result?: PPReadResult;
+  age: number;
+  error: string;
+};
+function SessionPageSampler(
+  p: SessionsTableProps & {
+    device: Device;
+    sampleKey: string;
+    publish: (sample: PageSample) => void;
+  },
+) {
+  const { setRoot, result, sampleAge, error } = usePPReadState({
+    profile: p.profile || '',
+    activation: p.activation || '',
+    device: p.device,
+    observation: p.observation || '',
+    rows: p.rows.filter((r) => r.state !== 'OFFLINE').map((r) => r.row_id),
+    automaticLive: true,
+    blocked: p.blocked,
+  });
+  const { publish, sampleKey } = p;
+  useEffect(
+    () => publish({ key: sampleKey, result, age: sampleAge, error }),
+    [publish, sampleKey, result, sampleAge, error],
+  );
+  return <span hidden ref={setRoot} />;
+}
+function LiveSessionsTable(p: SessionsTableProps & { device: Device }) {
+  const [sample, publish] = useState<PageSample>();
+  const key = p.observation + '|' + p.rows.map((r) => r.row_id).join(',');
+  const current = sample?.key === key ? sample : undefined;
+  const samples = new Map(current?.result?.rows.map((r) => [r.row_id, r]));
+  const rows = p.rows.map((r) => {
+    const v = samples.get(r.row_id);
+    return v && current && current.age < 6000 && !current.error
+      ? { ...r, download: v.download, upload: v.upload }
+      : r;
+  });
+  return (
+    <>
+      <SessionPageSampler key={key} {...p} sampleKey={key} publish={publish} />
+      <SessionsTable {...p} rows={rows} />
+      {current?.error && <p role="status">{current.error}</p>}
+    </>
+  );
+}
+function SessionsTable(p: SessionsTableProps) {
   const table = useSessionTable(p.control);
   return (
     <div
@@ -184,7 +251,15 @@ export function PPPoESessionsTable(p: SessionsTableProps) {
         preference={table.preference}
         service={table.service}
         filters={table.filters}
-        defaultColumns={['address', 'plan', 'uptime', 'state', 'linked_device']}
+        defaultColumns={[
+          'address',
+          'plan',
+          'download',
+          'upload',
+          'uptime',
+          'state',
+          'linked_device',
+        ]}
       >
         <thead>
           <tr>
@@ -192,6 +267,8 @@ export function PPPoESessionsTable(p: SessionsTableProps) {
               ['login', 'Usuário'],
               ['address', 'IP'],
               ['plan', 'Plano'],
+              ['download', 'Download'],
+              ['upload', 'Upload'],
               ['uptime', 'Conectado há'],
               ['state', 'Estado'],
               ['linked_device', 'CPE'],

@@ -195,6 +195,9 @@ func persistEquipmentDevice(ctx context.Context, tx *sql.Tx, d equipment.Device)
 	if err != nil {
 		return equipment.Unavailable
 	}
+	if err := recordManualPulse(ctx, tx, d); err != nil {
+		return equipment.Unavailable
+	}
 	return persistDeviceRole(ctx, tx, d)
 }
 func persistDeviceRole(ctx context.Context, tx *sql.Tx, d equipment.Device) equipment.Code {

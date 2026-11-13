@@ -87,8 +87,8 @@ type Attempt struct {
 	Code               Code   `json:"code"`
 	At                 string `json:"at"`
 }
-
 type Observation struct {
+	UptimeNS      *int64             `json:"uptime_ns,omitempty"`
 	InterfacePart *InterfacePart     `json:"interface_part,omitempty"`
 	Identity      string             `json:"identity"`
 	Version       string             `json:"version"`
@@ -118,8 +118,8 @@ type LiveReading struct {
 	At            string `json:"at,omitempty"`
 	Fault         string `json:"fault"`
 }
-
 type Device struct {
+	LastReboot      string           `json:"last_reboot,omitempty"`
 	GroupPath       string           `json:"group_path"`
 	Identity        string           `json:"identity"`
 	GroupID         string           `json:"group_id"`
@@ -182,7 +182,6 @@ type Remote interface {
 	Inspect(context.Context, Device) (string, Code)
 	Query(context.Context, Device, string, string, func() Code) (*Observation, Code)
 }
-
 type IDs interface{ ID() (string, Code) }
 
 type Job struct {

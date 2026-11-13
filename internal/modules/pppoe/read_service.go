@@ -3,6 +3,7 @@ package pppoe
 import (
 	"context"
 	"infradesktop/internal/modules/access"
+	"infradesktop/internal/modules/equipment"
 	"infradesktop/internal/modules/inventory"
 	"strings"
 	"time"
@@ -103,7 +104,11 @@ func paginateReadResult(j *RunningJob, offset int, v *PPView) Code {
 		return CursorInvalid
 	}
 	page := *source
-	end := min(offset+PageSize, v.Total)
+	size := PageSize
+	if j.PPInput.Scope == "live" {
+		size = equipment.PPPageTrafficRows
+	}
+	end := min(offset+size, v.Total)
 	page.Rows = append([]PPReadRow{}, source.Rows[offset:end]...)
 	v.Read = &page
 	v.NextOffset = end
@@ -170,9 +175,12 @@ func (s *Service) validReadProvenance(p PPProvenance, t PPTarget, now int64) boo
 		p.Sample.Known &&
 		now >= p.Sample.Max
 }
-
 func validReadRowIDList(scope string, rowIDs []string) bool {
-	if len(rowIDs) == 0 || len(rowIDs) > PageSize {
+	limit := PageSize
+	if scope == "live" {
+		limit = equipment.PPPageTrafficRows
+	}
+	if len(rowIDs) == 0 || len(rowIDs) > limit {
 		return false
 	}
 	if (scope == "log" || scope == "secret") && len(rowIDs) != 1 {

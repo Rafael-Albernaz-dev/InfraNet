@@ -21,10 +21,13 @@ function readLifetime(
     l.activeJob = '';
     l.privateJob = '';
     l.operation = '';
-    if (id) void api.cancel(profile, activation, id).catch(() => {});
+    if (id)
+      void Promise.resolve()
+        .then(() => api.cancel(profile, activation, id))
+        .catch(() => {});
     else if (op)
-      void api
-        .cancelOperation(profile, activation, deviceId, op)
+      void Promise.resolve()
+        .then(() => api.cancelOperation(profile, activation, deviceId, op))
         .catch(() => {});
   };
 }

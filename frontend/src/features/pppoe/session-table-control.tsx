@@ -16,7 +16,15 @@ export type SessionTableControl = {
   options: Record<string, string[]>;
   pageState: string;
 };
-const columns = ['address', 'plan', 'uptime', 'state', 'linked_device'];
+const columns = [
+  'address',
+  'plan',
+  'download',
+  'upload',
+  'uptime',
+  'state',
+  'linked_device',
+];
 function sessionQuery(p: TablePreference): Partial<PPQuery> {
   return {
     search: p.search,

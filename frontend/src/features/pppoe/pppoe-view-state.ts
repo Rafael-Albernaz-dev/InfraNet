@@ -49,7 +49,15 @@ function usePPPoEPageStatus() {
 }
 function usePPPoEListState() {
   const tablePreference = useTablePreference('sessions', {
-    columns: ['address', 'plan', 'uptime', 'state', 'linked_device'],
+    columns: [
+      'address',
+      'plan',
+      'download',
+      'upload',
+      'uptime',
+      'state',
+      'linked_device',
+    ],
     filters: {},
     search: '',
     sort: null,

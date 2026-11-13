@@ -17,6 +17,7 @@ import (
 )
 
 var ppFields = map[string][]string{
+	"pppoe.session-history": {"device_id", "login", "history_reason", "history_days", "cursor"},
 	"pppoe.monitor-current": {"device_id", "scope", "cursor"},
 	"pppoe.read-start":      {"device_id", "revision", "operation_id", "scope", "observation_id", "row_ids"},
 	"pppoe.read-status":     {"job_id"}, "pppoe.read-cancel": {"job_id", "device_id", "operation_id"}, "pppoe.read-page": {"job_id", "cursor"},
@@ -80,6 +81,9 @@ func (s *Server) ppCursor(q Request, offset int) string {
 	if q.Op == "pppoe.current" {
 		payload += ":" + q.PPPoE.ObservationID
 	}
+	if q.Op == "pppoe.session-history" {
+		payload += ":" + q.PPPoE.HistoryGeneration
+	}
 	if q.Op == "pppoe.monitor-current" {
 		payload += ":" + q.PPPoE.MonitoringGeneration
 	}
@@ -99,9 +103,8 @@ func (s *Server) ppOffset(q Request) (int, bool) {
 	if !restorePPCursorSource(q, f) {
 		return 0, false
 	}
-
 	n, e := strconv.Atoi(f[0])
-	if e != nil || n < 0 || n > 4096 {
+	if e != nil || n < 0 || (n > 4096 && q.Op != "pppoe.session-history") {
 		return 0, false
 	}
 	expected := s.ppCursor(q, n)
@@ -203,6 +206,10 @@ func (s *Server) attachPPPageCursor(q *Request, v *equipment.PPView, input equip
 		if q.Op == "pppoe.current" && v.Current != nil {
 			q.PPPoE.ObservationID = v.Current.ID
 		}
+		if q.Op == "pppoe.session-history" {
+			input.HistoryGeneration = v.HistoryGeneration
+			q.PPPoE = &input
+		}
 		if q.Op == "pppoe.monitor-current" {
 			input.MonitoringGeneration = v.MonitoringGeneration
 			q.PPPoE = &input
@@ -222,6 +229,12 @@ func restorePPCursorSource(q Request, fields []string) bool {
 			return false
 		}
 		q.PPPoE.ObservationID = fields[2]
+		return true
+	case "pppoe.session-history":
+		if len(fields) != 4 || fields[2] == "" {
+			return false
+		}
+		q.PPPoE.HistoryGeneration = fields[2]
 		return true
 	case "pppoe.monitor-current":
 		return restoreMonitorCursorSource(q.PPPoE, fields)

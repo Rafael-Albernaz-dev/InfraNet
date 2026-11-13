@@ -1,7 +1,5 @@
 import { readingAge } from '../equipment/equipment-reading-format';
-import { ContextCounts } from './pppoe-context';
 import { CSVNotice } from './pppoe-csv-notice';
-import { PPPoEReadPanel } from './pppoe-diagnostics';
 import { PPPoEHeader, PPPoEStatusBanners } from './pppoe-header';
 import { observationReadingStatus } from './pppoe-observation-state';
 import { PPPoETabContent } from './pppoe-observation-view';
@@ -57,47 +55,6 @@ function ObservationBlock(p: WorkspaceProps) {
     />
   );
 }
-function SessionsReadPanels({ s, disabled }: WorkspaceProps) {
-  return (
-    <>
-      {s.tab === 'sessions' && !s.current && <CSVNotice />}
-      {s.tab === 'sessions' && !s.loading && !s.initialFailed && (
-        <PPPoEReadPanel
-          key={
-            (s.current?.observation_id || 'none') +
-            '|' +
-            s.rows.map((r) => r.row_id).join(',')
-          }
-          profile={s.profile}
-          activation={s.activation}
-          device={s.device}
-          observation={s.current?.observation_id || ''}
-          rows={
-            s.current
-              ? s.rows.filter((r) => r.state !== 'OFFLINE').map((r) => r.row_id)
-              : []
-          }
-          blocked={disabled}
-          allowTop
-          pageBandwidth
-        />
-      )}
-      {s.tab === 'sessions' && s.current && !s.current.context_omitted && (
-        <>
-          <div className="sp10" />
-          <ContextCounts
-            key={s.current.observation_id}
-            profile={s.profile}
-            activation={s.activation}
-            device={s.device.id}
-            observation={s.current.observation_id}
-            at={s.current.provenance.ended_at}
-          />
-        </>
-      )}
-    </>
-  );
-}
 export function PPPoEWorkspace(p: WorkspaceProps) {
   const { s, refs, section } = p;
   const { focusedControlRef, detailIntentRef, detailTriggerRef } = refs;
@@ -123,7 +80,7 @@ export function PPPoEWorkspace(p: WorkspaceProps) {
       <PPPoEHeader s={s} section={section} />
       <PPPoEStatusBanners s={s} />
       <ObservationBlock {...p} />
-      <SessionsReadPanels {...p} />
+      {s.tab === 'sessions' && !s.current && <CSVNotice />}
     </section>
   );
 }

@@ -3,9 +3,10 @@ package storage
 import "testing"
 
 // latestCompanySchema is the newest company migration the synthetic fixtures know.
-const latestCompanySchema = 16
+const latestCompanySchema = 17
 
 func dropRadioFixtureSchema(t *testing.T, j *journey) {
+	dropPulseFixtureSchema(t, j)
 	t.Helper()
 	dropInventoryBlockFixtureSchema(t, j)
 	var latest int
@@ -47,6 +48,28 @@ func dropPPDiagnosticFixtureSchema(t *testing.T, j *journey) {
 		}
 	}
 	if _, err := j.st.unit.Exec("DELETE FROM schema_migrations WHERE version=6"); err != nil {
+		t.Fatal(err)
+	}
+}
+func dropPulseFixtureSchema(t *testing.T, j *journey) {
+	t.Helper()
+	// ignored: Only the SQL error is consumed; the result carries no required domain value.
+	if _, err := j.st.unit.Exec("DROP VIEW IF EXISTS pppoe_row_values"); err != nil {
+		t.Fatal(err)
+	}
+	for _, table := range []string{"device_presence",
+		"device_pulse_events",
+		"device_boot_checkpoint",
+		"device_identity_checkpoint",
+		"session_history",
+		"session_collection_checkpoint", "session_history_generation"} {
+		// ignored: Only the SQL error is consumed; the result carries no required domain value.
+		if _, err := j.st.unit.Exec("DROP TABLE IF EXISTS " + table); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// ignored: Only the SQL error is consumed; the result carries no required domain value.
+	if _, err := j.st.unit.Exec("DELETE FROM schema_migrations WHERE version=17"); err != nil {
 		t.Fatal(err)
 	}
 }

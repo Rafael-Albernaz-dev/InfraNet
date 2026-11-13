@@ -6,7 +6,11 @@ export type { PPReadPanelProps } from './pppoe-read-props';
 export type ReadState = Omit<ReturnType<typeof usePPReadState>, 'setRoot'>;
 export function usePPReadState(props: PPReadPanelProps) {
   const { state: s, context, actions, doc, setRoot } = usePPPoEReadJob(props);
-  useTrafficRenewal(context, doc, Boolean(props.traffic));
+  useTrafficRenewal(
+    context,
+    doc,
+    Boolean(props.traffic || props.automaticLive),
+  );
   const locked = Boolean(
     props.blocked ||
     s.starting ||

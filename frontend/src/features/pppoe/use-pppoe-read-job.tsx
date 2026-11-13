@@ -47,15 +47,22 @@ function useReadClock(c: ReadContext, job: string, scope: string) {
 function automaticTraffic(c: ReadContext) {
   if (!canResumeTraffic(c)) return;
   c.life.current.automaticStarted = true;
-  void c.start('traffic', true);
+  void c.start(
+    c.latest.current.automaticLive ? RadioModes.live : 'traffic',
+    true,
+  );
 }
 function useAutomaticTraffic(c: ReadContext, p: PPReadPanelProps) {
   const {
     traffic,
+    automaticLive,
     blocked,
     rows: { length: rowCount },
   } = p;
-  useEffect(() => automaticTraffic(c), [c, traffic, blocked, rowCount]);
+  useEffect(
+    () => automaticTraffic(c),
+    [c, traffic, automaticLive, blocked, rowCount],
+  );
 }
 export function usePPPoEReadJob(p: PPReadPanelProps) {
   const [state, dispatch] = useReducer(readReducer, initialReadState);

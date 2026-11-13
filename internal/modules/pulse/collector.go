@@ -27,11 +27,13 @@ type Collector struct {
 	profile   string
 	targets   []Target
 	tracker   *Tracker
+	presence  PresenceStore
 }
 
 func NewCollector(inv Inventory, prober Prober, limit int) *Collector {
 	return &Collector{inventory: inv, prober: prober, slots: make(chan struct{}, max(1, min(16, limit))), tracker: NewTracker()}
 }
+func (c *Collector) SetPresenceStore(store PresenceStore) { c.presence = store }
 func (c *Collector) refresh(ctx context.Context) {
 	profile, targets, ok := c.inventory.Targets(ctx)
 	c.mu.Lock()
@@ -44,6 +46,12 @@ func (c *Collector) refresh(ctx context.Context) {
 	}
 	c.profile, c.targets = profile, targets
 	c.tracker.Sync(targets)
+	if c.presence != nil && profile != "" {
+		values, err := c.presence.LoadPresence(ctx, profile)
+		if err == nil {
+			c.tracker.Restore(values)
+		}
+	}
 }
 func (c *Collector) Step(ctx context.Context, second int, now time.Time) {
 	if ctx.Err() != nil {
@@ -85,6 +93,17 @@ func (c *Collector) probeSlot(ctx context.Context, second int, now func() time.T
 		}(target)
 	}
 	wg.Wait()
+	if c.presence != nil {
+		c.mu.Lock()
+		profile := c.profile
+		current := c.tracker == tracker
+		c.mu.Unlock()
+		if current && profile != "" {
+			if err := c.presence.SavePresence(ctx, profile, tracker.Snapshot(now()).Devices, now()); err != nil {
+				return // The next probe retries; the durable checkpoint is not advanced on failure.
+			}
+		}
+	}
 }
 func (c *Collector) Snapshot(profile string, now time.Time) (Snapshot, bool) {
 	c.mu.Lock()

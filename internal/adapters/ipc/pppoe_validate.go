@@ -103,6 +103,7 @@ func validPPQueryObject(op string, query json.RawMessage) bool {
 }
 
 var staticRequiredPPFields = map[string][]string{
+	"pppoe.session-history":  {"device_id", "login"},
 	"pppoe.context-counts":   {"device_id", "observation_id"},
 	"pppoe.collect-start":    {"device_id", "revision", "operation_id"},
 	"pppoe.collect-status":   {"job_id"},
@@ -155,6 +156,7 @@ func validatePPReadStart(
 		return nil, false
 	}
 	if input.Scope == "top" || input.Scope == "health" || input.Scope == "operations" {
+		// ignored: Only the SQL error is consumed; the result carries no required domain value.
 		_, hasRows := raw["row_ids"]
 		_, hasObs := raw["observation_id"]
 		if hasRows || hasObs {
@@ -169,9 +171,12 @@ func validatePPReadStart(
 		"device_id", "revision", "operation_id", "scope", "observation_id", "row_ids",
 	}, true
 }
-
 func validPPReadRowIDs(scope string, rowIDs []string) bool {
-	if len(rowIDs) == 0 || len(rowIDs) > equipment.PageSize {
+	limit := equipment.PageSize
+	if scope == string(equipment.RadioLive) {
+		limit = equipment.PPPageTrafficRows
+	}
+	if len(rowIDs) == 0 || len(rowIDs) > limit {
 		return false
 	}
 	if (scope == "log" || scope == "secret") && len(rowIDs) != 1 {
@@ -218,6 +223,7 @@ func validatePPDiagnosticStart(
 	if input.Scope == equipment.PDPing {
 		return append(r, "observation_id", "row_id"), true
 	}
+	// ignored: Only the SQL error is consumed; the result carries no required domain value.
 	_, hasObs := raw["observation_id"]
 	_, hasRow := raw["row_id"]
 	if hasObs || hasRow {

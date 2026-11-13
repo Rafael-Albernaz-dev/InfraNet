@@ -119,7 +119,7 @@ func TestLiveDialRejectsChangedStampBeforeOpeningVault(t *testing.T) {
 	vault := &liveTestVault{}
 	_, targets, _ := inv.ReadTargets(context.Background())
 	store.target.Credential.Metadata.Revision++
-	session, fault := (liveDialer{inv, vault}).Dial(context.Background(), targets[0])
+	session, fault := (liveDialer{inventory: inv, vault: vault}).Dial(context.Background(), targets[0])
 	if session != nil || fault != pulse.ReadLost || vault.opens.Load() != 0 {
 		t.Fatal("stale target opened secret")
 	}

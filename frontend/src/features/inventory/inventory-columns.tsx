@@ -46,6 +46,20 @@ function memory(d: Device) {
 export const columns: Column[] = [
   { id: 'status', label: 'Estado', cell: pulseCell },
   {
+    id: 'last_online',
+    label: 'Visto online por último',
+    cell: ({ device }) =>
+      device.pulse?.last_reply
+        ? formatDate(device.pulse.last_reply)
+        : 'Nunca respondeu',
+  },
+  {
+    id: 'last_reboot',
+    label: 'Último reinício',
+    cell: ({ device }) =>
+      device.last_reboot ? formatDate(device.last_reboot) : '—',
+  },
+  {
     id: 'role',
     label: 'Papel',
     cell: ({ device }) => equipmentType(device.role),
@@ -145,6 +159,7 @@ export const columns: Column[] = [
 export const defaultColumns = [
   'equipment',
   'status',
+  'last_online',
   'role',
   'group',
   'model',
@@ -178,6 +193,10 @@ function pulseCell({ device }: Context) {
 
 // Values are typed per metric; IPs, versions and names always keep text ordering.
 const sortMetrics: Record<string, (c: Context) => number | string> = {
+  last_online: ({ device }) =>
+    device.pulse?.last_reply ? Date.parse(device.pulse.last_reply) : '',
+  last_reboot: ({ device }) =>
+    device.last_reboot ? Date.parse(device.last_reboot) : '',
   cpu: (c) => latestSavedReading(c.device, c.now).cpu ?? '',
   online: ({ device: d, now }) =>
     liveReading(d, now)?.clients ??
