@@ -1,3 +1,4 @@
+import { pppCatalogAPI } from '../../platform/wails/presentation';
 import { waitForSessionReady } from '../../shared/testing/session-ready';
 import {
   fireEvent,
@@ -95,12 +96,35 @@ it('stable context shows negotiated IPv6 and unavailable fields without invented
   vi.mocked(api.groups).mockResolvedValue(
     result({ groups: [{ service: 'service', vlan: 100, count: 2 }], total: 1 }),
   );
+  vi.mocked(pppCatalogAPI.list).mockResolvedValue(
+    result({
+      entries: [
+        {
+          id: 'server',
+          kind: 'server',
+          name: 'service',
+          service: 'service',
+          device_id: 'device',
+          concentrator: 'Fixture',
+          interface: 'vlan100',
+          vlan: 100,
+          online: 2,
+          registrations: 0,
+          disabled: false,
+          invalid: false,
+        },
+      ],
+      options: {},
+      catalog_dates: { device: new Date().toISOString() },
+      total: 1,
+    }),
+  );
   showPP();
   fireEvent.click(
     await screen.findByRole('button', { name: 'Detalhar duplicado row-1' }),
   );
   await waitForSessionReady();
-  fireEvent.click(await screen.findByRole('tab', { name: 'Informações' }));
+  fireEvent.click(await screen.findByRole('tab', { name: 'Resumo' }));
   fireEvent.click(screen.getByText(/Mais informações/));
   expect(await screen.findByText('Sim')).toBeInTheDocument();
   expect(screen.getByText('Sem prefixo delegado')).toBeInTheDocument();
@@ -110,13 +134,15 @@ it('stable context shows negotiated IPv6 and unavailable fields without invented
       .find((element) => element.closest('.kv')),
   ).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Servidores PPPoE' }));
+  const server = (await screen.findByRole('cell', { name: 'service' })).closest(
+    'tr',
+  )!;
+  expect(within(server).getByRole('cell', { name: '2' })).toBeVisible();
+  expect(within(server).getByRole('cell', { name: '100' })).toBeVisible();
   expect(
-    within(
-      (await screen.findByRole('cell', { name: 'service' })).closest('tr')!,
-    )
-      .getAllByRole('cell')
-      .map((cell) => cell.textContent),
-  ).toEqual(['100', 'service', '2', 'Não informado nesta leitura']);
+    within(server).queryByRole('cell', { name: '0' }),
+  ).not.toBeInTheDocument();
 });
 it.each([
   ['ambiguous', 'Vários secrets locais ativos: perfil ambíguo'],
@@ -146,7 +172,7 @@ it.each([
     await screen.findByRole('button', { name: 'Detalhar duplicado row-1' }),
   );
   await waitForSessionReady();
-  fireEvent.click(await screen.findByRole('tab', { name: 'Informações' }));
+  fireEvent.click(await screen.findByRole('tab', { name: 'Resumo' }));
   fireEvent.click(screen.getByText(/Mais informações/));
   expect(await screen.findByText(label)).toBeInTheDocument();
   expect(screen.queryByText('disabled-default-canary')).not.toBeInTheDocument();
@@ -255,7 +281,7 @@ it('FastTrack marks every displayed plan limit without a router action', async (
     await screen.findByRole('button', { name: 'Detalhar duplicado row-1' }),
   );
   await waitForSessionReady();
-  fireEvent.click(await screen.findByRole('tab', { name: 'Informações' }));
+  fireEvent.click(await screen.findByRole('tab', { name: 'Resumo' }));
   expect(
     (await screen.findAllByText('limite lido, não garantido')).find((element) =>
       element.closest('.kv'),
@@ -295,21 +321,45 @@ it('VLAN peak uses raw counts, a configurable drop threshold and optional plan c
       ],
     }),
   );
+  vi.mocked(pppCatalogAPI.list).mockResolvedValue(
+    result({
+      entries: [
+        {
+          id: 'server',
+          kind: 'server',
+          name: 'X-service',
+          service: 'X-service',
+          device_id: 'device',
+          concentrator: 'Fixture',
+          interface: 'vlan100',
+          vlan: 100,
+          online: 4,
+          registrations: 0,
+          disabled: false,
+          invalid: false,
+          peak: 10,
+          drop: 60,
+        },
+      ],
+      options: {},
+      catalog_dates: { device: new Date().toISOString() },
+      total: 1,
+    }),
+  );
   showPP();
+  fireEvent.click(screen.getByRole('tab', { name: 'Servidores PPPoE' }));
   const group = (
     await screen.findByRole('cell', { name: 'X-service' })
   ).closest('tr')!;
-  expect(
-    within(group)
-      .getAllByRole('cell')
-      .map((cell) => cell.textContent),
-  ).toEqual(['100', 'X-service', '4 · Queda local detectada', '10']);
-  expect(within(group).getByText('10')).toHaveAttribute('title', 'Δ −60 %');
-  expect(screen.getByText('· Queda local detectada')).toBeInTheDocument();
+  expect(within(group).getByRole('cell', { name: '4' })).toBeVisible();
+  expect(within(group).getByRole('cell', { name: '10' })).toBeVisible();
+  expect(within(group).getByText('60%')).toHaveClass('st-off');
   fireEvent.change(screen.getByLabelText('Queda local'), {
     target: { value: '75' },
   });
-  expect(screen.queryByText('· Queda local detectada')).not.toBeInTheDocument();
+  expect(within(group).getByText('60%')).not.toHaveClass('st-off');
+  fireEvent.click(screen.getByRole('tab', { name: 'Sessões' }));
+  await screen.findByText('100 / 50 Mbps');
   expect(
     screen.queryByLabelText('Mostrar plano/limite'),
   ).not.toBeInTheDocument();

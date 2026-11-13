@@ -6,6 +6,7 @@ import (
 	"infradesktop/internal/modules/access"
 	"infradesktop/internal/modules/equipment"
 	"infradesktop/internal/modules/foundation"
+	"infradesktop/internal/modules/pppoe"
 	"strings"
 )
 
@@ -65,6 +66,9 @@ func validPPPoEInputFields(
 	if op == "pppoe.monitor-current" && !validMonitorScope(input.Scope) {
 		return false
 	}
+	if op == "pppoe.ppp-list" && !pppoe.ValidPPPQuery(input.PPPQuery) {
+		return false
+	}
 	if query, ok := raw["query"]; ok && !validPPQueryObject(op, query) {
 		return false
 	}
@@ -103,6 +107,8 @@ func validPPQueryObject(op string, query json.RawMessage) bool {
 }
 
 var staticRequiredPPFields = map[string][]string{
+	"pppoe.ppp-list":         {"ppp_query"},
+	"pppoe.summary":          {"device_id"},
 	"pppoe.session-history":  {"device_id", "login"},
 	"pppoe.context-counts":   {"device_id", "observation_id"},
 	"pppoe.collect-start":    {"device_id", "revision", "operation_id"},
@@ -155,7 +161,7 @@ func validatePPReadStart(
 	if !equipment.PPReadScope(input.Scope) || input.Revision == 0 {
 		return nil, false
 	}
-	if input.Scope == "top" || input.Scope == "health" || input.Scope == "operations" {
+	if input.Scope == "top" || input.Scope == "health" || input.Scope == "operations" || input.Scope == equipment.PPPCatalogScope {
 		// ignored: Only the SQL error is consumed; the result carries no required domain value.
 		_, hasRows := raw["row_ids"]
 		_, hasObs := raw["observation_id"]

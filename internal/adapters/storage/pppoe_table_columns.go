@@ -7,6 +7,10 @@ import (
 
 func ppTableColumn(key string) string {
 	switch key {
+	case "client":
+		return ppClientColumn
+	case "mtu", "absent_end", "session_id":
+		return "json_extract(r.row_json,'$." + key + "')"
 	case "row":
 		return "r.ordinal"
 	case "state":
@@ -26,8 +30,10 @@ func ppTableColumn(key string) string {
 			"THEN json_extract(r.row_json,'$.context.profile') END"
 	case "vlan", "service", "interface":
 		return "json_extract(r.row_json,'$.context." + key + "')"
-	case "session_id":
-		return "json_extract(r.row_json,'$.session_id')"
+	case "linked_ap":
+		return "COALESCE((SELECT d.name FROM radio_links l JOIN devices d ON d.id=json_extract(l.body,'$.ap_id') " +
+			"WHERE l.concentrator_id=(SELECT device_id FROM pppoe_observations o WHERE o.id=r.observation_id) " +
+			"AND l.scope='pppoe-active-v1' AND l.login=r.login),'')"
 	case "linked_device":
 		return "COALESCE((SELECT d.name FROM radio_links l JOIN devices d ON d.id=json_extract(l.body,'$.cpe_id') " +
 			"WHERE l.concentrator_id=(SELECT device_id FROM pppoe_observations o WHERE o.id=r.observation_id) " +
@@ -38,7 +44,8 @@ func ppTableColumn(key string) string {
 }
 func ppTableSearch() string {
 	return "table_session_search(r.row_json) || ' ' || " + ppTableColumn("linked_device") +
-		" || ' ' || CASE WHEN (" + ppTableColumn("duplicates") + ")>1 THEN 'Com' ELSE 'Sem' END"
+		" || ' ' || " + ppTableColumn("linked_ap") + " || ' ' || COALESCE(" + ppClientColumn +
+		",'') || ' ' || CASE WHEN (" + ppTableColumn("duplicates") + ")>1 THEN 'Com' ELSE 'Sem' END"
 }
 func (s *Store) ppTableOptions(ctx context.Context, observation string, v *equipment.PPView) equipment.Code {
 	v.Options = map[string][]string{}
@@ -68,3 +75,7 @@ func (s *Store) ppTableOptions(ctx context.Context, observation string, v *equip
 	}
 	return equipment.OK
 }
+
+const ppClientColumn = `(SELECT CASE WHEN count(*)=1 THEN json_extract(j.value,'$.client') END
+ FROM ppp_catalog c,json_each(c.body) j WHERE c.device_id=(SELECT device_id FROM pppoe_observations o WHERE o.id=r.observation_id)
+ AND json_extract(j.value,'$.kind')='secret' AND json_extract(j.value,'$.name')=r.login)`

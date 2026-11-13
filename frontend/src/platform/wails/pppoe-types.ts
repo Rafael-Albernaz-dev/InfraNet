@@ -1,3 +1,4 @@
+import type { PPPEntry, PPPSummary } from './ppp-catalog';
 export type PPQuery = {
   page_size?: number;
   plan?: string;
@@ -64,6 +65,9 @@ export type PPTraffic = {
   peak_upload?: PPRate;
 };
 export type PPRow = {
+  linked_ap_name?: string;
+  client?: string;
+  mtu?: number;
   download?: PPRate;
   upload?: PPRate;
   linked_device_name?: string;
@@ -204,6 +208,11 @@ export type PPResult = {
   activation_id: string;
   error?: { reason?: string; entity_id?: string };
   data?: {
+    counts?: Record<string, number>;
+    entries?: PPPEntry[];
+    summary?: PPPSummary;
+    catalog_dates?: Record<string, string>;
+    catalog_limited?: boolean;
     options?: Record<string, string[]>;
     effect_state?: string;
     current?: PPObservation;

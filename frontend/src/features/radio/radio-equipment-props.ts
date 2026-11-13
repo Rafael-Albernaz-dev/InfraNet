@@ -5,6 +5,7 @@ export type RadioEquipmentProps = {
   activation: string;
   device: Device;
   blocked: boolean;
+  onAccess?: () => void;
   devices?: Device[];
   openEquipment?: (id: string) => void;
   openSession?: (target: LinkedSessionTarget) => void;

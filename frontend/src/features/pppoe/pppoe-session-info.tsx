@@ -10,7 +10,7 @@ export function SessionAuthInfo(p: SessionAuthInfoProps) {
   const { current } = p;
   return (
     <DataBlock
-      title="Informações"
+      title="Resumo"
       className="session-info-block"
       source={`SSH (${p.device.name})`}
       age={readingAge(current.provenance.ended_at)}

@@ -23,6 +23,9 @@ const columns = [
   'upload',
   'uptime',
   'state',
+  'vlan',
+  'service',
+  'mtu',
   'linked_device',
 ];
 function sessionQuery(p: TablePreference): Partial<PPQuery> {

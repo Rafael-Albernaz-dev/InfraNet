@@ -6,6 +6,7 @@ export type SessionRouteTarget = {
   row: string;
   login: string;
   originDevice?: string;
+  originPPP?: boolean;
 };
 export type SessionNavigation = {
   active: boolean;

@@ -1,3 +1,7 @@
+import {
+  SummaryAccess,
+  SummaryPending,
+} from '../../features/equipment/equipment-summary-common';
 import type { Props } from './equipment-detail';
 import { EquipmentReading } from '../../features/equipment/equipment-reading';
 import { queryFailureOwnsDetail } from '../../features/equipment/equipment-query-failure';
@@ -5,11 +9,21 @@ import { EquipmentSummaryStatistics } from '../../features/equipment/equipment-s
 import { equipmentReadBlocked } from './equipment-query-policy';
 import { DataBlock } from '../../shared/ui/DataBlock';
 
-export function SummaryTab({ p }: { p: Props }) {
+export function SummaryTab({
+  p,
+  onSessions,
+  onServers,
+  onAccess,
+}: {
+  p: Props;
+  onSessions?: () => void;
+  onServers?: () => void;
+  onAccess?: () => void;
+}) {
   if (!p.selected.fingerprint && !p.selected.result)
     return (
       <DataBlock
-        title="Identidade e sistema"
+        title="Equipamento"
         source="SSH"
         data={{
           state: 'empty',
@@ -31,11 +45,24 @@ export function SummaryTab({ p }: { p: Props }) {
         disabled: equipmentReadBlocked(p),
       }}
       statistics={
-        <EquipmentSummaryStatistics
-          profile={p.profile}
-          activation={p.activation}
-          device={p.selected}
-        />
+        <>
+          <EquipmentSummaryStatistics
+            profile={p.profile}
+            activation={p.activation}
+            device={p.selected}
+            onSessions={onSessions}
+            onServers={onServers}
+          />
+          <SummaryPending title="Configuração" slice="L-CFG" />
+          <SummaryAccess
+            device={p.selected}
+            edit={onAccess}
+            credential={
+              p.credentials.find((c) => c.id === p.selected.credential_id)
+                ?.alias
+            }
+          />
+        </>
       }
     />
   ) : (
@@ -47,7 +74,7 @@ export function SummaryTab({ p }: { p: Props }) {
       )}
       <div className="grid">
         <DataBlock
-          title="Identidade e sistema"
+          title="Equipamento"
           source="SSH"
           data={{
             state: p.job?.state === 'RUNNING' ? 'loading' : 'unread',

@@ -7,6 +7,7 @@ import (
 	"infradesktop/internal/adapters/routerssh/deviceparse"
 	"infradesktop/internal/adapters/routerssh/pppoeparse"
 	"infradesktop/internal/modules/equipment"
+	"infradesktop/internal/modules/pppoe"
 	"infradesktop/internal/modules/pulse"
 	"net"
 	"strconv"
@@ -15,8 +16,10 @@ import (
 )
 
 type liveSession struct {
-	client *ssh.Client
-	conn   net.Conn
+	client    *ssh.Client
+	conn      net.Conn
+	previous  *equipment.PPObservation
+	contextAt time.Time
 }
 
 // OpenLive owns a separate connection with a handshake deadline, never a cumulative read budget.
@@ -120,6 +123,10 @@ func (s *liveSession) readSessions(ctx context.Context) (*equipment.PPObservatio
 	if code != equipment.OK || observation.Quality.Status != "complete" {
 		return nil, nil
 	}
+	pppoe.CarryObservationContext(s.previous, observation)
+	s.readSessionContext(ctx, observation)
+	pppoe.CarryObservationContext(s.previous, observation)
+	s.previous = observation
 	output, fault = s.runLive(ctx, pppoeparse.PulseCountersCommand, equipment.PPWireBytes)
 	if fault != pulse.ReadOK {
 		return observation, nil

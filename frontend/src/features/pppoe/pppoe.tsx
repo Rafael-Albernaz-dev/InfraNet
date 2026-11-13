@@ -11,6 +11,7 @@ export type PPPoEProps = {
   activation: string;
   device: Device;
   back: () => void;
+  initialTab?: import('./pppoe-state').PPPoETab;
   section?: 'sessions' | 'services';
   refreshAvailable?: boolean;
   sessionTarget?: LinkedSessionTarget;
@@ -27,7 +28,7 @@ export function PPPoE(p: PPPoEProps) {
     activation,
     device,
     refs,
-    section === 'services' ? 'catalog' : 'sessions',
+    p.initialTab || (section === 'services' ? 'catalog' : 'sessions'),
   );
   const { navigation, active, selectedMatches, openSession, rememberFocus } =
     usePPPoESessionNavigation(s, refs, p);

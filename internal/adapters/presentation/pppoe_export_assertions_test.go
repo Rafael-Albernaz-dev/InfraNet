@@ -152,7 +152,7 @@ func (s *ppExportJourney) readOperationalCSV(t *testing.T) ([]byte, [][]string, 
 
 func (s *ppExportJourney) assertOperationalCSV(t *testing.T, csvRaw []byte, records [][]string, csvPath string) {
 	expected := []string{"login", "ip", "caller_id", "estado", "uptime_min_ns", "uptime_max_ns", "vlan", "servico", "perfil",
-		"upload_limite_bit_s", "download_limite_bit_s", "contexto", "estado_secret"}
+		"upload_limite_bit_s", "download_limite_bit_s", "contexto", "estado_secret", "cliente"}
 	if strings.Join(records[0], "|") != strings.Join(expected, "|") || len(records) != s.b.Count+1 ||
 		!strings.HasPrefix(records[1][0], "synthetic-") {
 		t.Fatal("operational columns/rows/identity", len(records))

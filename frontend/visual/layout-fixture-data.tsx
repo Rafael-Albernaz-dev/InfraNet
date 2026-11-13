@@ -12,6 +12,7 @@ export const base5Scenes = new Set([
   'seguranca-codigo',
 ]);
 export const sessions = Array.from({ length: 25 }, (_, i) => ({
+  mtu: 1492,
   row_id: `row-${i}`,
   remote_id: `*${i}`,
   session_id: String(i),

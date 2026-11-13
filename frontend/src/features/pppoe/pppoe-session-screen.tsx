@@ -81,8 +81,8 @@ function SessionDetailNav({
     <Tabs
       label="Detalhes da sessão"
       items={[
+        ['information', 'Resumo'],
         ['traffic', 'Tráfego'],
-        ['information', 'Informações'],
         ['link', 'Enlace'],
         ['history', 'Histórico'],
       ]}

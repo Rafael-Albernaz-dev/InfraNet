@@ -12,6 +12,7 @@ export function SessionHeader(
       <div className="grow">
         <h1 tabIndex={-1} ref={detailHeadingRef}>
           {selected.login}
+          {selected.client ? ` · ${selected.client}` : ''}
         </h1>
         <div className="meta">
           Sessão PPPoE · {device.name} · {selected.state || 'ONLINE'} · IP{' '}

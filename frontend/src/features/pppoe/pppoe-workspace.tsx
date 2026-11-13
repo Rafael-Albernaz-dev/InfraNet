@@ -1,6 +1,7 @@
 import { readingAge } from '../equipment/equipment-reading-format';
 import { CSVNotice } from './pppoe-csv-notice';
-import { ContextCounts } from './pppoe-context';
+import { PPPCatalogPanel } from './ppp-catalog-panel';
+import { usePPPCatalogRefresh } from './use-ppp-catalog-refresh';
 import { PPPoEHeader, PPPoEStatusBanners } from './pppoe-header';
 import { observationReadingStatus } from './pppoe-observation-state';
 import { PPPoETabContent } from './pppoe-observation-view';
@@ -58,6 +59,19 @@ function ObservationBlock(p: WorkspaceProps) {
 }
 export function PPPoEWorkspace(p: WorkspaceProps) {
   const { s, refs, section } = p;
+  const catalog = usePPPCatalogRefresh({
+    profile: s.profile,
+    activation: s.activation,
+    devices: [s.device],
+    available: !p.disabled && !!s.device.fingerprint,
+  });
+  const catalogScreen =
+    s.tab === 'servers' ||
+    s.tab === 'secrets' ||
+    s.tab === 'profiles' ||
+    s.tab === 'l2tp'
+      ? s.tab
+      : undefined;
   const { focusedControlRef, detailIntentRef, detailTriggerRef } = refs;
   return (
     <section
@@ -80,22 +94,20 @@ export function PPPoEWorkspace(p: WorkspaceProps) {
     >
       <PPPoEHeader s={s} section={section} />
       <PPPoEStatusBanners s={s} />
-      <ObservationBlock {...p} />
-      {s.tab === 'sessions' && !s.current && <CSVNotice />}
-      {/* Stays here until L-PPP moves it to Servidores PPPoE (TELAS §4.2). */}
-      {s.tab === 'sessions' && s.current && !s.current.context_omitted && (
-        <>
-          <div className="sp10" />
-          <ContextCounts
-            key={s.current.observation_id}
-            profile={s.profile}
-            activation={s.activation}
-            device={s.device.id}
-            observation={s.current.observation_id}
-            at={s.current.provenance.ended_at}
-          />
-        </>
+      {catalogScreen ? (
+        <PPPCatalogPanel
+          key={catalogScreen}
+          profile={s.profile}
+          activation={s.activation}
+          device={s.device.id}
+          screen={catalogScreen}
+          refresh={catalog.refresh}
+        />
+      ) : (
+        <ObservationBlock {...p} />
       )}
+      {catalogScreen && catalog.error && <p role="alert">{catalog.error}</p>}
+      {s.tab === 'sessions' && !s.current && <CSVNotice />}
     </section>
   );
 }

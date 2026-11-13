@@ -12,7 +12,7 @@ import (
 const PulseCountersCommand = routeros.EscapeScript + `; :local ids [/interface find where type="pppoe-in"]; ` +
 	`:local n 0; :if ([:len $ids]>2048) do={:error "rows"}; :foreach i in=$ids do={:do {` +
 	`:local line ("C\t".[$esc [/interface get $i name]]."\t".[/interface get $i rx-byte]."\t".` +
-	`[/interface get $i tx-byte]); ` +
+	`[/interface get $i tx-byte]."\t".[/interface get $i actual-mtu]); ` +
 	`:put $line; :set n ($n+1)} on-error={}}; :put ("Z\t".$n)`
 
 func ParsePulseCounters(text string) ([]equipment.PPTunnel, equipment.Code) {
@@ -34,7 +34,7 @@ func ParsePulseCounters(text string) ([]equipment.PPTunnel, equipment.Code) {
 			}
 			return out, equipment.OK
 		}
-		if len(f) != 4 || f[0] != "C" {
+		if (len(f) != 4 && len(f) != 5) || f[0] != "C" {
 			return nil, equipment.Partial
 		}
 		row, ok := parsePulseCounter(f)
@@ -53,5 +53,13 @@ func parsePulseCounter(f []string) (equipment.PPTunnel, bool) {
 	if !ok || name == "" || len(name) > 256 || rx == nil || tx == nil {
 		return equipment.PPTunnel{}, false
 	}
-	return equipment.PPTunnel{ID: name, Name: name, RX: rx, TX: tx}, true
+	row := equipment.PPTunnel{ID: name, Name: name, RX: rx, TX: tx}
+	if len(f) == 5 {
+		n, valid := pdNumber(f[4], 65535)
+		if !valid || n == 0 {
+			return equipment.PPTunnel{}, false
+		}
+		row.MTU = &n
+	}
+	return row, true
 }

@@ -1,9 +1,10 @@
-import { useCallback, useContext, useState } from 'react';
+import { useDesktopSession } from './desktop-session';
+import { PPPMenuProvider } from '../features/pppoe/ppp-menu-provider';
+import { useCallback, useState } from 'react';
 import type { DesktopProps, Page } from '../features/access/desktop-model';
 import { normalizeRoute } from '../features/access/desktop-model';
 import { CompanyList, Settings } from './desktop-pages';
 import { Sidebar, Topbar } from './desktop-shell';
-import type { SessionRouteTarget } from '../features/equipment/session-navigation';
 import { SessionRoute } from '../features/equipment/session-navigation';
 import { Button } from '../shared/ui/Button';
 import { DetailTitle } from '../shared/ui/DetailTitle';
@@ -44,15 +45,7 @@ export function Statusbar({
 export function Desktop(
   p: DesktopProps & { onRoot?: (root: HTMLDivElement | null) => void },
 ) {
-  const externalSession = useContext(SessionRoute);
-  const [localSession, setLocalSession] = useState<SessionRouteTarget>();
-  const session = externalSession || {
-    active: !!localSession,
-    target: localSession,
-    open: setLocalSession,
-    back: () => setLocalSession(undefined),
-    leave: () => setLocalSession(undefined),
-  };
+  const session = useDesktopSession();
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   const onRoot = p.onRoot;
   const attachRoot = useCallback(
@@ -75,68 +68,70 @@ export function Desktop(
     },
   };
   return (
-    <SessionRoute.Provider value={session}>
-      <DialogHost value={host}>
-        <DetailTitle value={setDetailTitle}>
-          <div
-            ref={attachRoot}
-            className="app"
-            data-route={route}
-            data-theme={p.theme}
-          >
-            {route === 'companies' ? (
-              <div className="col">
-                <main>
-                  <CompanyList p={p} />
-                </main>
-                <div className="tema" role="group" aria-label="Tema">
-                  <Button
-                    aria-pressed={p.theme !== 'dark'}
-                    onClick={() => p.setTheme('light')}
-                  >
-                    Claro
-                  </Button>
-                  <Button
-                    aria-pressed={p.theme === 'dark'}
-                    onClick={() => p.setTheme('dark')}
-                  >
-                    Escuro
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <Sidebar
-                  key={route}
-                  p={navigationProps}
-                  route={route}
-                  expandRequest={expandRequest}
-                  detailTitle={detailTitle}
-                />
+    <PPPMenuProvider>
+      <SessionRoute.Provider value={session}>
+        <DialogHost value={host}>
+          <DetailTitle value={setDetailTitle}>
+            <div
+              ref={attachRoot}
+              className="app"
+              data-route={route}
+              data-theme={p.theme}
+            >
+              {route === 'companies' ? (
                 <div className="col">
-                  <Topbar
+                  <main>
+                    <CompanyList p={p} />
+                  </main>
+                  <div className="tema" role="group" aria-label="Tema">
+                    <Button
+                      aria-pressed={p.theme !== 'dark'}
+                      onClick={() => p.setTheme('light')}
+                    >
+                      Claro
+                    </Button>
+                    <Button
+                      aria-pressed={p.theme === 'dark'}
+                      onClick={() => p.setTheme('dark')}
+                    >
+                      Escuro
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Sidebar
+                    key={route}
                     p={navigationProps}
                     route={route}
+                    expandRequest={expandRequest}
                     detailTitle={detailTitle}
                   />
-                  <main>
-                    {route === 'overview' ? (
-                      <h1>Visão geral</h1>
-                    ) : route === 'settings' ? (
-                      <Settings p={p} />
-                    ) : (
-                      p.inventory
-                    )}
-                    {p.error && <p role="alert">{p.error}</p>}
-                    <Statusbar connected={p.connected} />
-                  </main>
-                </div>
-              </>
-            )}
-            {p.children}
-          </div>
-        </DetailTitle>
-      </DialogHost>
-    </SessionRoute.Provider>
+                  <div className="col">
+                    <Topbar
+                      p={navigationProps}
+                      route={route}
+                      detailTitle={detailTitle}
+                    />
+                    <main>
+                      {route === 'overview' ? (
+                        <h1>Visão geral</h1>
+                      ) : route === 'settings' ? (
+                        <Settings p={p} />
+                      ) : (
+                        p.inventory
+                      )}
+                      {p.error && <p role="alert">{p.error}</p>}
+                      <Statusbar connected={p.connected} />
+                    </main>
+                  </div>
+                </>
+              )}
+              {p.children}
+            </div>
+          </DetailTitle>
+        </DialogHost>
+      </SessionRoute.Provider>
+    </PPPMenuProvider>
   );
 }

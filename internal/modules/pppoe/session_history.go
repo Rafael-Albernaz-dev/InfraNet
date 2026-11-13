@@ -49,6 +49,9 @@ func AverageSessions(rows []PPRow, previous, current []PPTunnel) {
 		if ok && r.Context == nil && counts[r.Login] == 1 {
 			r.Context = &PPContext{Association: "associated", Interface: name}
 		}
+		if ok {
+			r.MTU = now.MTU
+		}
 		if !ok || !had {
 			continue
 		}

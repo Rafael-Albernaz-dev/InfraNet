@@ -367,7 +367,7 @@ it('review focus: disappearing clear/delete controls and cancelled picker restor
   expect(
     screen.getByRole('heading', { name: 'Referências preservadas' }),
   ).toHaveFocus();
-  fireEvent.click(screen.getByRole('tab', { name: 'Lista' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Sessões' }));
   await screen.findByRole('button', { name: 'Detalhar duplicado row-1' });
   const exporting = screen.getByRole('button', {
     name: 'Exportar JSON sanitizado',
@@ -461,7 +461,7 @@ it('fields, offline reason and previous page use stored data', async () => {
     screen.getByRole('button', { name: 'Detalhar duplicado row-1' }),
   );
   await waitForSessionReady();
-  fireEvent.click(await screen.findByRole('tab', { name: 'Informações' }));
+  fireEvent.click(await screen.findByRole('tab', { name: 'Resumo' }));
   await screen.findByText('Sem leitura: sessão OFFLINE');
   expect(screen.getByText('Caller ID').nextElementSibling).toHaveTextContent(
     '02:00:00:00:00:01',

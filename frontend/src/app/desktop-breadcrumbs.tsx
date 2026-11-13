@@ -20,10 +20,10 @@ export function DesktopBreadcrumbs({ p, route, detailTitle }: BreadcrumbProps) {
             href="#equipamentos"
             onClick={(e) => {
               e.preventDefault();
-              p.navigate('equipment');
+              p.navigate(route === 'sessao' ? 'pppoe' : 'equipment');
             }}
           >
-            Equipamentos
+            {route === 'sessao' ? 'PPP' : 'Equipamentos'}
           </a>
           <span aria-hidden="true">›</span>
         </>
@@ -58,6 +58,7 @@ function currentLabel(
   return (
     (
       {
+        pppoe: 'PPP',
         vitrine: 'Vitrine',
         overview: 'Visão geral',
         settings: 'Configurações',

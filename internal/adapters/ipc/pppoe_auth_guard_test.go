@@ -73,6 +73,8 @@ func ppGuardValue(op, field string, fields []string, device, observation string)
 		return 30
 	case "revision":
 		return 2
+	case "ppp_query":
+		return map[string]any{"screen": "sessions"}
 	case "query":
 		return map[string]any{}
 	case "export_key":

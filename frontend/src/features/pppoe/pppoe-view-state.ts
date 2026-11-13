@@ -12,7 +12,16 @@ import type {
   PPReference,
 } from '../../platform/wails/pppoe-types';
 export type PPPoETab =
-  'sessions' | 'compare' | 'references' | 'catalog' | 'radius' | 'monitoring';
+  | 'servers'
+  | 'secrets'
+  | 'profiles'
+  | 'l2tp'
+  | 'sessions'
+  | 'compare'
+  | 'references'
+  | 'catalog'
+  | 'radius'
+  | 'monitoring';
 function usePPPoEPageStatus() {
   const [pageState, setPageState] = useState<
     'idle' | 'loading' | 'ready' | 'error'
@@ -21,7 +30,7 @@ function usePPPoEPageStatus() {
   const [statusRetry, retryStatus] = useState(0);
   const [detailTab, setDetailTab] = useState<
     'traffic' | 'information' | 'link' | 'history'
-  >('traffic');
+  >('information');
   const [pair, setPair] = useState<{ left?: PPRow; right?: PPRow }>();
   const [referencesState, setReferencesState] = useState<
     'loading' | 'ready' | 'error'
@@ -56,6 +65,9 @@ function usePPPoEListState() {
       'upload',
       'uptime',
       'state',
+      'vlan',
+      'service',
+      'mtu',
       'linked_device',
     ],
     filters: {},

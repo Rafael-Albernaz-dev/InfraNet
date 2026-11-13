@@ -106,7 +106,7 @@ async function openList() {
   fireEvent.click(await screen.findByText('Empresa um'));
   fireEvent.click(await screen.findByRole('link', { name: 'Equipamentos' }));
   fireEvent.click(await screen.findByRole('cell', { name: 'CCR fixture' }));
-  fireEvent.click(await screen.findByRole('tab', { name: /^Sessões$/ }));
+  fireEvent.click(await screen.findByRole('tab', { name: /^PPP$/ }));
   await screen.findByRole('button', { name: /Detalhar primeiro/ });
 }
 
@@ -207,7 +207,7 @@ it('cancels live on a tab change and starts it on returning to traffic', async (
   );
   await openFirstSession();
   await waitFor(() => expect(pppoeReadAPI.status).toHaveBeenCalled());
-  fireEvent.click(screen.getByRole('tab', { name: 'Informações' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Resumo' }));
   await waitFor(() =>
     expect(pppoeReadAPI.cancel).toHaveBeenCalledWith(
       'company',
@@ -509,7 +509,7 @@ it('runs ping only for the selected session from the information tab', async () 
     }),
   );
   await openFirstSession();
-  fireEvent.click(screen.getByRole('tab', { name: 'Informações' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Resumo' }));
   const ping = await screen.findByRole('button', { name: 'Ping' });
   await waitFor(() => expect(ping).toBeEnabled());
   fireEvent.click(ping);

@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS ppp_catalog (
+ device_id TEXT PRIMARY KEY REFERENCES devices(id) ON DELETE CASCADE,
+ at TEXT NOT NULL,
+ limited INTEGER NOT NULL CHECK(limited IN (0,1)),
+ body TEXT NOT NULL
+);

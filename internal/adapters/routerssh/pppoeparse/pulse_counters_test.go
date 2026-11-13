@@ -21,6 +21,7 @@ func TestPageCountersAreBoundedAndGoldenPreservesExactBytes(t *testing.T) {
 		*counters[1].RX != 9007199254740993 {
 		t.Fatal(code, counters)
 	}
+	assertCounterMTU(t, counters[0].MTU)
 	rows := []equipment.PPRow{}
 	for i := 0; i < 200; i++ {
 		rows = append(rows, equipment.PPRow{Login: fmt.Sprintf("fixture-%d", i)})
@@ -41,5 +42,12 @@ func TestPageCountersAreBoundedAndGoldenPreservesExactBytes(t *testing.T) {
 			"find where name") ||
 		!strings.Contains(PulseCountersCommand, "on-error={}}") {
 		t.Fatal("quadratic or per-row monitor in background")
+	}
+}
+
+func assertCounterMTU(t *testing.T, mtu *uint64) {
+	t.Helper()
+	if mtu == nil || *mtu != 1492 {
+		t.Fatal("MTU missing from the counter loop", mtu)
 	}
 }

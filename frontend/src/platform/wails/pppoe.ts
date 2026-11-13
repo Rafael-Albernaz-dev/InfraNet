@@ -141,7 +141,11 @@ const readBindings = {
   stop: StopPPPoETraffic,
   status: async (...args: Parameters<typeof PPPoEReadStatus>) => {
     const first = await PPPoEReadStatus(...args);
-    if (first.data?.job?.state !== 'SUCCEEDED') return first;
+    if (
+      first.data?.job?.state !== 'SUCCEEDED' ||
+      first.data?.read?.scope === 'ppp-catalog'
+    )
+      return first;
     return completePPTable(
       first,
       (next) => PPPoEReadPage(args[0], args[1], args[2], next),

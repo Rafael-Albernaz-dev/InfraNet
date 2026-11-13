@@ -119,7 +119,7 @@ func paginateReadResult(j *RunningJob, offset int, v *PPView) Code {
 func (s *Service) preparePPRead(
 	ctx context.Context, q Command, in PPInput, t PPTarget,
 ) (*PPReadTarget, Code) {
-	if in.Scope == "top" || in.Scope == "health" || in.Scope == "operations" {
+	if in.Scope == "top" || in.Scope == "health" || in.Scope == "operations" || in.Scope == equipment.PPPCatalogScope {
 		if in.ObservationID != "" || len(in.RowIDs) != 0 {
 			return nil, Invalid
 		}
@@ -331,6 +331,15 @@ func (s *Service) publishPPRead(ctx context.Context, j *RunningJob, result *PPRe
 		return c
 	}
 	return s.inv.Authorized(ctx, j.Command, func(uint64) Code {
+		if j.PPInput.Scope == equipment.PPPCatalogScope {
+			store, ok := s.inv.Store.(equipment.PPPCatalogStore)
+			if !ok {
+				return Unavailable
+			}
+			if code := store.SavePPPCatalog(ctx, j.Command.Scope.Profile, j.Device, j.CredentialRevision, result); code != OK {
+				return code
+			}
+		}
 		if j.PPInput.Scope == "operations" {
 			store, ok := s.inv.Store.(DeviceMonitoringStore)
 			if !ok {

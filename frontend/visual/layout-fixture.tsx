@@ -1,3 +1,4 @@
+import { radioAndPPPFixtureOperations } from './ppp-layout-fixture';
 import {
   base5Scenes,
   sessions,
@@ -18,7 +19,6 @@ import {
   createBase5List,
   prepareBase5Scene,
 } from './inventory-layout-fixture';
-import { radioFixtureOperations } from './layout-radio-operations';
 import savedReadings from './layout-readings.json';
 import {
   RadioRoles,
@@ -288,7 +288,7 @@ export function installFixture() {
     go: {
       presentation: {
         App: {
-          ...radioFixtureOperations(result, radioReading),
+          ...radioAndPPPFixtureOperations(result, radioReading),
           ...importFixtureOperations(visualScene, result),
           Status: async () => ({ code: 'OK', columns: savedColumns }),
           SetInventoryColumns: async (columns: string[]) => {

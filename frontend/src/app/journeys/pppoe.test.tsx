@@ -107,7 +107,7 @@ it('budget-omitted context preserves sessions, explains detail and avoids unknow
     screen.getByRole('button', { name: 'Detalhar duplicado row-1' }),
   );
   await waitForSessionReady();
-  fireEvent.click(await screen.findByRole('tab', { name: 'Informações' }));
+  fireEvent.click(await screen.findByRole('tab', { name: 'Resumo' }));
   fireEvent.click(screen.getByText(/Mais informações/));
   await screen.findByText(
     'Contexto não incluído por limite. VLAN, IPv6 e plano indisponíveis nesta leitura.',
@@ -148,7 +148,7 @@ it('references keep their own tab and saving stays on the sessions list', async 
   expect(
     screen.getByRole('button', { name: 'Recarregar referências' }),
   ).toBeEnabled();
-  fireEvent.click(screen.getByRole('tab', { name: 'Lista' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Sessões' }));
   expect(
     screen.getByRole('button', { name: 'Salvar referência desta leitura' }),
   ).toBeEnabled();
@@ -232,7 +232,7 @@ it('A-H01: returning and changing the filter invalidates a pending detail, while
     screen.getByRole('button', { name: 'Detalhar duplicado row-2' }),
   );
   await waitForSessionReady();
-  fireEvent.click(await screen.findByRole('tab', { name: 'Informações' }));
+  fireEvent.click(await screen.findByRole('tab', { name: 'Resumo' }));
   expect(await waitForSessionReady()).toHaveTextContent('row-2');
 });
 it('A-H01: changing comparison reference rejects a late pair before requesting its second leg', async () => {
@@ -360,7 +360,7 @@ it('A-H01: newer detail wins when two queries resolve in reverse order', async (
   );
   await act(async () => second.resolve(result({ rows: [rows[1]], total: 1 })));
   await waitForSessionReady();
-  fireEvent.click(await screen.findByRole('tab', { name: 'Informações' }));
+  fireEvent.click(await screen.findByRole('tab', { name: 'Resumo' }));
   expect(
     screen.getByRole('region', { name: 'Detalhes da sessão' }),
   ).toHaveTextContent('row-2');

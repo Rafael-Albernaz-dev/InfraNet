@@ -3,7 +3,7 @@ package storage
 import "testing"
 
 // latestCompanySchema is the newest company migration the synthetic fixtures know.
-const latestCompanySchema = 17
+const latestCompanySchema = 18
 
 func dropRadioFixtureSchema(t *testing.T, j *journey) {
 	dropPulseFixtureSchema(t, j)
@@ -57,7 +57,7 @@ func dropPulseFixtureSchema(t *testing.T, j *journey) {
 	if _, err := j.st.unit.Exec("DROP VIEW IF EXISTS pppoe_row_values"); err != nil {
 		t.Fatal(err)
 	}
-	for _, table := range []string{"device_presence",
+	for _, table := range []string{"ppp_catalog", "device_presence",
 		"device_pulse_events",
 		"device_boot_checkpoint",
 		"device_identity_checkpoint",
@@ -69,7 +69,7 @@ func dropPulseFixtureSchema(t *testing.T, j *journey) {
 		}
 	}
 	// ignored: Only the SQL error is consumed; the result carries no required domain value.
-	if _, err := j.st.unit.Exec("DELETE FROM schema_migrations WHERE version=17"); err != nil {
+	if _, err := j.st.unit.Exec("DELETE FROM schema_migrations WHERE version>=17"); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -138,6 +138,12 @@ export function presentationMock(
       ...pppoeDiagnosticAPIMock(fallback.pppoeDiagnosticAPI),
       ...overrides.pppoeDiagnosticAPI,
     },
+    pppCatalogAPI: {
+      export: mockMethod(fallback.pppCatalogAPI?.export),
+      list: mockMethod(fallback.pppCatalogAPI?.list),
+      summary: mockMethod(fallback.pppCatalogAPI?.summary),
+      ...overrides.pppCatalogAPI,
+    },
     pppoeAPI: { ...pppoeAPIMock(fallback.pppoeAPI), ...overrides.pppoeAPI },
     pppoeReadAPI: {
       ...pppoeReadAPIMock(fallback.pppoeReadAPI),

@@ -51,85 +51,9 @@ func (a *App) ExportPPPoEOperational(p, act, device, observation string) string 
 		}
 		return a.checkPPExportLocked(p, act, device, observation, "")
 	}
-	produce := func(w io.Writer) string {
-		if c := check(); c != "OK" {
-			return c
-		}
-		out := csv.NewWriter(w)
-		if out.Write([]string{"login", "ip", "caller_id", "estado", "uptime_min_ns", "uptime_max_ns", "vlan", "servico", "perfil", "upload_limite_bit_s", "download_limite_bit_s", "contexto", "estado_secret"}) != nil {
-			return "EXPORT_UNAVAILABLE"
-		}
-		in := equipment.PPInput{DeviceID: device, ObservationID: observation}
-		seen := map[string]bool{}
-		count := 0
-		for pages := 0; pages <= equipment.PPMaxRows/equipment.PageSize; pages++ {
-			a.mu.Lock()
-			if generation != a.ppGeneration {
-				a.mu.Unlock()
-				return "PROFILE_CHANGED"
-			}
-			r := a.ppCallLocked("pppoe.sessions-list", p, act, in)
-			a.mu.Unlock()
-			if r.Code != "OK" {
-				return r.Code
-			}
-			if r.Data == nil {
-				return "EXPORT_UNAVAILABLE"
-			}
-			for _, row := range r.Data.Rows {
-				count++
-				if count > equipment.PPMaxRows {
-					return "EXPORT_UNAVAILABLE"
-				}
-				state := row.State
-				if state == "" {
-					state = "ONLINE"
-				}
-				values := []string{row.Login, row.Address, row.Caller, state, "", "", "", "", "", "", "", "indisponível", "unavailable"}
-				if r.Data.Current != nil && r.Data.Current.ContextOmitted {
-					values[11] = "não incluído por limite"
-				}
-				if row.Uptime.Known {
-					values[4] = strconv.FormatInt(row.Uptime.Min, 10)
-					values[5] = strconv.FormatInt(row.Uptime.Max, 10)
-				}
-				if c := row.Context; c != nil {
-					values[11] = "incluído"
-					if c.VLAN != nil {
-						values[6] = strconv.Itoa(*c.VLAN)
-					}
-					values[7] = c.Service
-					if c.SecretState != "" {
-						values[12] = c.SecretState
-					}
-					if c.SecretState == "active" {
-						values[8] = c.Profile
-					}
-					values[9] = c.UploadLimit
-					values[10] = c.DownloadLimit
-				}
-				for i := range values {
-					values[i] = ppCSVCell(values[i])
-				}
-				if out.Write(values) != nil {
-					return "EXPORT_UNAVAILABLE"
-				}
-			}
-			if r.Data.Next == "" {
-				out.Flush()
-				if out.Error() != nil {
-					return "EXPORT_UNAVAILABLE"
-				}
-				return "OK"
-			}
-			if seen[r.Data.Next] {
-				return "EXPORT_UNAVAILABLE"
-			}
-			seen[r.Data.Next] = true
-			in.Cursor = r.Data.Next
-		}
-		return "EXPORT_UNAVAILABLE"
-	}
+	request := operationalCSVRequest{profile: p, activation: act, device: device,
+		observation: observation, generation: generation}
+	produce := func(w io.Writer) string { return a.produceOperationalCSV(w, request, check) }
 	publish := func(fn func() string) string {
 		if c := check(); c != "OK" {
 			return c
@@ -142,4 +66,116 @@ func (a *App) ExportPPPoEOperational(p, act, device, observation string) string 
 		return fn()
 	}
 	return writePPExportFile(path, ".csv", produce, publish, a.ppExportFS)
+}
+
+type operationalCSVRequest struct {
+	profile, activation, device, observation string
+	generation                               uint64
+	concentrator                             string
+	skipHeader                               bool
+}
+
+func (a *App) produceOperationalCSV(w io.Writer, request operationalCSVRequest, check func() string) string {
+	p, act, device, observation, generation := request.profile, request.activation, request.device, request.observation, request.generation
+	if c := check(); c != "OK" {
+		return c
+	}
+	out := csv.NewWriter(w)
+	if !writeOperationalCSVHeader(out, request) {
+		return "EXPORT_UNAVAILABLE"
+	}
+	in := equipment.PPInput{DeviceID: device, ObservationID: observation}
+	seen := map[string]bool{}
+	count := 0
+	for pages := 0; pages <= equipment.PPMaxRows/equipment.PageSize; pages++ {
+		a.mu.Lock()
+		if generation != a.ppGeneration {
+			a.mu.Unlock()
+			return "PROFILE_CHANGED"
+		}
+		r := a.ppCallLocked("pppoe.sessions-list", p, act, in)
+		a.mu.Unlock()
+		if r.Code != "OK" {
+			return r.Code
+		}
+		if r.Data == nil {
+			return "EXPORT_UNAVAILABLE"
+		}
+		for _, row := range r.Data.Rows {
+			count++
+			if count > equipment.PPMaxRows {
+				return "EXPORT_UNAVAILABLE"
+			}
+			values := operationalCSVValues(row, r.Data.Current)
+			if request.concentrator != "" {
+				values = append(values, ppCSVCell(request.concentrator))
+			}
+
+			if out.Write(values) != nil {
+				return "EXPORT_UNAVAILABLE"
+			}
+		}
+		if r.Data.Next == "" {
+			out.Flush()
+			if out.Error() != nil {
+				return "EXPORT_UNAVAILABLE"
+			}
+			return "OK"
+		}
+		if seen[r.Data.Next] {
+			return "EXPORT_UNAVAILABLE"
+		}
+		seen[r.Data.Next] = true
+		in.Cursor = r.Data.Next
+	}
+	return "EXPORT_UNAVAILABLE"
+}
+func operationalCSVValues(row equipment.PPRow, current *equipment.PPObservation) []string {
+	state := row.State
+	if state == "" {
+		state = "ONLINE"
+	}
+	values := []string{row.Login, row.Address, row.Caller, state, "", "", "", "", "", "", "", "indisponível", "unavailable", row.Client}
+	if current != nil && current.ContextOmitted {
+		values[11] = "não incluído por limite"
+	}
+	if row.Uptime.Known {
+		values[4] = strconv.FormatInt(row.Uptime.Min, 10)
+		values[5] = strconv.FormatInt(row.Uptime.Max, 10)
+	}
+	if c := row.Context; c != nil {
+		values[11] = "incluído"
+		if c.VLAN != nil {
+			values[6] = strconv.Itoa(*c.VLAN)
+		}
+		values[7] = c.Service
+		if c.SecretState != "" {
+			values[12] = c.SecretState
+		}
+		if c.SecretState == "active" {
+			values[8] = c.Profile
+		}
+		values[9] = c.UploadLimit
+		values[10] = c.DownloadLimit
+	}
+	for i := range values {
+		values[i] = ppCSVCell(values[i])
+	}
+	return values
+}
+
+func operationalCSVHeader() []string {
+	return []string{"login", "ip", "caller_id", "estado", "uptime_min_ns", "uptime_max_ns", "vlan", "servico", "perfil",
+		"upload_limite_bit_s", "download_limite_bit_s", "contexto", "estado_secret", "cliente"}
+}
+
+func writeOperationalCSVHeader(out *csv.Writer, request operationalCSVRequest) bool {
+	if request.skipHeader {
+		return true
+	}
+	header := operationalCSVHeader()
+	if request.concentrator != "" {
+		header = append(header, "concentrador")
+	}
+	return out.Write(header) == nil
 }

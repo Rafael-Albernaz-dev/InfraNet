@@ -39,6 +39,7 @@ function renderInventory(
       primaryInHeader
       credentialsPage={route === 'credentials'}
       groupsPage={route === 'grupos'}
+      pppPage={route === 'pppoe'}
       addPage={route === 'adicionar'}
       onAdd={() => setPage('adicionar')}
       onAddBack={() => setPage('equipment')}

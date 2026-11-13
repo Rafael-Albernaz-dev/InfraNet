@@ -8,3 +8,5 @@ export * from './pppoe-types';
 export * from './radio';
 
 export * from './table-preferences';
+
+export * from './ppp-catalog';

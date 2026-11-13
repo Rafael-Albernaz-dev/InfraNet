@@ -190,7 +190,7 @@ it('edits only the concentrator group, reopens saved sessions and measures bandw
   expect(
     screen.getByRole('region', { name: 'Ficha do equipamento' }),
   ).toHaveTextContent('Torre Sul');
-  fireEvent.click(screen.getByRole('tab', { name: 'Sessões' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'PPP' }));
   expect(await screen.findByText('cliente-sintetico')).toBeVisible();
   const result = within(screen.getByRole('table', { name: 'Sessões PPPoE' }));
   expect(await result.findByText('2 Mbps')).toBeVisible();

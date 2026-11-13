@@ -28,6 +28,8 @@ function authRows(p: SessionAuthInfoProps): InformationRows {
   const c = selected.context,
     associated = c?.association === 'associated';
   return [
+    ['Cliente', selected.client || known],
+    ['MTU', selected.mtu ?? known],
     [
       'Autenticação',
       <details>

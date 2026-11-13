@@ -1,3 +1,4 @@
+import { PPPMenuLinks } from '../features/pppoe/ppp-menu-links';
 import { NetworkBadge } from '../features/equipment/network-pulse';
 import { useEffect, useRef, useState } from 'react';
 import { DesktopBreadcrumbs } from './desktop-breadcrumbs';
@@ -23,9 +24,7 @@ export function Sidebar({
     title: string;
   }>();
   const expanded =
-    ['equipment', 'credentials', 'grupos', 'adicionar', 'sessao'].includes(
-      route,
-    ) &&
+    ['equipment', 'credentials', 'grupos', 'adicionar'].includes(route) &&
     (!closedAt ||
       closedAt.request !== expandRequest ||
       closedAt.title !== detailTitle);
@@ -101,6 +100,11 @@ export function Sidebar({
           </a>
         </div>
       )}
+      <PPPMenuLink
+        route={route}
+        navigate={(e) => navigateTo(e, 'pppoe')}
+        open={() => p.navigate('pppoe')}
+      />
     </nav>
   );
 }
@@ -184,6 +188,31 @@ function SidebarBrand({ connected }: { connected: boolean }) {
         <ProductBrand />
       </div>
       <NetworkBadge connected={connected} />
+    </>
+  );
+}
+
+function PPPMenuLink({
+  route,
+  navigate,
+  open,
+}: {
+  route: RouteName;
+  navigate: (event: React.MouseEvent) => void;
+  open: () => void;
+}) {
+  const expanded = route === 'pppoe' || route === 'sessao';
+  return (
+    <>
+      <a
+        href="#ppp/sessoes"
+        className={'grp ' + (expanded ? 'open' : '')}
+        aria-expanded={expanded}
+        onClick={navigate}
+      >
+        PPP
+      </a>
+      {expanded && <PPPMenuLinks navigate={open} />}
     </>
   );
 }

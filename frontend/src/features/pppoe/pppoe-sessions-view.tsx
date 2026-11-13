@@ -158,6 +158,7 @@ function renderPPPoESessionRow(
           {row.login || 'Não informado nesta leitura'}
         </Button>
       </td>
+      <td>{row.client || '—'}</td>
       <td>{row.address || 'Não informado nesta leitura'}</td>
       {SessionPlanCell({ row, fastTrack: p.fastTrack })}
       <td>{row.state === 'OFFLINE' ? '—' : formatRate(row.download)}</td>
@@ -180,6 +181,7 @@ function renderPPPoESessionRow(
           open={p.openEquipment}
         />
       </td>
+      <td>{row.mtu ?? 'Não informado nesta leitura'}</td>
       {optionalSessionCells(row)}
     </tr>
   );
@@ -189,13 +191,13 @@ export function PPPoESessionsTable(p: SessionsTableProps) {
     return <LiveSessionsTable {...p} device={p.device} />;
   return <SessionsTable {...p} />;
 }
-type PageSample = {
+export type PageSample = {
   key: string;
   result?: PPReadResult;
   age: number;
   error: string;
 };
-function SessionPageSampler(
+export function SessionPageSampler(
   p: SessionsTableProps & {
     device: Device;
     sampleKey: string;
@@ -258,6 +260,9 @@ function SessionsTable(p: SessionsTableProps) {
           'upload',
           'uptime',
           'state',
+          'vlan',
+          'service',
+          'mtu',
           'linked_device',
         ]}
       >
@@ -265,6 +270,7 @@ function SessionsTable(p: SessionsTableProps) {
           <tr>
             {[
               ['login', 'Usuário'],
+              ['client', 'Cliente'],
               ['address', 'IP'],
               ['plan', 'Plano'],
               ['download', 'Download'],
@@ -272,6 +278,9 @@ function SessionsTable(p: SessionsTableProps) {
               ['uptime', 'Conectado há'],
               ['state', 'Estado'],
               ['linked_device', 'CPE'],
+              ['mtu', 'MTU'],
+              ['linked_ap', 'AP'],
+              ['absent_end', 'Desconectou em'],
               ['caller_id', 'Caller ID'],
               ['vlan', 'VLAN'],
               ['service', 'Serviço'],
@@ -299,6 +308,8 @@ function SessionsTable(p: SessionsTableProps) {
 function optionalSessionCells(row: PPRow) {
   return (
     <>
+      <td>{row.linked_ap_name || '—'}</td>
+      <td>{row.absent_end ? formatDate(row.absent_end) : '—'}</td>
       <td>{row.caller_id || '—'}</td>
       <td>{row.context?.vlan ?? '—'}</td>
       <td>{row.context?.service || '—'}</td>

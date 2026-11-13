@@ -17,7 +17,10 @@ func sessionTableSearch(body string) string {
 	if row.State == "" {
 		row.State = "ONLINE"
 	}
-	parts := []string{row.Login, row.Address, row.Caller, row.SessionID, row.State}
+	parts := []string{row.Login, row.Address, row.Caller, row.SessionID, row.State, row.Client}
+	if row.MTU != nil {
+		parts = append(parts, strconv.FormatUint(*row.MTU, 10))
+	}
 	if row.State != "OFFLINE" && row.Uptime.Known {
 		parts = append(parts, tableDuration(row.Uptime.Min))
 	}

@@ -21,7 +21,11 @@ export function PPPoEHeader({
           ['radius', 'RADIUS'],
         ]
       : [
-          ['sessions', 'Lista'],
+          ['sessions', 'Sessões'],
+          ['servers', 'Servidores PPPoE'],
+          ['secrets', 'Cadastros'],
+          ['profiles', 'Planos'],
+          ['l2tp', 'L2TP Secrets'],
           ['compare', 'Comparação'],
           ['references', 'Referências'],
         ];
@@ -50,7 +54,7 @@ export function PPPoEHeader({
         </HeaderAction>
       )}
       <Tabs
-        label={section === 'services' ? 'Serviços' : 'Sessões'}
+        label={section === 'services' ? 'Serviços' : 'PPP'}
         sub
         items={items}
         value={s.tab}

@@ -43,13 +43,7 @@ export type Props = ReturnType<typeof useEquipmentState> & {
   onBackReady?: (back?: () => void) => void;
 };
 const TABS: Record<string, string[]> = {
-  concentrator: [
-    'Resumo',
-    'Sessões',
-    'Interfaces e saúde',
-    'Serviços',
-    'Acesso',
-  ],
+  concentrator: ['Resumo', 'PPP', 'Interfaces e saúde', 'Serviços', 'Acesso'],
   [RadioRoles.ap]: ['Resumo', 'Clientes', 'Rádio', 'Interfaces', 'Acesso'],
   [RadioRoles.cpe]: ['Resumo', 'Enlace', 'Cliente', 'Roteador', 'Acesso'],
   [RadioRoles.ptp]: ['Resumo', 'Enlace', 'Acesso'],
@@ -140,7 +134,19 @@ function HealthTab({ p }: { p: Props }) {
     </>
   );
 }
-function SheetContent({ p, tab }: { p: Props; tab: string }) {
+function SheetContent({
+  p,
+  tab,
+  onTab,
+  pppTab,
+  onPPP,
+}: {
+  p: Props;
+  tab: string;
+  onTab: (tab: string) => void;
+  pppTab: import('../../features/pppoe/pppoe-state').PPPoETab;
+  onPPP: (tab: import('../../features/pppoe/pppoe-state').PPPoETab) => void;
+}) {
   if (tab === 'Acesso') return <AccessTab p={p} />;
   if (tab === 'Resumo' && driverOwners[p.selected.role || ''])
     return (
@@ -154,16 +160,25 @@ function SheetContent({ p, tab }: { p: Props; tab: string }) {
         }}
       />
     );
-  if (tab === 'Resumo') return <SummaryTab p={p} />;
+  if (tab === 'Resumo')
+    return (
+      <SummaryTab
+        p={p}
+        onSessions={() => onPPP('sessions')}
+        onServers={() => onPPP('servers')}
+        onAccess={() => onTab('Acesso')}
+      />
+    );
   if (tab === 'Interfaces e saúde') return <HealthTab p={p} />;
-  if (tab === 'Sessões' || tab === 'Serviços')
+  if (tab === 'PPP' || tab === 'Serviços')
     return (
       <PPPoE
         key={tab}
+        initialTab={tab === 'PPP' ? pppTab : undefined}
         profile={p.profile}
         activation={p.activation}
         device={p.selected}
-        section={tab === 'Sessões' ? 'sessions' : 'services'}
+        section={tab === 'PPP' ? 'sessions' : 'services'}
         sessionTarget={p.sessionTarget}
         onSessionConsumed={() => p.setSessionTarget(undefined)}
         refreshAvailable={
@@ -186,10 +201,12 @@ function SheetContent({ p, tab }: { p: Props; tab: string }) {
 }
 export function EquipmentDetailPane(p: Props) {
   const sessionRoute = useContext(SessionRoute);
+  const [pppTab, setPPPTab] =
+    useState<import('../../features/pppoe/pppoe-state').PPPoETab>('sessions');
   const { detailSurfaceRef } = p;
   const [tab, setTab] = useState(
     p.sessionTarget?.deviceID === p.selected.id
-      ? 'Sessões'
+      ? 'PPP'
       : sessionRoute?.returnOrigin === p.selected.id
         ? 'Cliente'
         : 'Resumo',
@@ -261,12 +278,22 @@ export function EquipmentDetailPane(p: Props) {
             actionHost={radioActions}
             chainHost={chainHost}
             devices={p.devices}
+            onAccess={() => setTab('Acesso')}
             openEquipment={p.openById}
             openSession={p.openSession}
           />
         )}
         {(!isRadio || tab === 'Acesso' || tab === 'Roteador') && (
-          <SheetContent p={p} tab={tab} />
+          <SheetContent
+            p={p}
+            tab={tab}
+            onTab={setTab}
+            pppTab={pppTab}
+            onPPP={(sub) => {
+              setPPPTab(sub);
+              setTab('PPP');
+            }}
+          />
         )}
       </HeaderActionHost>
     </section>

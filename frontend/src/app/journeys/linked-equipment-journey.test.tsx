@@ -123,7 +123,7 @@ it('Cliente da CPE lê o login na última observação e abre a tela da sessão 
   expect(
     await screen.findByRole('heading', { name: 'Concentrador sintético' }),
   ).toBeVisible();
-  expect(screen.getByRole('tab', { name: 'Sessões' })).toHaveAttribute(
+  expect(screen.getByRole('tab', { name: 'PPP' })).toHaveAttribute(
     'aria-selected',
     'true',
   );

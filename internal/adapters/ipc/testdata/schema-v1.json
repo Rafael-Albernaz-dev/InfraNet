@@ -626,6 +626,14 @@
       "history_reason",
       "history_days",
       "cursor"
+    ],
+    "pppoe.ppp-list": [
+      "device_id",
+      "ppp_query",
+      "cursor"
+    ],
+    "pppoe.summary": [
+      "device_id"
     ]
   },
   "pppoe": {

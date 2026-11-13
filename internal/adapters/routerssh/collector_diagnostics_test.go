@@ -27,6 +27,7 @@ func diagnosticCommands(t *testing.T) map[string]string {
 	out := map[string]string{"IdentityCommand": deviceparse.IdentityCommand,
 		"ResourceCommand": deviceparse.ResourceCommand, "InterfacesCommand": deviceparse.InterfacesCommand,
 		"PulseCountersCommand": pppoeparse.PulseCountersCommand,
+		"PPPCatalogCommand":    pppoeparse.PPPCatalogCommand,
 		"PPPoECommand":         pppoeparse.PPPoECommand, "PPContextCommand": pppoeparse.PPContextCommand,
 		"PDCatalogCommand": pppoeparse.PDCatalogCommand, "PDRadiusCommand": pppoeparse.PDRadiusCommand,
 		"PPHealthFirstCommand": pppoeparse.PPHealthFirstCommand, "PPHealthCommand": pppoeparse.PPHealthCommand,

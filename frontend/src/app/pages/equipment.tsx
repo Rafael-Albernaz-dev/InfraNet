@@ -1,3 +1,4 @@
+import { PPPMenu } from '../../features/pppoe/ppp-menu';
 import { EquipmentGroups } from '../../features/equipment/equipment-groups';
 import {
   EquipmentBanners,
@@ -27,6 +28,7 @@ function EquipmentCapabilityBody({
   primaryInHeader: boolean;
   credentialsPage?: boolean;
   groupsPage?: boolean;
+  pppPage?: boolean;
   addPage?: boolean;
   onAdd?: () => void;
   onAddBack?: () => void;
@@ -37,6 +39,9 @@ function EquipmentCapabilityBody({
 }) {
   const { s, profile, activation, connected, primaryInHeader, locked } = p;
   const adding = p.addPage;
+  const session = useContext(SessionRoute);
+  const ppp = p.pppPage || session?.target?.originPPP;
+  if (ppp) return <EquipmentPPPBody {...p} setSurface={setSurface} />;
   return (
     <div className="equipment-capability" ref={setSurface}>
       <EquipmentBanners s={s} locked={locked} trustOpen={p.trustOpen} />
@@ -143,6 +148,7 @@ export type EquipmentProps = {
   primaryInHeader?: boolean;
   credentialsPage?: boolean;
   groupsPage?: boolean;
+  pppPage?: boolean;
   addPage?: boolean;
   onAdd?: () => void;
   onAddBack?: () => void;
@@ -231,6 +237,7 @@ function EquipmentContext(props: EquipmentProps) {
       primaryInHeader={primaryInHeader}
       credentialsPage={props.credentialsPage}
       groupsPage={props.groupsPage}
+      pppPage={props.pppPage}
       addPage={adding}
       onAdd={props.onAdd}
       onAddBack={() => {
@@ -242,5 +249,23 @@ function EquipmentContext(props: EquipmentProps) {
       trustOpen={trustOpen}
       onBackReady={props.onBackReady}
     />
+  );
+}
+
+function EquipmentPPPBody(p: Parameters<typeof EquipmentCapabilityBody>[0]) {
+  const { s, profile, activation, connected, locked, setSurface } = p;
+  return (
+    <div className="equipment-capability" ref={setSurface}>
+      <EquipmentBanners s={s} locked={locked} trustOpen={p.trustOpen} />
+      <PPPMenu
+        profile={profile}
+        activation={activation}
+        devices={s.devices}
+        available={connected && s.vault && !locked}
+        openEquipment={s.openById}
+      />
+      <EquipmentJobProgress s={s} profile={profile} activation={activation} />
+      <EquipmentDialogs {...p} />
+    </div>
   );
 }

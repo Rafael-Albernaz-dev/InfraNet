@@ -143,15 +143,15 @@ it('Resumo abre pelo StartQuery e mantém identidade, idade e motivo na falha', 
     'active',
     device.id,
   ]);
-  const block = (await screen.findByText('Identidade e sistema')).closest(
-    '[data-state]',
-  )!;
+  const block = (
+    await screen.findByText('Equipamento', { selector: '.bh > b' })
+  ).closest('[data-state]')!;
   expect(block).toHaveAttribute('data-state', 'refreshing');
   expect(
     within(block as HTMLElement).getByText('Resumo preservado'),
   ).toBeVisible();
   await waitFor(() => expect(block).toHaveAttribute('data-state', 'failed'));
-  expect(screen.getAllByRole('alert')).toHaveLength(1);
+  expect(within(block as HTMLElement).getAllByRole('alert')).toHaveLength(1);
   expect(block).toHaveTextContent('Resumo preservado');
   expect(block).toHaveTextContent(/porta SSH/);
   expect(block).toHaveTextContent(/há/);
@@ -161,13 +161,13 @@ it('Sessões abre a projeção do serviço e duas aberturas não iniciam coleta 
   const { device, bindings } = fixtures();
   show(device);
   await screen.findByRole('heading', { name: device.name });
-  fireEvent.click(screen.getByRole('tab', { name: 'Sessões' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'PPP' }));
   await waitFor(() =>
     expect(bindings.StartPPPoECollection).not.toHaveBeenCalled(),
   );
   expect(await screen.findByText('cliente-sintético')).toBeVisible();
   fireEvent.click(screen.getByRole('tab', { name: 'Comparação' }));
-  fireEvent.click(screen.getByRole('tab', { name: 'Lista' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Sessões' }));
   await screen.findByText('cliente-sintético');
   expect(bindings.StartPPPoECollection).not.toHaveBeenCalled();
   expect(bindings.StartQuery).not.toHaveBeenCalled();
@@ -265,7 +265,7 @@ it('não inicia outra coleta quando a leitura PPPoE está em curso, mesmo com te
   );
   show(device);
   await screen.findByRole('heading', { name: device.name });
-  fireEvent.click(screen.getByRole('tab', { name: 'Sessões' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'PPP' }));
   await screen.findByText('cliente-sintético');
   expect(bindings.StartPPPoECollection).not.toHaveBeenCalled();
 });

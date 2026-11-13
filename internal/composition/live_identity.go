@@ -12,14 +12,16 @@ import (
 
 type identityReadSession struct {
 	pulse.ReadSession
-	inventory liveInventory
-	profile   string
-	target    equipment.PPTarget
-	previous  []equipment.PPTunnel
-	clock     *inventory.Service
+	inventory           liveInventory
+	profile             string
+	target              equipment.PPTarget
+	previous            []equipment.PPTunnel
+	previousObservation *equipment.PPObservation
+	clock               *inventory.Service
 }
 
 func (s *identityReadSession) Read(ctx context.Context, target pulse.ReadTarget) (pulse.Reading, pulse.ReadFault) {
+	s.seedSessionContext(ctx)
 	reading, fault := s.ReadSession.Read(ctx, target)
 	if fault != pulse.ReadOK {
 		if s.markGap(ctx) != equipment.OK {
@@ -53,6 +55,9 @@ func (s *identityReadSession) Read(ctx context.Context, target pulse.ReadTarget)
 		}
 	}
 	s.previous = reading.Tunnels
+	if reading.Observation != nil {
+		s.previousObservation = reading.Observation
+	}
 	if current.Identity == reading.Identity {
 		return reading, fault
 	}
@@ -144,5 +149,6 @@ func (s *identityReadSession) prepareSessions(reading *pulse.Reading) {
 		tunnel.Login, tunnel.Caller, tunnel.Address = r.Login, r.Caller, r.Address
 		tunnel.Uptime, tunnel.RouterUptime, tunnel.Sample = r.Uptime, o.Provenance.RouterUptime, sample
 	}
+	pppoe.CarryObservationContext(s.previousObservation, o)
 	pppoe.AverageSessions(o.Rows, s.previous, reading.Tunnels)
 }

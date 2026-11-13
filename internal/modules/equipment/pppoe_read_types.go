@@ -27,6 +27,7 @@ type PPContext struct {
 }
 
 type PPTunnel struct {
+	MTU                              *uint64
 	ID, Name, Login, Caller, Address string
 	Uptime                           PPInterval
 	Context                          PPContext
@@ -136,6 +137,7 @@ type PPSecretEvidence struct {
 }
 
 type PPReadRow struct {
+	Entry      *PPPEntry              `json:"entry,omitempty"`
 	Duplicate  *PPCrossDuplicate      `json:"duplicate,omitempty"`
 	Port       *DevicePort            `json:"port,omitempty"`
 	BeforePort *DevicePort            `json:"before_port,omitempty"`
@@ -179,6 +181,7 @@ type PPReadCost struct {
 }
 
 type PPReadResult struct {
+	CatalogLimited    bool              `json:"catalog_limited,omitempty"`
 	FailureReason     string            `json:"-"`
 	VersionDivergence *bool             `json:"version_divergence,omitempty"`
 	PackageDivergence *bool             `json:"package_divergence,omitempty"`

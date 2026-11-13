@@ -61,6 +61,9 @@ type PPQuality struct {
 	MembershipChecked bool   `json:"membership_checked"`
 }
 type PPRow struct {
+	LinkedAPName     string     `json:"linked_ap_name,omitempty"`
+	Client           string     `json:"client,omitempty"`
+	MTU              *uint64    `json:"mtu,omitempty"`
 	Download         *PPRate    `json:"download,omitempty"`
 	Upload           *PPRate    `json:"upload,omitempty"`
 	LinkedDeviceName string     `json:"linked_device_name,omitempty"`
@@ -80,6 +83,7 @@ type PPRow struct {
 }
 
 type PPObservation struct {
+	ContextReadAt  string       `json:"context_read_at,omitempty"`
 	ContextOmitted bool         `json:"context_omitted,omitempty"`
 	Online         int          `json:"online"`
 	Offline        int          `json:"offline"`
@@ -129,30 +133,31 @@ type PPQuery struct {
 	Category   string `json:"category,omitempty"`
 }
 type PPInput struct {
-	HistoryGeneration    string   `json:"-"`
-	Login                string   `json:"login,omitempty"`
-	HistoryReason        string   `json:"history_reason,omitempty"`
-	HistoryDays          int      `json:"history_days,omitempty"`
-	MonitoringGeneration string   `json:"-"`
-	RowIDs               []string `json:"row_ids,omitempty"`
-	Scope                string   `json:"scope,omitempty"`
-	DiagnosticID         string   `json:"diagnostic_id,omitempty"`
-	WorkerEpoch          string   `json:"-"`
-	SavedAt              string   `json:"-"`
-	ExportPart           string   `json:"export_part,omitempty"`
-	DeviceID             string   `json:"device_id,omitempty"`
-	Revision             uint64   `json:"revision,omitempty"`
-	Operation            string   `json:"operation_id,omitempty"`
-	JobID                string   `json:"job_id,omitempty"`
-	ObservationID        string   `json:"observation_id,omitempty"`
-	RowID                string   `json:"row_id,omitempty"`
-	ReferenceID          string   `json:"reference_id,omitempty"`
-	BaseID               string   `json:"base_id,omitempty"`
-	TargetID             string   `json:"target_id,omitempty"`
-	Query                *PPQuery `json:"query,omitempty"`
-	Cursor               string   `json:"cursor,omitempty"`
-	ExportKey            string   `json:"export_key,omitempty"`
-	Offset               int      `json:"-"`
+	PPPQuery             *PPPQuery `json:"ppp_query,omitempty"`
+	HistoryGeneration    string    `json:"-"`
+	Login                string    `json:"login,omitempty"`
+	HistoryReason        string    `json:"history_reason,omitempty"`
+	HistoryDays          int       `json:"history_days,omitempty"`
+	MonitoringGeneration string    `json:"-"`
+	RowIDs               []string  `json:"row_ids,omitempty"`
+	Scope                string    `json:"scope,omitempty"`
+	DiagnosticID         string    `json:"diagnostic_id,omitempty"`
+	WorkerEpoch          string    `json:"-"`
+	SavedAt              string    `json:"-"`
+	ExportPart           string    `json:"export_part,omitempty"`
+	DeviceID             string    `json:"device_id,omitempty"`
+	Revision             uint64    `json:"revision,omitempty"`
+	Operation            string    `json:"operation_id,omitempty"`
+	JobID                string    `json:"job_id,omitempty"`
+	ObservationID        string    `json:"observation_id,omitempty"`
+	RowID                string    `json:"row_id,omitempty"`
+	ReferenceID          string    `json:"reference_id,omitempty"`
+	BaseID               string    `json:"base_id,omitempty"`
+	TargetID             string    `json:"target_id,omitempty"`
+	Query                *PPQuery  `json:"query,omitempty"`
+	Cursor               string    `json:"cursor,omitempty"`
+	ExportKey            string    `json:"export_key,omitempty"`
+	Offset               int       `json:"-"`
 }
 
 type PPDeltaSession struct {
@@ -191,6 +196,10 @@ type PPGroup struct {
 	Count   int    `json:"count"`
 }
 type PPView struct {
+	Entries              []PPPEntry          `json:"entries,omitempty"`
+	CatalogDates         map[string]string   `json:"catalog_dates,omitempty"`
+	CatalogLimited       bool                `json:"catalog_limited,omitempty"`
+	Summary              *PPPSummary         `json:"summary,omitempty"`
 	HistoryGeneration    string              `json:"-"`
 	History              []PPSessionHistory  `json:"history,omitempty"`
 	Options              map[string][]string `json:"options,omitempty"`

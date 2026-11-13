@@ -50,6 +50,9 @@ func dispatchDirectReadScope(
 	d, user, secret, scope, target := options.device, options.user, options.secret, options.scope, options.target
 	options.secret = ""
 	switch scope {
+	case equipment.PPPCatalogScope:
+		res, c := readPPPCatalog(ctx, options, check)
+		return true, res, c
 	case "operations":
 		res, c := readDeviceOperational(ctx, d, user, secret, check)
 		return true, res, c

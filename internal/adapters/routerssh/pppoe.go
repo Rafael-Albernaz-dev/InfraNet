@@ -13,11 +13,12 @@ import (
 )
 
 type ppConnection struct {
-	legacy  []string
-	run     func(string) (string, equipment.Code)
-	close   func()
-	tighten func(int)
-	metrics func() (int, int)
+	catalogBudget func()
+	legacy        []string
+	run           func(string) (string, equipment.Code)
+	close         func()
+	tighten       func(int)
+	metrics       func() (int, int)
 }
 
 func openPPConnection(ctx context.Context,
@@ -65,7 +66,10 @@ func openPPConnection(ctx context.Context,
 	budget := &outputBudget{conn: conn}
 	commands := 0
 	runner := &ppCommandRunner{ctx: ctx, client: client, budget: budget, check: check, commands: &commands}
-	return &ppConnection{legacy: legacyNegotiated(cc),
+	return &ppConnection{catalogBudget: func() {
+		budget.maximum = equipment.PPPCatalogBytes
+		budget.limit = equipment.PPPCatalogBytes
+	}, legacy: legacyNegotiated(cc),
 		run:     runner.run,
 		metrics: runner.metrics,
 		close: func() {
@@ -134,6 +138,7 @@ func enrichPPObservation(
 ) (*equipment.PPObservation, equipment.Code) {
 	// Optional enrichment shares this connection's cumulative SSH budget.
 	// Failure never invents a join or discards the complete active reading.
+	o.ContextReadAt = equipment.PPTime(time.Now())
 	enriched, code := connection.run(pppoeparse.PPContextCommand)
 	if c := check(); c != equipment.OK {
 		return nil, c

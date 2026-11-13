@@ -68,7 +68,7 @@ func TestPPPoEBindingExportAndContext(t *testing.T) {
 			t.Error(e)
 		}
 	}()
-	s := &ppExportJourney{root: root}
+	s := &ppExportJourney{root: root, store: st}
 	defer func() {
 		if s.peer != nil {
 			s.peer.Close()
@@ -81,11 +81,13 @@ func TestPPPoEBindingExportAndContext(t *testing.T) {
 	s.assertSanitizedAndTargetOnly(t)
 	csvRaw, records, csvPath := s.readOperationalCSV(t)
 	s.assertOperationalCSV(t, csvRaw, records, csvPath)
+	s.assertGlobalExports(t, records[1][0])
 	s.assertOperationalGuards(t)
 	s.assertReplacementAndLogout(t)
 }
 
 type ppExportJourney struct {
+	store                     *storage.Store
 	root, profile, activation string
 	app                       *App
 	d                         DeviceInput
@@ -122,8 +124,9 @@ func (s *ppExportJourney) setupAccountAndPeer(t *testing.T, uid uint32) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	s.d = DeviceInput{ID: uuid.NewString(), Operation: uuid.NewString(), Name: "Saved router", Address: "127.0.0.1",
-		Port: s.peer.Port(), Transport: string(equipment.TransportSSH), User: "reader", Secret: sshfixture.Password}
+	s.d = DeviceInput{ID: uuid.NewString(), Operation: uuid.NewString(), Name: "Saved router", Role: string(equipment.RoleConcentrator),
+		Address: "127.0.0.1",
+		Port:    s.peer.Port(), Transport: string(equipment.TransportSSH), User: "reader", Secret: sshfixture.Password}
 	s.enrollAndInspect(t)
 }
 

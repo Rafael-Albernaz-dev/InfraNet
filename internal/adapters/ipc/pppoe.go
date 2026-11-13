@@ -17,6 +17,8 @@ import (
 )
 
 var ppFields = map[string][]string{
+	"pppoe.ppp-list":        {"device_id", "ppp_query", "cursor"},
+	"pppoe.summary":         {"device_id"},
 	"pppoe.session-history": {"device_id", "login", "history_reason", "history_days", "cursor"},
 	"pppoe.monitor-current": {"device_id", "scope", "cursor"},
 	"pppoe.read-start":      {"device_id", "revision", "operation_id", "scope", "observation_id", "row_ids"},
@@ -104,7 +106,7 @@ func (s *Server) ppOffset(q Request) (int, bool) {
 		return 0, false
 	}
 	n, e := strconv.Atoi(f[0])
-	if e != nil || n < 0 || (n > 4096 && q.Op != "pppoe.session-history") {
+	if e != nil || n < 0 || (n > 4096 && q.Op != "pppoe.session-history" && q.Op != "pppoe.ppp-list") {
 		return 0, false
 	}
 	expected := s.ppCursor(q, n)

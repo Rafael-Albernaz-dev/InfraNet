@@ -1,0 +1,6 @@
+P	1
+secret	*1	=ana	=pppoe	=100M	=true	=SGP: Ana	=	=	?	=	=	=
+secret	*2	=vpn	=l2tp	=default	=false	=	=	=192.0.2.2	=nov/13/2026 09:00:00	=	=	=192.0.2.1
+profile	*3	=100M	=20M/100M	=192.0.2.1	=pool	=yes
+server	*4	=painel-04	=vlan1004	=false	=true	=1492	=1492	=100M	=pap,chap
+Z	4	false

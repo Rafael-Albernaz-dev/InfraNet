@@ -16,7 +16,7 @@ func equipmentFrameLimit(op string) int {
 	return MaxFrame
 }
 func isTablePage(op string) bool {
-	return op == "pppoe.read-status" ||
+	return op == "pppoe.ppp-list" || op == "pppoe.read-status" ||
 		op == "pppoe.read-page" ||
 		op == "pppoe.session-history" ||
 		op == "inventory.list" ||

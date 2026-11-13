@@ -298,7 +298,7 @@ it('mantém o percurso de conta, empresa, cadastro, credencial, ficha e sessão 
     'Interfaces e saúde',
     'Serviços',
     'Acesso',
-    'Sessões',
+    'PPP',
   ]) {
     fireEvent.click(await screen.findByRole('tab', { name: tab }));
     expect(screen.getByRole('tab', { name: tab })).toHaveAttribute(

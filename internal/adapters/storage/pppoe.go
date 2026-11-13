@@ -207,7 +207,8 @@ func (s *Store) PPSession(ctx context.Context, company string, in equipment.PPIn
 		return v, c
 	}
 	var b string
-	query := "SELECT row_json FROM pppoe_row_values WHERE observation_id=? AND row_id=?"
+	query := "SELECT json_set(r.row_json,'$.client',COALESCE(" + ppClientColumn +
+		",'')) FROM pppoe_row_values r WHERE observation_id=? AND row_id=?"
 	if s.unit.QueryRowContext(ctx, query, in.ObservationID, in.RowID).Scan(&b) != nil {
 		return v, equipment.ObservationMissing
 	}

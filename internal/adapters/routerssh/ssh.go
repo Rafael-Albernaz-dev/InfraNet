@@ -22,6 +22,7 @@ var errInspect = errors.New("inspection complete before authentication")
 
 type Adapter struct{}
 type outputBudget struct {
+	maximum  int
 	mu       sync.Mutex
 	n        int
 	limit    int
@@ -37,6 +38,9 @@ func (w *limitedOutput) Write(b []byte) (int, error) {
 	w.budget.mu.Lock()
 	defer w.budget.mu.Unlock()
 	limit := MaxOutput
+	if w.budget.maximum > 0 {
+		limit = w.budget.maximum
+	}
 	if w.budget.limit > 0 && w.budget.limit < limit {
 		limit = w.budget.limit
 	}

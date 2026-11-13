@@ -169,7 +169,7 @@ it('recusa gravada no equipamento sobrevive a reiniciar: AP não tenta sozinho',
 it('consulta em curso: abrir Sessões não dispara coleta nem erro falso', async () => {
   const { bindings } = concentrator(61);
   await waitFor(() => expect(bindings.StartQuery).toHaveBeenCalledOnce());
-  fireEvent.click(await screen.findByRole('tab', { name: 'Sessões' }));
+  fireEvent.click(await screen.findByRole('tab', { name: 'PPP' }));
   await screen.findByText('cliente-sintético');
   await new Promise((resolve) => setTimeout(resolve, 50));
   expect(bindings.StartPPPoECollection).not.toHaveBeenCalled();
@@ -178,7 +178,7 @@ it('consulta em curso: abrir Sessões não dispara coleta nem erro falso', async
 
 it('coleta em curso: voltar ao Resumo não dispara consulta', async () => {
   const { device, current, bindings } = concentrator(0);
-  fireEvent.click(await screen.findByRole('tab', { name: 'Sessões' }));
+  fireEvent.click(await screen.findByRole('tab', { name: 'PPP' }));
   await waitFor(() => expect(bindings.GetPPPoECurrent).toHaveBeenCalled());
   device.result!.observed_at = at(61);
   bindings.GetPPPoECurrent.mockResolvedValue(
@@ -188,14 +188,14 @@ it('coleta em curso: voltar ao Resumo não dispara consulta', async () => {
     }) as never,
   );
   fireEvent.click(screen.getByRole('tab', { name: 'Resumo' }));
-  await screen.findByText('Identidade e sistema');
+  await screen.findByText('Equipamento', { selector: '.bh > b' });
   await new Promise((resolve) => setTimeout(resolve, 50));
   expect(bindings.StartQuery).not.toHaveBeenCalled();
 });
 
 it('Comparação não herda o filtro Estado da Lista', async () => {
   const { bindings } = concentrator(0);
-  fireEvent.click(await screen.findByRole('tab', { name: 'Sessões' }));
+  fireEvent.click(await screen.findByRole('tab', { name: 'PPP' }));
   await screen.findByText('cliente-sintético');
   const filter = sessionTable().getByRole('combobox', { name: 'Estado' });
   fireEvent.change(filter, { target: { value: 'OFFLINE' } });

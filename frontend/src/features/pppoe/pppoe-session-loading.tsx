@@ -12,7 +12,7 @@ export function SessionLoading(p: {
   error?: string;
   back: () => void;
 }) {
-  const [tab, setTab] = useState<SessionTab>('traffic');
+  const [tab, setTab] = useState<SessionTab>('information');
   return (
     <section
       className="session-screen"
@@ -38,8 +38,8 @@ export function SessionLoading(p: {
           <Tabs
             label="Detalhes da sessão"
             items={[
+              ['information', 'Resumo'],
               ['traffic', 'Tráfego'],
-              ['information', 'Informações'],
               ['link', 'Enlace'],
               ['history', 'Histórico'],
             ]}
@@ -47,7 +47,7 @@ export function SessionLoading(p: {
             onChange={p.onTab || setTab}
           />
           <div className="session-grid">
-            {['Informações', 'Tráfego'].map((title) => (
+            {['Resumo', 'Tráfego'].map((title) => (
               <DataBlock
                 key={title}
                 title={title}

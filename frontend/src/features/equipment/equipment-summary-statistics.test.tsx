@@ -1,9 +1,15 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { EquipmentSummaryStatistics } from './equipment-summary-statistics';
 import {
   deviceMonitoringAPI,
-  pppoeAPI,
+  pppCatalogAPI,
 } from '../../platform/wails/presentation';
 import type { Device } from './equipment-api';
 vi.mock('../../platform/wails/presentation', async () =>
@@ -11,20 +17,23 @@ vi.mock('../../platform/wails/presentation', async () =>
 );
 const device = { id: 'synthetic', revision: 1 } as Device;
 it('reabre projeção local após erro e não converte ausência de reinícios em zero', async () => {
-  vi.mocked(pppoeAPI.current)
+  vi.mocked(pppCatalogAPI.summary)
     .mockRejectedValueOnce(new Error('offline'))
     .mockResolvedValue({
       code: 'OK',
       profile_id: 'p',
       activation_id: 'a',
       data: {
-        total: 1,
-        current: {
-          observation_id: 'o',
-          count: 3,
+        total: 0,
+        summary: {
           online: 2,
-          provenance: { ended_at: new Date().toISOString() },
-          quality: { status: 'complete' },
+          offline: 1,
+          drops_today: 1,
+          plans: 1,
+          servers: 1,
+          invalid_servers: 0,
+          falling_servers: 0,
+          unlinked_servers: 1,
         },
       },
     });
@@ -37,12 +46,17 @@ it('reabre projeção local após erro e não converte ausência de reinícios e
   const view = render(
     <EquipmentSummaryStatistics profile="p" activation="a" device={device} />,
   );
-  await screen.findByRole('alert');
+  const clients = screen.getByText('Clientes').closest('.block') as HTMLElement;
+  await within(clients).findByRole('alert');
   expect(screen.queryByText('Nenhum reinício encontrado')).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+  fireEvent.click(
+    within(clients).getByRole('button', { name: 'Tentar novamente' }),
+  );
   await screen.findByText('2');
   expect(screen.queryByRole('alert')).toBeNull();
-  expect(screen.getByText('Ainda sem leitura')).toBeVisible();
+  expect(
+    screen.getAllByText('Não informado nesta leitura').length,
+  ).toBeGreaterThan(0);
   view.rerender(
     <EquipmentSummaryStatistics
       profile="other"
@@ -51,5 +65,5 @@ it('reabre projeção local após erro e não converte ausência de reinícios e
     />,
   );
   await waitFor(() => expect(screen.queryByText('2')).toBeNull());
-  expect(await screen.findAllByRole('alert')).toHaveLength(2);
+  expect(await screen.findAllByRole('alert')).toHaveLength(3);
 });

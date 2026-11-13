@@ -130,8 +130,8 @@ it('equipment summary and interfaces are separate, with a visible PPPoE path', a
   fireEvent.click(screen.getByRole('button', { name: 'VPNs e túneis' }));
   expect(screen.getByText('WG-VPN')).toBeVisible();
   expect(screen.queryByText('VLAN100')).not.toBeInTheDocument();
-  expect(screen.getByRole('tab', { name: 'Sessões' })).toBeVisible();
-  fireEvent.click(screen.getByRole('tab', { name: 'Sessões' }));
+  expect(screen.getByRole('tab', { name: 'PPP' })).toBeVisible();
+  fireEvent.click(screen.getByRole('tab', { name: 'PPP' }));
   await screen.findByText('Sessões PPPoE');
   fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
   expect(

@@ -1,6 +1,7 @@
 package pppoe
 
 import (
+	"infradesktop/internal/modules/equipment"
 	"math"
 	"sort"
 	"strconv"
@@ -74,7 +75,7 @@ func applyUniqueTunnelContexts(rows []PPRow, tunnels []PPTunnel, matches, uses [
 
 func PPReadScope(scope string) bool {
 	switch scope {
-	case "traffic", "operations", "bandwidth", "live", "top", "log", "health", "secret":
+	case "ppp-catalog", "traffic", "operations", "bandwidth", "live", "top", "log", "health", "secret":
 		return true
 	default:
 		return false
@@ -89,10 +90,18 @@ func PPReadBudget(scope string) time.Duration {
 }
 
 func PPReadWithinBudget(v *PPReadResult) bool {
-	if v == nil || len(v.Rows) > PPMaxRows {
+	limit := PPMaxRows
+	if v != nil && v.Scope == "ppp-catalog" {
+		limit = 4 * equipment.PPPMaxSecrets
+	}
+	if v == nil || len(v.Rows) > limit {
 		return false
 	}
-	if v.PayloadBytes <= 0 || v.PayloadBytes > PPObservationBytes {
+	payloadLimit := PPObservationBytes
+	if v.Scope == equipment.PPPCatalogScope {
+		payloadLimit = equipment.PPPCatalogBytes
+	}
+	if v.PayloadBytes <= 0 || v.PayloadBytes > payloadLimit {
 		return false
 	}
 	if v.MaxRowBytes < 0 || v.MaxRowBytes > PPRowBytes || (len(v.Rows) > 0 && v.MaxRowBytes <= 0) {

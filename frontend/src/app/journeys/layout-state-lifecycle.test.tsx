@@ -96,8 +96,8 @@ async function showSheet(bindings = localBindings()) {
 }
 it('troca diretamente Sessões → Serviços → Sessões com conteúdo e subaba da seção atual', async () => {
   await showSheet();
-  fireEvent.click(screen.getByRole('tab', { name: 'Sessões' }));
-  expect(await screen.findByRole('tab', { name: 'Lista' })).toHaveAttribute(
+  fireEvent.click(screen.getByRole('tab', { name: 'PPP' }));
+  expect(await screen.findByRole('tab', { name: 'Sessões' })).toHaveAttribute(
     'aria-selected',
     'true',
   );
@@ -105,15 +105,15 @@ it('troca diretamente Sessões → Serviços → Sessões com conteúdo e subaba
   expect(
     await screen.findByRole('tab', { name: 'VLANs e serviços' }),
   ).toHaveAttribute('aria-selected', 'true');
-  fireEvent.click(screen.getByRole('tab', { name: 'Sessões' }));
-  expect(await screen.findByRole('tab', { name: 'Lista' })).toHaveAttribute(
+  fireEvent.click(screen.getByRole('tab', { name: 'PPP' }));
+  expect(await screen.findByRole('tab', { name: 'Sessões' })).toHaveAttribute(
     'aria-selected',
     'true',
   );
 });
 it('mantém Parar disponível em Referências e cancela o mesmo job sem nova coleta', async () => {
   const bindings = await showSheet();
-  fireEvent.click(screen.getByRole('tab', { name: 'Sessões' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'PPP' }));
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'Atualizar' })).toBeEnabled(),
   );
@@ -143,10 +143,18 @@ it('mantém o motivo de falha de rádio junto da leitura anterior', async () => 
   );
   await screen.findByText('Modelo');
   fireEvent.click(screen.getByRole('button', { name: 'Atualizar' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent(/recus/i);
+  expect(
+    await within(
+      screen
+        .getByText('Equipamento', { selector: '.bh > b' })
+        .closest('.block') as HTMLElement,
+    ).findByRole('alert'),
+  ).toHaveTextContent(/recus/i);
   expect(screen.getByText('Modelo')).toBeVisible();
   expect(
-    screen.getByText('Identidade e sistema').closest('[data-state]'),
+    screen
+      .getByText('Equipamento', { selector: '.bh > b' })
+      .closest('[data-state]'),
   ).toHaveAttribute('data-state', 'failed');
 });
 it('conserva a seleção manual por teclado quando copiar o código falha', async () => {
@@ -179,7 +187,9 @@ for (const [reason, change, vault] of [
 ] as const) {
   it(`mantém a mesma recusa de início no cabeçalho e no bloco ${reason}`, async () => {
     const bindings = await showSheet(localBindings(change, vault));
-    const block = screen.getByText('Identidade e sistema').closest('.block')!;
+    const block = screen
+      .getByText('Equipamento', { selector: '.bh > b' })
+      .closest('.block')!;
     expect(
       within(block as HTMLElement).getByRole('button', { name: 'Atualizar' }),
     ).toBeDisabled();
@@ -188,7 +198,9 @@ for (const [reason, change, vault] of [
 }
 it('permite a leitura explícita pelo bloco quando cofre, atividade e credencial estão presentes', async () => {
   const bindings = await showSheet();
-  const block = screen.getByText('Identidade e sistema').closest('.block')!;
+  const block = screen
+    .getByText('Equipamento', { selector: '.bh > b' })
+    .closest('.block')!;
   fireEvent.click(
     within(block as HTMLElement).getByRole('button', { name: 'Atualizar' }),
   );

@@ -20,7 +20,7 @@ func (s *Service) HandlePP(ctx context.Context, q Command, in PPInput) (PPView, 
 	v := PPView{}
 	c := s.inv.Authorized(ctx, q, func(version uint64) Code {
 		q.Authority = version
-		return s.dispatchAuthorizedPP(ctx, q, in, &v)
+		return s.dispatchPPP(ctx, q, in, &v)
 	})
 	return v, c
 }
@@ -358,4 +358,17 @@ func (s *Service) ppLoad(
 		return nil, Unavailable
 	}
 	return o, OK
+}
+
+func (s *Service) dispatchPPP(ctx context.Context, q Command, in PPInput, v *PPView) Code {
+	switch q.Op {
+	case "pppoe.ppp-list":
+		if in.Offset < 0 {
+			return Invalid
+		}
+		return s.handlePPPList(ctx, q, in, v)
+	case "pppoe.summary":
+		return s.handlePPPSummary(ctx, q, in, v)
+	}
+	return s.dispatchAuthorizedPP(ctx, q, in, v)
 }

@@ -1,3 +1,4 @@
+import { RadioSummary } from './radio-summary';
 import type { ReactNode } from 'react';
 import { Fragment } from 'react';
 import { useDisplayNow } from '../equipment/equipment-snapshot';
@@ -186,6 +187,7 @@ export function RadioEquipmentView({
   pagination,
 }: ViewProps) {
   const now = useDisplayNow();
+  if (tab === 'Resumo') return <RadioSummary state={state} />;
   const content = (
     <RadioEquipmentBody
       state={state}

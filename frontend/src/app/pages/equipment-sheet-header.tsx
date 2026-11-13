@@ -41,7 +41,7 @@ function EquipmentHeaderActions({
 }: HeaderProps) {
   if (!p.selected.fingerprint || driverOwners[p.selected.role || ''])
     return null;
-  if (isRadio || tab === 'Sessões' || tab === 'Serviços')
+  if (isRadio || tab === 'PPP' || tab === 'Serviços')
     return <div ref={setRadioActions} className="actions header-actions" />;
   return (
     <Button

@@ -107,7 +107,8 @@ func (s *Store) PPPage(ctx context.Context, company string, in equipment.PPInput
 		}
 	}
 	args = append(args, size, in.Offset)
-	rows, e := s.unit.QueryContext(ctx, ppTableStatement("SELECT r.row_json,"+ppOnlineDuplicateCount+","+
+	rows, e := s.unit.QueryContext(ctx, ppTableStatement("SELECT json_set(r.row_json,'$.client',COALESCE("+
+		ppClientColumn+",''),'$.linked_ap_name',"+ppTableColumn("linked_ap")+"),"+ppOnlineDuplicateCount+","+
 		ppTableColumn("linked_device")+" FROM pppoe_row_values r WHERE "+where+" ORDER BY "+order+" LIMIT ? OFFSET ?"),
 		append([]any{in.ObservationID}, args...)...)
 	if e != nil {

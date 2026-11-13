@@ -23,25 +23,24 @@ export function Summary({
 }) {
   const r = device.result!;
   const pairs = [
-    ['Identidade', r.identity],
+    ['Nome', device.identity || r.identity || device.name],
+    ['IP', device.address],
+    ['Tipo', device.role],
+    ['Grupo', device.group_path || 'Sem grupo'],
+    ['Estado', device.pulse?.state || 'Não informado nesta leitura'],
     ['Modelo', r.board],
     ['Versão', r.version],
-    ['Uptime', formatRouterDuration(r.uptime)],
+    ['Ligado há', formatRouterDuration(r.uptime)],
     [
       'Último reinício',
       device.last_reboot ? formatDate(device.last_reboot) : '—',
     ],
-    [
-      'Visto online por último',
-      device.pulse?.last_reply
-        ? formatDate(device.pulse.last_reply)
-        : 'Nunca respondeu',
-    ],
+    ['Visto online por último', lastSeen(device)],
   ];
   return (
     <div className="grid">
       <DataBlock
-        title="Identidade e sistema"
+        title="Equipamento"
         source="SSH"
         age={stamp(device)}
         data={readingUpdateState(
@@ -66,12 +65,21 @@ export function Summary({
           <dl className="kv">
             <dt>CPU</dt>
             <dd>{formatMetric(r.cpu_percent, '%')}</dd>
-            <dt>Memória livre / total</dt>
+            <dt>Memória em uso</dt>
             <dd
               title={`${exactVolume(r.free_memory_bytes)} / ${exactVolume(r.total_memory_bytes)}`}
             >
-              {formatVolumePair(r.free_memory_bytes, r.total_memory_bytes)}
+              {formatVolumePair(
+                Math.max(0, r.total_memory_bytes - r.free_memory_bytes),
+                r.total_memory_bytes,
+              )}
             </dd>
+            <dt>Temperatura</dt>
+            <dd>{formatMetric(device.monitoring?.temperature, '°C')}</dd>
+            <dt>Tensão</dt>
+            <dd>Não informado nesta leitura</dd>
+            <dt>Latência / perda</dt>
+            <dd>Ainda não existe (L-PULSO-5)</dd>
           </dl>,
           status && { ...status, error: undefined },
         )}
@@ -79,4 +87,10 @@ export function Summary({
       {statistics}
     </div>
   );
+}
+
+function lastSeen(device: Device) {
+  if (device.pulse?.state === 'ONLINE') return 'agora';
+  if (device.pulse?.last_reply) return formatDate(device.pulse.last_reply);
+  return 'Nunca respondeu';
 }
