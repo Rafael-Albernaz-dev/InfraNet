@@ -82,7 +82,7 @@ async function finishOldPage(
   });
 }
 it.each(['success', 'error', 'rejection'])(
-  'preserves newer query B and offset when an older page finishes with %s',
+  'preserves newer query B when an older stored read finishes with %s',
   async (kind) => {
     const pending = deferredPage();
     configurePageRace(pending);
@@ -96,7 +96,9 @@ it.each(['success', 'error', 'rejection'])(
       />,
     );
     await screen.findByRole('cell', { name: /CPE-I1/ });
-    fireEvent.click(screen.getByRole('button', { name: 'Próxima' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Reabrir rádio armazenado' }),
+    );
     expect(api.current).toHaveBeenCalledTimes(2);
     fireEvent.click(screen.getByRole('button', { name: 'Atualizar' }));
     await screen.findByRole('cell', { name: /Cliente B/ });
@@ -113,7 +115,7 @@ it.each(['success', 'error', 'rejection'])(
     expect(api.start).toHaveBeenCalledTimes(1);
   },
 );
-it('accepts a legitimate page when no newer query owns the view', async () => {
+it('accepts a legitimate stored reopen when no newer query owns the view', async () => {
   vi.mocked(api.current)
     .mockResolvedValueOnce(
       response({ reading, total: 16, more: true, next_offset: 8 }),
@@ -134,11 +136,13 @@ it('accepts a legitimate page when no newer query owns the view', async () => {
     />,
   );
   await screen.findByRole('cell', { name: /CPE-I1/ });
-  fireEvent.click(screen.getByRole('button', { name: 'Próxima' }));
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Reabrir rádio armazenado' }),
+  );
   await screen.findByRole('cell', { name: /Página legítima/ });
   expect(
-    screen.getByRole('button', { name: 'Clientes anteriores' }),
-  ).toBeInTheDocument();
+    screen.queryByRole('button', { name: 'Clientes anteriores' }),
+  ).not.toBeInTheDocument();
   expect(api.current).toHaveBeenCalledTimes(2);
   expect(api.start).not.toHaveBeenCalled();
 });

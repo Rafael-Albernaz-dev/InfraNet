@@ -9,7 +9,6 @@ import type { ReadingUpdateStatus } from './reading-update-state';
 import { Button } from '../../shared/ui/Button';
 import { DataBlock } from '../../shared/ui/DataBlock';
 import { DataTable } from '../../shared/ui/DataTable';
-import { Pager } from '../../shared/ui/Pager';
 function classifyInterfaceKind(kind: string): string {
   const value = kind.toLowerCase();
   if (['ether', 'wlan', 'wifi', 'w60g', 'lte'].includes(value))
@@ -62,20 +61,14 @@ function InterfaceMetadata({ device }: { device: Device }) {
   );
 }
 function Interfaces({ device }: { device: Device }) {
-  const [filter, setFilter] = useState('physical'),
-    [page, setPage] = useState(0);
+  const [filter, setFilter] = useState('physical');
   const surface = useRef<HTMLDivElement>(null);
   const rows = (device.result?.interfaces || []).filter(
     (row) => classifyInterfaceKind(row.kind) === filter,
   );
-  const showPage = (next: number) => {
-    setPage(next);
-    surface.current?.focus({ preventScroll: true });
-    surface.current?.scrollIntoView?.({ block: 'start' });
-  };
   const content = (
     <div ref={surface} tabIndex={0} aria-label="Interfaces observadas">
-      <DataTable>
+      <DataTable tableId="reading">
         <thead>
           <tr>
             <th>Interface</th>
@@ -84,7 +77,7 @@ function Interfaces({ device }: { device: Device }) {
           </tr>
         </thead>
         <tbody>
-          {rows.slice(page * 16, (page + 1) * 16).map((row) => (
+          {rows.map((row) => (
             <tr key={row.name}>
               <td>{row.name}</td>
               <td>{row.kind}</td>
@@ -95,12 +88,6 @@ function Interfaces({ device }: { device: Device }) {
           ))}
         </tbody>
       </DataTable>
-      <Pager
-        page={page + 1}
-        total={Math.max(1, Math.ceil(rows.length / 16))}
-        first={() => showPage(0)}
-        next={() => showPage(page + 1)}
-      />
       <InterfaceMetadata device={device} />
     </div>
   );
@@ -120,7 +107,6 @@ function Interfaces({ device }: { device: Device }) {
             aria-pressed={filter === value}
             onClick={() => {
               setFilter(value);
-              setPage(0);
             }}
           >
             {label}

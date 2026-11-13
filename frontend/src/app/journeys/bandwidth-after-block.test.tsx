@@ -63,7 +63,7 @@ function fixture() {
     profile_id: 'company',
     activation_id: 'active',
     data: {
-      total: 1,
+      total: 51,
       total_devices: 1,
       devices: [device],
       credentials: [credential],
@@ -74,6 +74,7 @@ function fixture() {
   });
   const inventory = {
     ListEquipment: vi.fn(async () => result()),
+    ListEquipmentFiltered: vi.fn(async () => result()),
     ListCredentials: vi.fn(async () => result()),
     GetEquipment: vi.fn(async () => result({ device })),
     SaveEquipment: vi.fn(async (_p: string, _a: string, input: DeviceInput) => {

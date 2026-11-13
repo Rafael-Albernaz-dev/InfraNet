@@ -1,4 +1,9 @@
 export type PPQuery = {
+  page_size?: number;
+  plan?: string;
+  vlan?: string;
+  service?: string;
+  duplicity?: string;
   state?: '' | 'ONLINE' | 'OFFLINE';
   search: string;
   duplicates_only: boolean;
@@ -59,6 +64,7 @@ export type PPTraffic = {
   peak_upload?: PPRate;
 };
 export type PPRow = {
+  linked_device_name?: string;
   context?: PPContext;
   state?: string;
   absent_start?: string;
@@ -196,6 +202,7 @@ export type PPResult = {
   activation_id: string;
   error?: { reason?: string; entity_id?: string };
   data?: {
+    options?: Record<string, string[]>;
     effect_state?: string;
     current?: PPObservation;
     diagnostic?: PDDiagnostic;

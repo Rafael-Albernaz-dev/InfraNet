@@ -48,6 +48,7 @@ function localBindings(change: Partial<Device> = {}, vault = true) {
   });
   return {
     ListEquipment: vi.fn(async () => eq()),
+    ListEquipmentFiltered: vi.fn(async () => eq()),
     GetEquipment: vi.fn(async () => eq({ device })),
     ListCredentials: vi.fn(async () => eq()),
     GetPPPoECurrent: vi.fn(async () => pp()),

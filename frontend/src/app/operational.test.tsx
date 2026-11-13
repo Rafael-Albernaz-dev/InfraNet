@@ -374,7 +374,9 @@ it('overview and list navigation retain saved data while Back exposes the list',
   await openDeviceSheet('Saved router');
   await openDeviceSheet('Saved router');
   fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
-  expect(await screen.findByLabelText('Buscar')).toBeVisible();
+  expect(
+    await screen.findByLabelText('Buscar em todas as colunas'),
+  ).toBeVisible();
   expect(
     screen.queryByRole('button', { name: 'Voltar' }),
   ).not.toBeInTheDocument();

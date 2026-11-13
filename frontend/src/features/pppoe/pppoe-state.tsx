@@ -112,6 +112,7 @@ function usePPPoEPageLoad(p: SharedCtx) {
       }
       p.setPageState('ready');
       p.setRows(r.data?.rows || []);
+      p.setOptions(r.data?.options || {});
       p.setDeltas(r.data?.deltas || []);
       p.setNext(r.data?.next_cursor || '');
       p.setTotal(r.data?.total || 0);

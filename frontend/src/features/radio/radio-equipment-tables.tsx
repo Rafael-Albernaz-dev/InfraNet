@@ -1,3 +1,4 @@
+import { cloneElement } from 'react';
 import { formatMetric } from '../equipment/network-format';
 import type { RadioReading } from '../equipment/radio-api';
 import { RadioClientRow } from './radio-client-row';
@@ -8,7 +9,7 @@ type Ready = RadioEquipmentState & { reading: RadioReading };
 export function RadioClients({ state }: { state: Ready }) {
   if (!state.reading.clients.length) return <p>Nenhum cliente encontrado</p>;
   return (
-    <DataTable className="radio-clients-table">
+    <DataTable tableId="radio-tables" className="radio-clients-table">
       <thead>
         <tr>
           <th>CPE</th>
@@ -19,25 +20,26 @@ export function RadioClients({ state }: { state: Ready }) {
         </tr>
       </thead>
       <tbody>
-        {state.reading.clients.map((client) => (
-          <RadioClientRow
-            key={client.interface + '|' + client.mac}
-            client={client}
-            name={
-              state.devices?.find((d) => d.id === client.cpe_id)?.name ||
-              client.name ||
-              client.mac
-            }
-            open={state.openEquipment}
-          />
-        ))}
+        {state.reading.clients.map((client) =>
+          cloneElement(
+            RadioClientRow({
+              client: client,
+              name:
+                state.devices?.find((d) => d.id === client.cpe_id)?.name ||
+                client.name ||
+                client.mac,
+              open: state.openEquipment,
+            }),
+            { key: client.interface + '|' + client.mac },
+          ),
+        )}
       </tbody>
     </DataTable>
   );
 }
 export function RadioInterfaces({ state }: { state: Ready }) {
   return (
-    <DataTable>
+    <DataTable tableId="radio-tables-2">
       <thead>
         <tr>
           <th>Interface</th>
@@ -57,7 +59,7 @@ export function RadioInterfaces({ state }: { state: Ready }) {
             <td>{iface.bssid}</td>
             <td>{iface.channel || 'Não informado nesta leitura'}</td>
             <td>{iface.configured_width || 'Não informado nesta leitura'}</td>
-            <td>
+            <td data-value={radioMetric(iface.metrics, 'noise')?.value ?? ''}>
               {radioMetric(iface.metrics, 'noise')
                 ? formatMetric(
                     radioMetric(iface.metrics, 'noise')!.value,

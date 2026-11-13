@@ -29,40 +29,19 @@ type UseDeviceListEffectProps = {
   setReady: (v: boolean) => void;
 };
 
-function listFilters(p: UseDeviceListEffectProps) {
-  if (
-    !p.stateFilter &&
-    !p.roleFilter &&
-    !p.blockFilter &&
-    !p.modelFilter &&
-    !p.inactive
-  )
-    return;
-  return {
-    ...(p.stateFilter ? { state: p.stateFilter } : {}),
-    role: p.roleFilter,
-    block: p.blockFilter.startsWith('b:') ? p.blockFilter.slice(2) : '',
-    block_empty: p.blockFilter === 'none',
-    model: p.modelFilter,
-  };
-}
 async function readList(
   p: UseDeviceListEffectProps,
   current: () => boolean,
   publish: (pulse: string) => void,
 ) {
   try {
-    const filters = listFilters(p);
-    const args = [
-      p.profile,
-      p.activation,
-      p.search,
-      p.cursor,
-      p.inactive,
-    ] as const;
-    const r = filters
-      ? await api.list(...args, filters)
-      : await api.list(...args);
+    const r = await api.list(p.profile, p.activation, '', 0, false, {
+      all: true,
+      role: '',
+      block: '',
+      block_empty: false,
+      model: '',
+    });
     if (!current()) return;
     if (r.code !== 'OK' || !r.data)
       return p.setListError(equipmentMessage(r.code));
@@ -127,13 +106,6 @@ export function useDeviceListEffect(p: UseDeviceListEffectProps) {
     p.inventoryNode,
     p.profile,
     p.activation,
-    p.search,
-    p.cursor,
-    p.inactive,
-    p.roleFilter,
-    p.blockFilter,
-    p.modelFilter,
-    p.stateFilter,
     p.connected,
     p.refresh,
     p.onTotal,

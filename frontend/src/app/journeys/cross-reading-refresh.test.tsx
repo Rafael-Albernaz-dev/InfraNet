@@ -1,3 +1,4 @@
+import { sessionTable } from '../../shared/testing/session-ready';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Equipment } from '../pages/equipment';
@@ -26,7 +27,7 @@ const result = (data = {}) => ({
     credentials: [],
     next_cursor: 0,
     vault_available: true,
-    total: 1,
+    total: 51,
     ...data,
   },
 });
@@ -69,6 +70,7 @@ function concentrator(age: number) {
   };
   const bindings = {
     ListEquipment: vi.fn(async () => result({ devices: [device] })),
+    ListEquipmentFiltered: vi.fn(async () => result({ devices: [device] })),
     ListCredentials: vi.fn(async () => result()),
     GetEquipment: vi.fn(async () => result({ device })),
     GetDeviceMonitoring: vi.fn(async () => result()),
@@ -195,9 +197,7 @@ it('Comparação não herda o filtro Estado da Lista', async () => {
   const { bindings } = concentrator(0);
   fireEvent.click(await screen.findByRole('tab', { name: 'Sessões' }));
   await screen.findByText('cliente-sintético');
-  const filter = screen
-    .getAllByLabelText('Estado')
-    .find((e) => e.closest('.pppoe-filters'))!;
+  const filter = sessionTable().getByRole('combobox', { name: 'Estado' });
   fireEvent.change(filter, { target: { value: 'OFFLINE' } });
   await waitFor(() =>
     expect(bindings.ListPPPoESessions.mock.lastCall).toEqual(

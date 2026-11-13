@@ -42,23 +42,14 @@ const result = (page: Device[], next = 0) => ({
     total_devices: 500,
   },
 });
-it('selects each page of 500 synthetic devices and submits their exact revisions in one bulk operation', async () => {
-  vi.mocked(equipmentAPI.list).mockImplementation(
-    async (_p, _a, _search, cursor) =>
-      result(
-        devices.slice(cursor, cursor + 16),
-        cursor + 16 < 500 ? cursor + 16 : 0,
-      ) as never,
-  );
+it('selects all 500 filtered synthetic devices across pages and submits their exact revisions in one bulk operation', async () => {
+  vi.mocked(equipmentAPI.list).mockResolvedValue(result(devices) as never);
   vi.mocked(equipmentAPI.credentials).mockResolvedValue(result([]) as never);
   vi.mocked(equipmentAPI.bulk).mockResolvedValue(result([]) as never);
   render(<Equipment profile="company" activation="active" connected />);
-  for (let cursor = 0; cursor < 500; cursor += 16) {
-    await screen.findByText(`Sintetico ${String(cursor).padStart(3, '0')}`);
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Selecionar todos' }));
-    if (cursor + 16 < 500)
-      fireEvent.click(screen.getByRole('button', { name: 'Próxima' }));
-  }
+  await screen.findByText('Sintetico 000');
+  expect(screen.getByText('Página 1 de 10')).toBeVisible();
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Selecionar todos' }));
   expect(screen.getByText('500 selecionados')).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Definir bloco' }));
   const dialog = screen.getByRole('dialog', { name: 'Definir bloco' });

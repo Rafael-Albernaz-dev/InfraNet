@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import {
@@ -88,27 +89,29 @@ beforeEach(() => {
     response({ references: [], total: 0 }),
   );
 });
-it('opens and pages persisted catalog without remote refresh; rejected page has no old cursor or false empty', async () => {
+it('pages the entire stored catalog locally and a failed reload has no false empty state', async () => {
+  const all = Array.from({ length: 51 }, (_, i) => ({
+    ...rows[0],
+    id: `row-${i}`,
+    name: i === 0 ? 'Serviço de teste' : `Serviço ${i}`,
+  }));
   vi.mocked(api.list).mockResolvedValueOnce(
-    response({ diagnostic_rows: rows, next_cursor: 'signed-page', total: 17 }),
+    response({ diagnostic_rows: all, total: 51 }),
   );
   panel();
   await screen.findByRole('cell', { name: 'Serviço de teste' });
+  const table = within(screen.getByRole('group', { name: 'Tabela de Nome' }));
+  fireEvent.click(table.getByRole('button', { name: 'Próxima' }));
+  await screen.findByRole('cell', { name: 'Serviço 50' });
+  expect(api.list).toHaveBeenCalledOnce();
   expect(api.catalog).not.toHaveBeenCalled();
   expect(api.radius).not.toHaveBeenCalled();
   expect(api.ping).not.toHaveBeenCalled();
-  const page = deferred<PPResult>();
-  vi.mocked(api.list).mockReturnValueOnce(page.promise);
+  vi.mocked(api.list).mockRejectedValueOnce(new Error('transport'));
   fireEvent.click(
-    screen.getByRole('button', { name: 'Próxima página do diagnóstico' }),
+    screen.getByRole('button', { name: 'Reabrir dados armazenados' }),
   );
-  expect(
-    screen.getByRole('button', { name: 'Próxima página do diagnóstico' }),
-  ).toBeDisabled();
-  await act(async () => page.reject(new Error('transport')));
-  expect(screen.getByRole('alert')).toHaveTextContent(
-    'Não foi possível carregar a página.',
-  );
+  await screen.findByRole('alert');
   expect(
     screen.queryByText('Nenhum item configurado nesta leitura completa.'),
   ).not.toBeInTheDocument();
@@ -116,14 +119,9 @@ it('opens and pages persisted catalog without remote refresh; rejected page has 
     'device',
     'catalog',
     'catalog-snapshot',
-    'signed-page',
+    '',
     '',
   ]);
-  fireEvent.click(
-    screen.getByRole('button', { name: 'Reabrir dados armazenados' }),
-  );
-  await screen.findByRole('cell', { name: 'Serviço de teste' });
-  expect(api.catalog).not.toHaveBeenCalled();
 });
 it('reconciles an uncertain start through stored state without a second collection', async () => {
   vi.mocked(api.catalog)

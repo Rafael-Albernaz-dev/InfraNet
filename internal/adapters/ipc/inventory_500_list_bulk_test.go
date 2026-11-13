@@ -96,3 +96,44 @@ func listFiveHundredForBulk(t *testing.T, client *AccountClient) []equipment.Bul
 	}
 	return items
 }
+
+func TestAllInventoryProjectionKeepsDetailOutsideTheRefreshFrame(t *testing.T) {
+	j := newPPJourney(t)
+	if !jobprobe.SetParser(j.svc, importfile.Parser{}) {
+		t.Fatal("fixture parser unavailable")
+	}
+	selectEmptyImportCompany(t, j.client)
+	importFiveHundredForList(t, j.client)
+	ctx := context.Background()
+	var first string
+	c := j.store.UpdateEquipment(ctx, j.client.profile, func(st *equipment.State) equipment.Code {
+		first = st.Devices[0].ID
+		for i := range st.Devices {
+			st.Devices[i].Result = &equipment.Observation{Identity: "synthetic", Interfaces: make([]equipment.InterfaceReading, 128)}
+			for n := range st.Devices[i].Result.Interfaces {
+				st.Devices[i].Result.Interfaces[n] = equipment.InterfaceReading{Name: strings.Repeat("x", 80), Kind: "ether"}
+			}
+		}
+		return equipment.OK
+	})
+	if c != equipment.OK {
+		t.Fatal(c)
+	}
+	q := Request{Op: "inventory.list", ExpectedProfile: j.client.profile, ExpectedActivation: j.client.activation,
+		Equipment: &EquipmentInput{All: true}}
+	r := j.client.Call(ctx, q)
+	if r.Code != foundation.OK || len(r.Data.Equipment.Devices) != 500 || r.Data.Equipment.Next != 0 {
+		t.Fatal("all500", r.Code)
+	}
+	for _, d := range r.Data.Equipment.Devices {
+		if len(d.Result.Interfaces) != 0 {
+			t.Fatal("detail leaked into refresh frame")
+		}
+	}
+	q.Op = "inventory.get"
+	q.Equipment = &EquipmentInput{ID: first}
+	r = j.client.Call(ctx, q)
+	if r.Code != foundation.OK || len(r.Data.Equipment.Device.Result.Interfaces) != 128 {
+		t.Fatal("projection mutated stored detail", r.Code)
+	}
+}

@@ -10,14 +10,6 @@ import { Button } from '../../shared/ui/Button';
 import { Dialog } from '../../shared/ui/Dialog';
 import { Select } from '../../shared/ui/Select';
 
-const labels: Record<ImportItem['status'], string> = {
-  ready: 'Pronta',
-  pending: 'Pendente',
-  duplicate: 'Duplicada',
-  conflict: 'Conflito',
-  ignored: 'Ignorada',
-};
-type Filter = 'all' | ImportItem['status'];
 type State = ReturnType<typeof useImportState>;
 type CorrectionProps = {
   item: ImportItem;
@@ -133,35 +125,18 @@ type ImportPreviewProps = {
 };
 export function ImportPreview(p: ImportPreviewProps) {
   const s = p.state;
-  const [filter, setFilter] = useState<Filter>('all');
   const [editing, setEditing] = useState<ImportItem>();
   const [bulk, setBulk] = useState<'block' | 'credential'>();
-  const filters: Filter[] = [
-    'all',
-    'ready',
-    'pending',
-    'duplicate',
-    'conflict',
-    'ignored',
-  ];
   const open = s.items.filter(
     (item) => !['ready', 'ignored'].includes(item.status),
   ).length;
   const ready = s.items.filter((item) => item.status === 'ready').length;
-  const visible = s.items.filter(
-    (item) => filter === 'all' || item.status === filter,
-  );
   return (
     <>
       <ImportSteps step={2} />
-      <PreviewHeader
-        {...p}
-        filter={filter}
-        setFilter={setFilter}
-        filters={filters}
-      />
+      <PreviewHeader {...p} />
       <PreviewSelection s={s} setBulk={setBulk} />
-      <ImportPreviewTable s={s} visible={visible} setEditing={setEditing} />
+      <ImportPreviewTable s={s} visible={s.items} setEditing={setEditing} />
       <PreviewFooter {...p} open={open} ready={ready} />
       {s.error && (
         <Button onClick={() => void s.review(s.items.map((item) => item.row))}>
@@ -188,14 +163,8 @@ export function ImportPreview(p: ImportPreviewProps) {
   );
 }
 
-type PreviewHeaderProps = ImportPreviewProps & {
-  filter: Filter;
-  setFilter: (f: Filter) => void;
-  filters: Filter[];
-};
-function PreviewHeader(p: PreviewHeaderProps) {
-  const s = p.state,
-    { filter, setFilter, filters } = p;
+function PreviewHeader(p: ImportPreviewProps) {
+  const s = p.state;
   return (
     <>
       <div className="bar">
@@ -206,21 +175,6 @@ function PreviewHeader(p: PreviewHeaderProps) {
         <Button disabled={s.busy} onClick={p.replace}>
           Trocar arquivo
         </Button>
-      </div>
-      <div className="chips">
-        {filters.map((f) => (
-          <Button
-            key={f}
-            className={filter === f ? 'on' : ''}
-            onClick={() => setFilter(f)}
-          >
-            {f === 'all' ? 'Todas' : labels[f]} (
-            {f === 'all'
-              ? s.items.length
-              : s.items.filter((item) => item.status === f).length}
-            )
-          </Button>
-        ))}
       </div>
     </>
   );

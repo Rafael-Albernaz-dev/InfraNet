@@ -42,6 +42,10 @@ for (const active of [true, false]) {
         },
       });
       render(<Equipment profile="X" activation="a" connected />);
+      if (!active)
+        fireEvent.click(
+          await screen.findByRole('checkbox', { name: 'Mostrar inativos' }),
+        );
       await openDeviceSheet('Router X');
       fireEvent.click(
         screen.getByRole('button', { name: 'Editar equipamento' }),

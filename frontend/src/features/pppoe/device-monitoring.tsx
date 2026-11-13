@@ -38,7 +38,7 @@ function MonitoringDuplicatesTable({
         condições: não comparável (leituras distantes).
       </p>
       <div className="table-region" tabIndex={0}>
-        <DataTable className="data-table">
+        <DataTable tableId="device-monitoring" className="data-table">
           <thead>
             <tr>
               <th>Login</th>
@@ -232,7 +232,7 @@ function MonitoringCardBody(p: {
     );
   if (p.scope === 'flapping')
     return (
-      <DataTable>
+      <DataTable tableId="device-monitoring-2">
         <thead>
           <tr>
             <th>Usuário</th>
@@ -351,14 +351,6 @@ function MonitoringScopeCard(p: {
         comparison={comparison}
         displayNow={displayNow}
       />
-      {next && (
-        <Button onClick={() => setCursor(next)}>
-          Próxima página dos dados locais
-        </Button>
-      )}
-      {cursor && (
-        <Button onClick={() => setCursor('')}>Início dos dados locais</Button>
-      )}
       {rows
         .filter((r) => r.kind === 'availability')
         .map((r, i) => (

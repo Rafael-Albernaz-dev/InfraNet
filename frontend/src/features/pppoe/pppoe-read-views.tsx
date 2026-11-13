@@ -1,3 +1,4 @@
+import { cloneElement } from 'react';
 import { Fragment } from 'react';
 import {
   exactRate,
@@ -257,7 +258,7 @@ const PPP_LOG_LABELS: Record<string, string> = {
 export function PPReadLogTable({ rows }: { rows: PPReadResult['rows'] }) {
   return (
     <div className="table-region" tabIndex={0} aria-label="Eventos PPP">
-      <DataTable className="data-table">
+      <DataTable tableId="read-views" className="data-table">
         <thead>
           <tr>
             <th>Horário no equipamento</th>
@@ -280,12 +281,16 @@ export function PPReadLogTable({ rows }: { rows: PPReadResult['rows'] }) {
   );
 }
 
-type BandwidthRowProps = {
+type renderBandwidthRowProps = {
   r: PPReadRow;
   calculated: boolean;
   sampleAge: number;
 };
-function BandwidthRow({ r, calculated, sampleAge }: BandwidthRowProps) {
+function renderBandwidthRow({
+  r,
+  calculated,
+  sampleAge,
+}: renderBandwidthRowProps) {
   const calcUptime =
     r.uptime.known && calculated
       ? {
@@ -300,13 +305,11 @@ function BandwidthRow({ r, calculated, sampleAge }: BandwidthRowProps) {
         {r.login || 'Não informado nesta leitura'}
         {r.name && <small className="cell-sub">{r.name}</small>}
       </td>
-      <td>
-        <RateValue rate={r.download} />
+      <td data-value={r.download?.min ?? ''}>
+        {RateValue({ rate: r.download })}
       </td>
-      <td>
-        <RateValue rate={r.upload} />
-      </td>
-      <td>
+      <td data-value={r.upload?.min ?? ''}>{RateValue({ rate: r.upload })}</td>
+      <td data-value={calcUptime.known ? calcUptime.min : ''}>
         <span title={uptimeTitle(r.uptime)}>
           {formatPPUptime(calcUptime, true)}
         </span>
@@ -328,7 +331,7 @@ export function PPReadBandwidthTable(p: PPReadBandwidthTableProps) {
       tabIndex={0}
       aria-label="Tabela de banda e consumo"
     >
-      <DataTable className="data-table">
+      <DataTable tableId="read-views-2" className="data-table">
         <thead>
           <tr>
             <th>Usuário</th>
@@ -338,14 +341,16 @@ export function PPReadBandwidthTable(p: PPReadBandwidthTableProps) {
           </tr>
         </thead>
         <tbody>
-          {p.rows.map((r, i) => (
-            <BandwidthRow
-              key={r.row_id || i}
-              r={r}
-              calculated={p.calculated}
-              sampleAge={p.sampleAge}
-            />
-          ))}
+          {p.rows.map((r, i) =>
+            cloneElement(
+              renderBandwidthRow({
+                r: r,
+                calculated: p.calculated,
+                sampleAge: p.sampleAge,
+              }),
+              { key: r.row_id || i },
+            ),
+          )}
         </tbody>
       </DataTable>
     </div>

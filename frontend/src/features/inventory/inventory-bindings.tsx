@@ -1,6 +1,7 @@
 import type { EquipmentResult } from '../../platform/wails/presentation';
 
 export type InventoryFilters = {
+  all?: boolean;
   state?: string;
   role: string;
   block: string;

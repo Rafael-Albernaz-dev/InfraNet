@@ -2,12 +2,9 @@ import { useState } from 'react';
 import type { Device } from '../equipment/equipment-api';
 import type { useEquipmentState } from '../equipment/equipment-state';
 import { InventoryBulkDialog } from './inventory-bulk-dialog';
-import { useColumnPreferences } from './inventory-column-preferences';
 import { InventoryTable } from './inventory-table';
-import { InventoryToolbar } from './inventory-toolbar';
 import { Button } from '../../shared/ui/Button';
 import { StateNotice } from '../../shared/ui/StateNotice';
-import { Pager } from '../../shared/ui/Pager';
 
 type Props = ReturnType<typeof useEquipmentState> & {
   profile: string;
@@ -18,37 +15,31 @@ type Props = ReturnType<typeof useEquipmentState> & {
   onAdd?: () => void;
 };
 export function EquipmentInventoryPane(p: Props) {
-  const preferences = useColumnPreferences();
   const [bulk, setBulk] = useState<'block' | 'credential'>();
   const [selectedRows, setSelectedRows] = useState<Record<string, Device>>({});
   const state = { ...p, selectedRows, setSelectedRows };
   const selected = Object.values(selectedRows);
   return (
     <section hidden={p.detailOpen}>
-      <h1>Equipamentos</h1>
-      <InventoryToolbar
-        p={state}
-        locked={p.locked}
-        columns={preferences.visible}
-        saveColumns={(v) => void preferences.save(v)}
-        busy={preferences.busy}
-        onAdd={p.onAdd}
-      />
-      {preferences.error && <p role="alert">{preferences.error}</p>}
+      <div className="toolbar">
+        <h1 className="grow">Equipamentos</h1>
+        <span className="muted">Atualiza sozinha a cada 5 s</span>
+        <Button
+          kind="primary"
+          data-add-trigger
+          disabled={p.locked || !p.onAdd}
+          onClick={p.onAdd}
+        >
+          Adicionar equipamento
+        </Button>
+      </div>
       {selected.length > 0 &&
         selectedActions(selected, p.locked, setBulk, () => setSelectedRows({}))}
       {!p.ready && !p.listError && (
         <p role="status">Carregando equipamentos…</p>
       )}
       {pulseNotice(p.pulseNetwork)}
-      <InventoryTable p={state} visible={preferences.visible} />
-      <Pager
-        page={p.cursor ? 2 : 1}
-        total={p.next ? undefined : p.cursor ? 2 : 1}
-        hasNext={Boolean(p.next)}
-        first={() => p.setCursor(0)}
-        next={() => p.setCursor(p.next)}
-      />
+      <InventoryTable p={state} />
       {bulk && selected.length > 0 && (
         <InventoryBulkDialog
           mode={bulk}

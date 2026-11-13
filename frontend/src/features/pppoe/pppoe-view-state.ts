@@ -1,3 +1,4 @@
+import { useTablePreference } from '../../shared/ui/table-preferences';
 import { useLayoutEffect, useState } from 'react';
 import { acceptEquipmentAuthority } from '../access/equipment-receipts';
 import { FRESH_QUERY } from './pppoe-context-actions';
@@ -47,6 +48,15 @@ function usePPPoEPageStatus() {
   };
 }
 function usePPPoEListState() {
+  const tablePreference = useTablePreference('sessions', {
+    columns: ['address', 'plan', 'uptime', 'state', 'linked_device'],
+    filters: {},
+    search: '',
+    sort: null,
+    manual: [],
+    page_size: 50,
+  });
+  const [options, setOptions] = useState<Record<string, string[]>>({});
   const [rows, setRows] = useState<PPRow[]>([]);
   const [savedReferences, setSavedReferences] = useState<PPReference[]>([]);
   const [deltas, setDeltas] = useState<PPDelta[]>([]);
@@ -56,7 +66,10 @@ function usePPPoEListState() {
   const [history, setHistory] = useState<string[]>([]);
   return {
     rows,
+    tablePreference,
     setRows,
+    options,
+    setOptions,
     savedReferences,
     setSavedReferences,
     deltas,

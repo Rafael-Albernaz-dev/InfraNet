@@ -84,16 +84,16 @@ it('top is deliberate across all tunnels and its page never starts another read'
     cost: {
       ssh_commands: 2,
       ssh_bytes: 2048,
-      first_tunnels: 17,
-      last_tunnels: 17,
+      first_tunnels: 51,
+      last_tunnels: 51,
     },
-    rows: [
-      {
-        kind: 'session',
-        login: 'first-page',
-        uptime: { known: false, min: 0, max: 0 },
-      },
-    ],
+    rows: Array.from({ length: 51 }, (_, i) => ({
+      kind: 'session',
+      login:
+        ({ 0: 'first-page', 50: 'second-page' } as Record<number, string>)[i] ||
+        `synthetic-${i}`,
+      uptime: { known: false, min: 0, max: 0 },
+    })),
   };
   vi.mocked(readAPI.start).mockResolvedValue(
     response({
@@ -103,10 +103,10 @@ it('top is deliberate across all tunnels and its page never starts another read'
   );
   vi.mocked(readAPI.status).mockResolvedValue(
     response({
-      total: 17,
+      total: 51,
       job: { id: 'top-job', state: 'SUCCEEDED', code: 'OK' },
       read: meta,
-      next_cursor: 'next-page',
+      next_cursor: '',
     }),
   );
   vi.mocked(readAPI.page).mockResolvedValue(
@@ -153,20 +153,13 @@ it('top is deliberate across all tunnels and its page never starts another read'
     device.revision,
   );
   expect(
-    screen.getByText(/2 comandos SSH · 17\/17 túneis/),
+    screen.getByText(/2 comandos SSH · 51\/51 túneis/),
   ).toBeInTheDocument();
-  fireEvent.click(
-    screen.getByRole('button', { name: 'Próxima página de consumo' }),
-  );
+  fireEvent.click(screen.getByRole('button', { name: 'Próxima' }));
   await screen.findByText('second-page');
   expect(screen.queryByText('first-page')).not.toBeInTheDocument();
   expect(readAPI.start).toHaveBeenCalledTimes(1);
-  expect(readAPI.page).toHaveBeenCalledWith(
-    'company',
-    'active',
-    'top-job',
-    'next-page',
-  );
+  expect(readAPI.page).not.toHaveBeenCalled();
 });
 it('complete empty top has an honest empty state and no reset control', async () => {
   vi.mocked(readAPI.start).mockResolvedValue(

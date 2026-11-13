@@ -7,7 +7,6 @@ import {
 } from '../equipment/network-format';
 import { PPHealthTables } from './pppoe-read-health-tables';
 import { SessionTraffic } from './session-traffic';
-import { Button } from '../../shared/ui/Button';
 
 import type { PPReadPanelProps, ReadState } from './pppoe-read-state';
 import {
@@ -59,56 +58,6 @@ export function PPReadScopeBody(p: { s: ReadState; pProps: PPReadPanelProps }) {
     />
   );
 }
-export function PPReadResultPagination(p: {
-  s: ReadState;
-  pProps: PPReadPanelProps;
-}) {
-  const { s, pProps } = p;
-  const result = s.result!;
-  const nextLabel =
-    result.scope === 'operations'
-      ? 'Próxima página do monitoramento'
-      : result.scope === 'health'
-        ? 'Próxima página de pools e interfaces'
-        : result.scope === 'log'
-          ? 'Próximos eventos PPP'
-          : 'Próxima página de consumo';
-  const firstLabel =
-    result.scope === 'health'
-      ? 'Início de pools e interfaces'
-      : result.scope === 'log'
-        ? 'Primeiros eventos PPP'
-        : 'Início do consumo';
-  const isScoped =
-    result.scope === 'top' ||
-    result.scope === 'operations' ||
-    result.scope === 'log' ||
-    result.scope === 'health';
-  const hasFirst = Boolean(s.resultJob && isScoped && s.pageCursor);
-  return (
-    <>
-      {s.next && !pProps.summaryOnly && (
-        <Button
-          type="submit"
-          disabled={s.pageBusy}
-          onClick={() => void s.page(s.next)}
-        >
-          {nextLabel}
-        </Button>
-      )}
-      {hasFirst && (
-        <Button
-          type="submit"
-          disabled={s.pageBusy}
-          onClick={() => void s.page('')}
-        >
-          {firstLabel}
-        </Button>
-      )}
-    </>
-  );
-}
-
 export function PPReadResultMetadata({ s }: { s: ReadState }) {
   const result = s.result!;
   return (
@@ -165,7 +114,6 @@ export function PPReadResultView({
         </p>
       )}
       <PPReadScopeBody s={s} pProps={pProps} />
-      <PPReadResultPagination s={s} pProps={pProps} />
     </>
   );
 }

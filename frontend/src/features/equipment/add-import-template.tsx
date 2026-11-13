@@ -4,7 +4,7 @@ export function ImportTemplateFields() {
     <section className="import-card">
       <h2>Campos do modelo</h2>
       <p className="muted">No JSON, uma lista de objetos com estes campos.</p>
-      <DataTable>
+      <DataTable plain>
         <thead>
           <tr>
             <th>Campo</th>

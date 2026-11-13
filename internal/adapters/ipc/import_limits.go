@@ -14,7 +14,14 @@ func equipmentFrameLimit(op string) int {
 	return MaxFrame
 }
 
+func isTablePage(op string) bool {
+	return op == "inventory.list" || op == "pppoe.current" || op == "pppoe.observation-get" || op == "pppoe.sessions-list"
+}
+
 func equipmentResponseLimit(op string) int {
+	if op == "inventory.list" {
+		return MaxBrandFrame - 4096
+	}
 	if op == "inventory.import-preview" {
 		return MaxBrandFrame - 4096
 	}
@@ -24,4 +31,11 @@ func equipmentResponseLimit(op string) int {
 func validEquipmentEnvelope(q Request, fields, size int) bool {
 	return fields == 11 && size <= equipmentFrameLimit(q.Op) && q.Equipment != nil &&
 		access.ValidCompanyID(q.ExpectedProfile) && validID(q.ExpectedActivation)
+}
+
+func ppResponseLimit(op string) int {
+	if isTablePage(op) {
+		return MaxBrandFrame - 4096
+	}
+	return 48 * 1024
 }

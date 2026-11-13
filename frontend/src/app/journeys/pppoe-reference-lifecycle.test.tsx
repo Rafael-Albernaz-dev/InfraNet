@@ -1,3 +1,7 @@
+import {
+  sessionTable,
+  sessionSearch,
+} from '../../shared/testing/session-ready';
 import { waitForSessionReady } from '../../shared/testing/session-ready';
 import {
   act,
@@ -347,7 +351,7 @@ it('review focus: disappearing clear/delete controls and cancelled picker restor
     />,
   );
   await screen.findAllByText('duplicado');
-  const search = screen.getByLabelText('Buscar sessões');
+  const search = sessionSearch();
   fireEvent.change(search, { target: { value: 'query' } });
   const clear = screen.getByRole('button', { name: 'Limpar filtros' });
   clear.focus();
@@ -434,7 +438,7 @@ it('fields, offline reason and previous page use stored data', async () => {
   vi.mocked(api.list).mockImplementation(async (_p, _a, _d, _o, _q, c) =>
     result({
       rows: c ? [rows[1]] : [offline],
-      total: 2,
+      total: 51,
       next_cursor: c ? undefined : 'second',
     }),
   );
@@ -446,11 +450,11 @@ it('fields, offline reason and previous page use stored data', async () => {
   expect(
     screen.getByRole('columnheader', { name: 'Conectado há' }),
   ).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }));
-  await screen.findByRole('button', { name: 'Página anterior' });
+  fireEvent.click(sessionTable().getByRole('button', { name: 'Próxima' }));
+  await sessionTable().findByRole('button', { name: 'Anterior' });
   expect(vi.mocked(api.list).mock.calls.at(-1)?.[5]).toBe('second');
   await screen.findByRole('cell', { name: 'ONLINE' });
-  fireEvent.click(screen.getByRole('button', { name: 'Página anterior' }));
+  fireEvent.click(sessionTable().getByRole('button', { name: 'Anterior' }));
   await screen.findByRole('cell', { name: 'OFFLINE' });
   expect(vi.mocked(api.list).mock.calls.at(-1)?.[5]).toBe('');
   fireEvent.click(

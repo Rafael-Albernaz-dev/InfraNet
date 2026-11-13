@@ -1,3 +1,4 @@
+import { cloneElement } from 'react';
 import type { PPDelta, PPRow } from '../../platform/wails/presentation';
 import { formatDate, uptimeTitle } from '../equipment/network-format';
 import { COMPARE_CATEGORIES } from './pppoe-context-actions';
@@ -171,7 +172,7 @@ export function PPPoECompareView(p: {
         onChangeCategory={(category) => p.change({ category })}
       />
       {p.pageState === 'loading' && <p role="status">Carregando comparação…</p>}
-      <DataTable>
+      <DataTable tableId="session-detail">
         <thead>
           <tr>
             <th>Usuário</th>
@@ -181,13 +182,11 @@ export function PPPoECompareView(p: {
           </tr>
         </thead>
         <tbody>
-          {p.deltas.map((d, i) => (
-            <CompareDeltaItem
-              key={d.base_row + '|' + d.target_row + '|' + i}
-              d={d}
-              openPair={p.openPair}
-            />
-          ))}
+          {p.deltas.map((d, i) =>
+            cloneElement(CompareDeltaItem({ d: d, openPair: p.openPair }), {
+              key: d.base_row + '|' + d.target_row + '|' + i,
+            }),
+          )}
         </tbody>
       </DataTable>
     </>
@@ -271,7 +270,7 @@ export function PPPoEReferencesView(p: {
         <p>Nenhuma referência salva.</p>
       )}
       {!!savedReferences.length && (
-        <DataTable>
+        <DataTable tableId="session-detail-2">
           <thead>
             <tr>
               <th>Referência</th>
@@ -280,14 +279,16 @@ export function PPPoEReferencesView(p: {
             </tr>
           </thead>
           <tbody>
-            {savedReferences.map((ref) => (
-              <ReferenceItem
-                key={ref.reference_id}
-                refItem={ref}
-                disabled={disabled}
-                remove={remove}
-              />
-            ))}
+            {savedReferences.map((ref) =>
+              cloneElement(
+                ReferenceItem({
+                  refItem: ref,
+                  disabled: disabled,
+                  remove: remove,
+                }),
+                { key: ref.reference_id },
+              ),
+            )}
           </tbody>
         </DataTable>
       )}

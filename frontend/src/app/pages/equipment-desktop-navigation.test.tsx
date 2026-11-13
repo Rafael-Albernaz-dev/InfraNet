@@ -96,9 +96,13 @@ it('service status and last valid data remain truthful after a reading, failed r
     ...data(),
     code: 'SERVICE_UNAVAILABLE',
   });
-  fireEvent.change(screen.getByLabelText('Buscar'), {
-    target: { value: 'refresh' },
+  fireEvent.change(screen.getByLabelText('Buscar em todas as colunas'), {
+    target: { value: 'Router' },
   });
+  fireEvent(
+    screen.getByRole('table').ownerDocument,
+    new Event('visibilitychange'),
+  );
   await screen.findByText(/O serviço está indisponível/);
   await openDeviceSheet('Router X');
   fireEvent.click(screen.getByRole('tab', { name: 'Resumo' }));

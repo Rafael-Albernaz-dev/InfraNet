@@ -22,6 +22,7 @@ var (
 	companyRadioSchema             = companyMigration("012_radio.sql")
 	companyRadioJourneySchema      = companyMigration("013_radio_journey.sql")
 	companyInventoryBlockSchema    = companyMigration("014_inventory_block.sql")
+	companyTablePreferencesSchema  = companyMigration("015_table_preferences.sql")
 )
 
 // companyMigration reads one company migration from the single migrations embed.
@@ -37,7 +38,7 @@ func companySchemas() []string {
 	return []string{companySchema, companyBrandSchema, companyEquipmentSchema, companyOperationalSchema,
 		companyPPPoESchema, companyPPDiagnosticSchema, companySessionsOfflineSchema, companySessionContextSchema,
 		companyDeviceMonitoringSchema, companyEquipmentInsightsSchema, companyContextPeaksSchema,
-		companyRadioSchema, companyRadioJourneySchema, companyInventoryBlockSchema}
+		companyRadioSchema, companyRadioJourneySchema, companyInventoryBlockSchema, companyTablePreferencesSchema}
 }
 
 func applyCompanyMigrations(db *sql.DB, current int, schemas []string) error {

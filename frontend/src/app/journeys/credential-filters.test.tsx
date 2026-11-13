@@ -30,7 +30,7 @@ it('filters credentials by user, default role and usage, then clears every filte
       locked={false}
     />,
   );
-  fireEvent.change(screen.getByLabelText('Buscar credencial'), {
+  fireEvent.change(screen.getByLabelText('Buscar em todas as colunas'), {
     target: { value: 'reader-b' },
   });
   expect(screen.getByText('Beta')).toBeVisible();
@@ -51,5 +51,5 @@ it('filters credentials by user, default role and usage, then clears every filte
   fireEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }));
   expect(screen.getByText('Alpha')).toBeVisible();
   expect(screen.getByText('Beta')).toBeVisible();
-  expect(screen.getByLabelText('Buscar credencial')).toHaveValue('');
+  expect(screen.getByLabelText('Buscar em todas as colunas')).toHaveValue('');
 });

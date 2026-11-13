@@ -1,3 +1,4 @@
+import { sessionTable } from '../../shared/testing/session-ready';
 import {
   cleanup,
   fireEvent,
@@ -42,6 +43,7 @@ it('troca Estado e ordenação com cursor reiniciado e Limpar filtros recupera T
             uptime: { known: false, min: 0, max: 0 },
           },
         ],
+        total: query.state ? 1 : 51,
         next_cursor: cursor || query.state ? '' : 'second',
       });
     },
@@ -75,7 +77,7 @@ it('troca Estado e ordenação com cursor reiniciado e Limpar filtros recupera T
     />,
   );
   await screen.findByRole('cell', { name: 'cliente-online' });
-  fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }));
+  fireEvent.click(sessionTable().getByRole('button', { name: 'Próxima' }));
   await screen.findByRole('cell', { name: 'cliente-offline' });
   expect(list.mock.calls.at(-1)?.[5]).toBe('second');
   fireEvent.change(screen.getByRole('combobox', { name: 'Estado' }), {
@@ -87,9 +89,7 @@ it('troca Estado e ordenação com cursor reiniciado e Limpar filtros recupera T
       '',
     ]),
   );
-  fireEvent.change(screen.getByRole('combobox', { name: 'Ordenar' }), {
-    target: { value: 'state' },
-  });
+  fireEvent.click(sessionTable().getByRole('button', { name: 'Estado' }));
   await waitFor(() =>
     expect(list.mock.calls.at(-1)?.[4]).toMatchObject({
       state: 'OFFLINE',
@@ -99,8 +99,10 @@ it('troca Estado e ordenação com cursor reiniciado e Limpar filtros recupera T
   fireEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }));
   await screen.findByRole('cell', { name: 'cliente-online' });
   expect(screen.getByRole('combobox', { name: 'Estado' })).toHaveValue('');
-  expect(screen.getByRole('combobox', { name: 'Ordenar' })).toHaveValue(
-    'login',
-  );
-  expect(screen.getByRole('textbox', { name: 'Buscar sessões' })).toHaveFocus();
+  expect(
+    screen.queryByRole('combobox', { name: 'Ordenar' }),
+  ).not.toBeInTheDocument();
+  expect(
+    sessionTable().getByRole('textbox', { name: 'Buscar em todas as colunas' }),
+  ).toHaveFocus();
 });

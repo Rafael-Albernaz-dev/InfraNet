@@ -107,7 +107,11 @@ func (s *Service) dispatchStorePPOp(
 		return s.handleCurrent(ctx, store, q, in, v)
 	case "pppoe.observation-get":
 		var c Code
-		v.Current, c = store.PPObservation(ctx, q.Scope.Profile, in.DeviceID, in.ObservationID)
+		if in.Query != nil {
+			*v, c = store.PPPage(ctx, q.Scope.Profile, in)
+		} else {
+			v.Current, c = store.PPObservation(ctx, q.Scope.Profile, in.DeviceID, in.ObservationID)
+		}
 		return c
 	case "pppoe.context-counts":
 		return s.handleContextCounts(ctx, q, in, v)
@@ -176,6 +180,16 @@ func (s *Service) handleCurrent(
 			v.Attempt.Quality.Code = CodeJobInterrupted
 		}
 		s.inv.Mu.Unlock()
+	}
+	if c == OK && in.Query != nil && v.Current != nil {
+		if in.ObservationID != "" && in.ObservationID != v.Current.ID {
+			return CursorInvalid
+		}
+		in.ObservationID = v.Current.ID
+		page, code := store.PPPage(ctx, q.Scope.Profile, in)
+		page.Attempt = v.Attempt
+		*v = page
+		return code
 	}
 	return c
 }

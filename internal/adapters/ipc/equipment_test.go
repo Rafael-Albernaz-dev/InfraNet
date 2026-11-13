@@ -28,6 +28,14 @@ func (testEquipmentIDs) ID() (string, equipment.Code) { return uuid.NewString(),
 func TestEquipmentStrictSchema(t *testing.T) {
 	for op, allowed := range equipmentFields {
 		q := Request{Version: 1, ContractRevision: ProductRevision, RequestID: "new", Op: op, Capability: strings.Repeat("a", 64), Session: "s", Profile: "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa", Activation: "a", ExpectedProfile: "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa", ExpectedActivation: "a", Equipment: &EquipmentInput{}}
+		if op == "inventory.table-preference-set" {
+			q.Equipment = &EquipmentInput{Table: "equipment", TablePreference: &equipment.TablePreference{PageSize: 50}}
+		}
+		input, err := json.Marshal(q.Equipment)
+		if err != nil {
+			t.Fatal(err)
+		}
+		original := `"equipment":` + string(input)
 		b, _ := json.Marshal(q)
 		if _, c := validate(b); c != foundation.OK {
 			t.Fatal(op, c)
@@ -50,7 +58,17 @@ func TestEquipmentStrictSchema(t *testing.T) {
 				t.Fatal("cross-operation field accepted", op, field, c)
 			}
 		}
-		for _, body := range []string{strings.Replace(string(b), `"equipment":{}`, `"equipment":{"id":"one","id":"two"}`, 1), strings.Replace(string(b), `"equipment":{}`, `"equipment":{"id":null}`, 1), strings.Replace(string(b), `"contract_revision":`+strconv.Itoa(ProductRevision), `"contract_revision":`+strconv.Itoa(ProductRevision-1), 1)} {
+		bodies := []string{
+			strings.Replace(string(b), original, `"equipment":{"id":"one","id":"two"}`, 1),
+			strings.Replace(string(b), original, `"equipment":{"id":null}`, 1),
+			strings.Replace(
+				string(b),
+				`"contract_revision":`+strconv.Itoa(ProductRevision),
+				`"contract_revision":`+strconv.Itoa(ProductRevision-1),
+				1,
+			),
+		}
+		for _, body := range bodies {
 			if _, c := validate([]byte(body)); c == foundation.OK {
 				t.Fatal("malformed/old contract accepted", op)
 			}

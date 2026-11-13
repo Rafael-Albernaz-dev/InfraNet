@@ -3,6 +3,9 @@ package equipment
 import "infradesktop/internal/modules/access"
 
 type Command struct {
+	Table                                                           string
+	TablePreference                                                 *TablePreference
+	All                                                             bool
 	Import                                                          *ImportInput
 	Bulk                                                            *BulkUpdate
 	Authority                                                       uint64

@@ -20,7 +20,7 @@ export function CompanyList({ p }: { p: DesktopProps }) {
             Criar empresa
           </Button>
         </div>
-        <DataTable>
+        <DataTable tableId="desktop-pages">
           <thead>
             <tr>
               <th>Empresa</th>
@@ -48,7 +48,7 @@ export function CompanyList({ p }: { p: DesktopProps }) {
                   {company.name}
                   {company.id === p.activeProfile && <span> · Atual</span>}
                 </td>
-                <td>
+                <td data-value={company.count ?? ''}>
                   {company.count === undefined
                     ? 'Não informado nesta leitura'
                     : company.count

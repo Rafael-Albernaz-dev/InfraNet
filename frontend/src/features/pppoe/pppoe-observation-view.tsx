@@ -9,12 +9,7 @@ import {
   PPPoEPairDetail,
   PPPoEReferencesView,
 } from './pppoe-session-detail';
-import {
-  PPPoEObsActions,
-  PPPoEPaginationActions,
-  PPPoESessionFilters,
-  PPPoESessionsTable,
-} from './pppoe-sessions-view';
+import { PPPoEObsActions, PPPoESessionsTable } from './pppoe-sessions-view';
 import { usePPPoEState } from './pppoe-state';
 import type { PPPoERefs } from './pppoe-state';
 
@@ -29,11 +24,10 @@ function PPPoESessionsSection(p: {
   onOpenSession: (row: PPRow) => void;
   onFocusOrigin: (element: HTMLElement) => void;
 }) {
-  const { s, refs, detailTriggerRef } = p;
+  const { s, detailTriggerRef } = p;
   if (!s.current) return null;
   return (
     <>
-      <PPPoESessionFilters {...s} searchControlRef={refs.searchControlRef} />
       {p.actions}
       <CSVNotice />
       {s.pageState === 'loading' && (
@@ -41,6 +35,7 @@ function PPPoESessionsSection(p: {
       )}
       <PPPoESessionsTable
         rows={s.rows}
+        control={s}
         profile={s.profile}
         activation={s.activation}
         deviceId={s.device.id}
@@ -63,7 +58,6 @@ function PPPoESessionsSection(p: {
             : 'Nenhuma sessão corresponde aos filtros.'}
         </p>
       )}
-      <PPPoEPaginationActions {...s} searchControlRef={refs.searchControlRef} />
       <p className="muted">
         ONLINE: vista na última leitura concluída. OFFLINE: vista antes e
         ausente nesta leitura.
@@ -115,12 +109,6 @@ function PPPoEObsBody(p: {
           pairHeadingRef={refs.pairHeadingRef}
           detailTriggerRef={refs.detailTriggerRef}
           detailIntentRef={refs.detailIntentRef}
-        />
-      )}
-      {s.tab === 'compare' && (
-        <PPPoEPaginationActions
-          {...s}
-          searchControlRef={refs.searchControlRef}
         />
       )}
     </>

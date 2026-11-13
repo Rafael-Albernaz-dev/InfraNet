@@ -12,7 +12,7 @@ export function SessionPointsTable({
       tabIndex={0}
       aria-label="Pontos de sessões online"
     >
-      <DataTable className="data-table">
+      <DataTable tableId="monitoring-points" className="data-table">
         <thead>
           <tr>
             <th>Período</th>
@@ -36,7 +36,7 @@ export function SessionPointsTable({
                   {formatDate(p.at)} ·{' '}
                   {p.resolution === 3600 ? 'hora' : 'minuto'}
                 </td>
-                <td>
+                <td data-value={p.online_min ?? ''}>
                   {p.online_min ?? 'Não informado nesta leitura'} /{' '}
                   {p.online_max ?? 'Não informado nesta leitura'} /{' '}
                   {p.online ?? 'Não informado nesta leitura'}

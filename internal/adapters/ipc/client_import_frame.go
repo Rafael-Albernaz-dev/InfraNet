@@ -9,6 +9,9 @@ import (
 )
 
 func clientFrameLimit(op string, response bool) int {
+	if response && isTablePage(op) {
+		return MaxBrandFrame
+	}
 	if isImport(op) || op == "company.brand-set" || response && op == "company.brand-get" {
 		return MaxBrandFrame
 	}

@@ -124,7 +124,7 @@ function fixtureDaemon() {
       ...snapshot,
       brand: { name: '', logo: '', accent: 'teal' },
     })),
-    ListEquipment: vi.fn(async () => eq()),
+    ListEquipmentFiltered: vi.fn(async () => eq()),
     ListCredentials: vi.fn(async () => eq()),
     GetEquipment: vi.fn(async () => eq({ device: devices[0] })),
     SaveEquipment: vi.fn(async (_p: string, _a: string, input: DeviceInput) => {

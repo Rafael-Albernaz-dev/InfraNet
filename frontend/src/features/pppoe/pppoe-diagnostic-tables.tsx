@@ -18,7 +18,7 @@ function catalogRowDetails(row: PDRow) {
 }
 export function CatalogTable({ rows }: { rows: PDRow[] }) {
   return (
-    <DataTable>
+    <DataTable tableId="diagnostic-tables">
       <thead>
         <tr>
           {[
@@ -68,7 +68,7 @@ export function CatalogTable({ rows }: { rows: PDRow[] }) {
 }
 export function AbsentInterfacesTable({ rows }: { rows: PDRow[] }) {
   return (
-    <DataTable>
+    <DataTable tableId="diagnostic-tables-2">
       <thead>
         <tr>
           <th>Interface</th>
@@ -88,7 +88,7 @@ export function AbsentInterfacesTable({ rows }: { rows: PDRow[] }) {
 }
 export function RadiusTable({ rows }: { rows: PDRow[] }) {
   return (
-    <DataTable>
+    <DataTable tableId="diagnostic-tables-3">
       <thead>
         <tr>
           {[
@@ -117,15 +117,17 @@ export function RadiusTable({ rows }: { rows: PDRow[] }) {
                   ? 'Não informado nesta leitura'
                   : r.protocol}
               </td>
-              <td>porta {r.auth_port}</td>
-              <td>porta {r.accounting_port}</td>
+              <td data-number={r.auth_port}>porta {r.auth_port}</td>
+              <td data-number={r.accounting_port}>porta {r.accounting_port}</td>
               <td>{flag(r.disabled)}</td>
               <td>
                 {r.counters?.last_rtt.known
                   ? formatLatencyRange(r.counters.last_rtt)
                   : 'Não informado nesta leitura'}
               </td>
-              <td>{exactNumber(r.counters?.bad_replies)}</td>
+              <td data-number={r.counters?.bad_replies ?? ''}>
+                {exactNumber(r.counters?.bad_replies)}
+              </td>
             </tr>
           ))}
       </tbody>

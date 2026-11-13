@@ -28,7 +28,7 @@ var ppFields = map[string][]string{
 	"pppoe.diagnostic-list":    {"device_id", "scope", "diagnostic_id", "cursor", "query"},
 	"pppoe.collect-start":      {"device_id", "revision", "operation_id"},
 	"pppoe.collect-status":     {"job_id"}, "pppoe.collect-cancel": {"job_id"},
-	"pppoe.current": {"device_id"}, "pppoe.observation-get": {"device_id", "observation_id"},
+	"pppoe.current": {"device_id", "query", "cursor"}, "pppoe.observation-get": {"device_id", "observation_id", "query", "cursor"},
 	"pppoe.sessions-list":  {"device_id", "observation_id", "query", "cursor"},
 	"pppoe.session-get":    {"device_id", "observation_id", "row_id"},
 	"pppoe.reference-save": {"device_id", "observation_id", "reference_id", "operation_id"},
@@ -77,6 +77,9 @@ func (s *Server) ppCursor(q Request, offset int) string {
 		return ""
 	}
 	payload := strconv.Itoa(offset) + ":" + ppDigest(q)
+	if q.Op == "pppoe.current" {
+		payload += ":" + q.PPPoE.ObservationID
+	}
 	if q.Op == "pppoe.monitor-current" {
 		payload += ":" + q.PPPoE.MonitoringGeneration
 	}
@@ -93,27 +96,10 @@ func (s *Server) ppOffset(q Request) (int, bool) {
 		return 0, false
 	}
 	f := strings.Split(string(b), ":")
-	if q.Op == "pppoe.monitor-current" {
-		if len(f) != 4 {
-			return 0, false
-		}
-		snapshot := strings.Split(f[2], "~")
-		if len(snapshot) != 3 {
-			return 0, false
-		}
-		if _, e := strconv.ParseUint(snapshot[0], 10, 63); e != nil {
-			return 0, false
-		}
-		if _, e := strconv.ParseInt(snapshot[1], 10, 64); e != nil {
-			return 0, false
-		}
-		if digest, e := hex.DecodeString(snapshot[2]); e != nil || len(digest) != 32 {
-			return 0, false
-		}
-		q.PPPoE.MonitoringGeneration = f[2]
-	} else if len(f) != 3 {
+	if !restorePPCursorSource(q, f) {
 		return 0, false
 	}
+
 	n, e := strconv.Atoi(f[0])
 	if e != nil || n < 0 || n > 4096 {
 		return 0, false
@@ -155,78 +141,29 @@ func (s *Server) dispatchPPPoE(ctx context.Context, uid uint32, q Request, owner
 	v, c := s.equipment.HandlePP(ctx, equipment.Command{Op: q.Op, UID: uid, Scope: scope}, input)
 	r.Code = foundation.Code(c)
 	if c != equipment.OK {
-		if c == equipment.Limit && v.Reason != "" {
-			r.ErrorDetail = &ErrorDetail{Reason: v.Reason}
-		}
-		if c == "JOB_INTERRUPTED" && v.Entity != "" {
-			r.ErrorDetail = &ErrorDetail{Entity: v.Entity}
-		}
-		return r
+		return ppOperationFailure(r, v, c)
 	}
 	if q.Op == "pppoe.export-page" {
-		key, _ := base64.RawStdEncoding.DecodeString(input.ExportKey)
-		for _, row := range v.DiagnosticRows {
-			id := v.Diagnostic.ID
-			row.ID = ppToken(key, "diagnostic-row", id+row.ID)
-			if row.RemoteID != "" {
-				row.RemoteID = ppToken(key, "diagnostic-remote", input.Scope+"/"+row.RemoteID)
-			}
-			row.Name = ppToken(key, "diagnostic-name", row.Name)
-			row.Parent = ppToken(key, "diagnostic-name", row.Parent)
-			if row.ParentID != "" {
-				row.ParentID = ppToken(key, "diagnostic-row", id+row.ParentID)
-			}
-			row.Address = ppToken(key, "address", row.Address)
-			switch row.Type {
-			case "", "ether", "vlan", "bridge", "pppoe-in", "pppoe-out", "wlan", "wifi", "bonding", "eoip", "veth", "loopback", "gre", "vxlan", "wireguard":
-			default:
-				row.Type = "unknown"
-			}
-			v.ExportDiagnostics = append(v.ExportDiagnostics, row)
-		}
-		for _, row := range v.Rows {
-			if row.State == "" {
-				row.State = "ONLINE"
-			}
-			v.ExportRows = append(v.ExportRows, equipment.PPExportRow{State: row.State, Uptime: row.Uptime, Duplicates: row.Duplicates, Observation: ppToken(key, "observation", v.Current.ID), Row: ppToken(key, "row", v.Current.ID+row.ID), Login: ppToken(key, "login", row.Login), Address: ppToken(key, "address", row.Address), Caller: ppToken(key, "caller", row.Caller)})
-		}
-		for _, delta := range v.Deltas {
-			v.ExportDeltas = append(v.ExportDeltas, equipment.PPExportDelta{BaseRow: ppToken(key, "row", func() string {
-				if delta.BaseRow == "" {
-					return ""
-				}
-				return input.BaseID + delta.BaseRow
-			}()), TargetRow: ppToken(key, "row", func() string {
-				if delta.TargetRow == "" {
-					return ""
-				}
-				return input.TargetID + delta.TargetRow
-			}()), Category: delta.Category, Reason: delta.Reason, AddressChanged: delta.AddressChanged, CallerChanged: delta.CallerChanged})
-		}
-		v.Deltas = nil
-		v.Rows = nil
-		v.Current = nil
-		v.Diagnostic = nil
-		v.DiagnosticRows = nil
-	}
-	if v.More {
-		if q.Op == "pppoe.monitor-current" {
-			input.MonitoringGeneration = v.MonitoringGeneration
-			q.PPPoE = &input
-		}
-		v.Next = s.ppCursor(q, v.NextOffset)
-		if v.Next == "" {
-			r.Code = foundation.Unavailable
+		if code := sanitizePPExport(&v, input); code != equipment.OK {
+			r.Code = foundation.Code(code)
 			return r
 		}
 	}
+	if !s.attachPPPageCursor(&q, &v, input) {
+		r.Code = foundation.Unavailable
+		return r
+	}
+
+	return s.ppResponse(q, v, r)
+}
+func (s *Server) ppResponse(q Request, v equipment.PPView, r Response) Response {
 	d := &Data{ContractRevision: ProductRevision, ProductVersion: ProductVersion, Instance: s.identity.Instance, Profile: q.Profile, Activation: q.Activation, Authenticated: true, PPPoE: &v}
 	if v.Job != nil && v.Job.PPPoE != nil && equipment.ValidCollectorReason(v.Job.Code, v.Job.PPPoE.Quality.Reason) {
 		r.ErrorDetail = &ErrorDetail{Reason: v.Job.PPPoE.Quality.Reason}
 	}
 	r.Data = d
 	b, e := json.Marshal(r)
-	if e != nil || len(b) > 48*1024 {
+	if e != nil || len(b) > ppResponseLimit(q.Op) {
 		r.Data = nil
 		r.Code = foundation.Code(equipment.Limit)
 		r.ErrorDetail = &ErrorDetail{Reason: "frame"}
@@ -249,4 +186,68 @@ func validErrorDetail(r Response) bool {
 		return j != nil && j.State == "FAILED" && j.PPPoE != nil && j.PPPoE.Quality.Reason == d.Reason && equipment.ValidCollectorReason(j.Code, d.Reason)
 	}
 	return r.Code == "JOB_INTERRUPTED" && d.Reason == "" && access.ValidCompanyID(d.Entity)
+}
+
+func ppOperationFailure(r Response, v equipment.PPView, c equipment.Code) Response {
+	if c == equipment.Limit && v.Reason != "" {
+		r.ErrorDetail = &ErrorDetail{Reason: v.Reason}
+	}
+	if c == "JOB_INTERRUPTED" && v.Entity != "" {
+		r.ErrorDetail = &ErrorDetail{Entity: v.Entity}
+	}
+	return r
+}
+
+func (s *Server) attachPPPageCursor(q *Request, v *equipment.PPView, input equipment.PPInput) bool {
+	if v.More {
+		if q.Op == "pppoe.current" && v.Current != nil {
+			q.PPPoE.ObservationID = v.Current.ID
+		}
+		if q.Op == "pppoe.monitor-current" {
+			input.MonitoringGeneration = v.MonitoringGeneration
+			q.PPPoE = &input
+		}
+		v.Next = s.ppCursor(*q, v.NextOffset)
+		if v.Next == "" {
+			return false
+		}
+	}
+	return true
+}
+
+func restorePPCursorSource(q Request, fields []string) bool {
+	switch q.Op {
+	case "pppoe.current":
+		if len(fields) != 4 || !access.ValidCompanyID(fields[2]) {
+			return false
+		}
+		q.PPPoE.ObservationID = fields[2]
+		return true
+	case "pppoe.monitor-current":
+		return restoreMonitorCursorSource(q.PPPoE, fields)
+	default:
+		return len(fields) == 3
+	}
+}
+func restoreMonitorCursorSource(input *equipment.PPInput, f []string) bool {
+	if len(f) != 4 {
+		return false
+	}
+	snapshot := strings.Split(f[2], "~")
+	if len(snapshot) != 3 {
+		return false
+	}
+	// ignored: parsing validates the cursor generation; its numeric value is not consumed here.
+	if _, e := strconv.ParseUint(snapshot[0], 10, 63); e != nil {
+		return false
+	}
+	// ignored: parsing validates the cursor timestamp; the signed cursor retains its original text.
+	if _, e := strconv.ParseInt(snapshot[1], 10, 64); e != nil {
+		return false
+	}
+	if digest, e := hex.DecodeString(snapshot[2]); e != nil || len(digest) != 32 {
+		return false
+	}
+	input.MonitoringGeneration = f[2]
+	return true
 }

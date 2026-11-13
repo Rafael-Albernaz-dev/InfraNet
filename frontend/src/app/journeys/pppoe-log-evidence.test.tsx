@@ -195,43 +195,39 @@ it('stored series preserves unknowns and package divergence across pages', async
   expect(readAPI.start).toHaveBeenCalledTimes(1);
   view.unmount();
 });
-it('reopening an expired local page returns to the first cursor', async () => {
+it('reopening an expired stored collection returns to the first cursor', async () => {
+  const opened = new Set<string>();
   vi.mocked(monitoringAPI.current).mockImplementation(
-    async (_p, _a, _d, scope, cursor) =>
-      cursor
-        ? { ...response(), code: 'CURSOR_INVALID' }
-        : response({
-            total: 17,
-            next_cursor: 'expired-page',
-            read: {
-              scope,
-              started_at: '',
-              ended_at: '2026-10-28T01:00:00Z',
-              duration_ns: 0,
-              rows: [],
-            },
-          }),
+    async (_p, _a, _d, scope, cursor) => {
+      expect(cursor).toBe('');
+      if (!opened.has(scope)) {
+        opened.add(scope);
+        return { ...response(), code: 'CURSOR_INVALID' };
+      }
+      return response({
+        total: 0,
+        read: {
+          scope,
+          started_at: '',
+          ended_at: '2026-10-28T01:00:00Z',
+          duration_ns: 0,
+          rows: [],
+        },
+      });
+    },
   );
   const view = render(
     <DeviceMonitoring profile="company" activation="active" device={device} />,
   );
-  fireEvent.click(
-    (
-      await screen.findAllByRole('button', {
-        name: 'Próxima página dos dados locais',
-      })
-    )[0],
-  );
-  fireEvent.click(
-    await screen.findByRole('button', { name: 'Reabrir série local' }),
-  );
+  const retry = (
+    await screen.findAllByRole('button', { name: 'Reabrir série local' })
+  )[0];
+  const before = vi.mocked(monitoringAPI.current).mock.calls.length;
+  fireEvent.click(retry);
   await waitFor(() =>
-    expect(vi.mocked(monitoringAPI.current).mock.calls.at(-1)?.[4]).toBe(''),
+    expect(monitoringAPI.current).toHaveBeenCalledTimes(before + opened.size),
   );
-  await screen.findAllByRole('button', {
-    name: 'Próxima página dos dados locais',
-  });
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(vi.mocked(monitoringAPI.current).mock.calls.at(-1)?.[4]).toBe('');
   view.unmount();
 });
 it('a minute can disclose both a gap and an observed drop', async () => {

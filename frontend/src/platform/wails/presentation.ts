@@ -6,3 +6,5 @@ export * from './inventory';
 export * from './pppoe';
 export * from './pppoe-types';
 export * from './radio';
+
+export * from './table-preferences';

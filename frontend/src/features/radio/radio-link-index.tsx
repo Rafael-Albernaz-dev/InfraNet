@@ -30,36 +30,6 @@ export function RadioIndexRefresh({ state }: { state: RadioLinkState }) {
   );
 }
 
-export function RadioIndexPagination({ state }: { state: RadioLinkState }) {
-  const { radio, indexPage, index } = state;
-  return (
-    <>
-      {!radio.busy && index && (index.total || 0) > 8 && (
-        <div className="radio-actions">
-          <span>
-            APs {(index.offset || 0) + 1}–
-            {Math.min((index.offset || 0) + 8, index.total || 0)} de{' '}
-            {index.total}
-          </span>
-          <Button
-            type="submit"
-            disabled={!index.offset}
-            onClick={() => void indexPage(Math.max(0, (index.offset || 0) - 8))}
-          >
-            APs anteriores
-          </Button>
-          <Button
-            type="submit"
-            disabled={!index.more}
-            onClick={() => void indexPage(index.next_offset || 0)}
-          >
-            Próximos APs
-          </Button>
-        </div>
-      )}
-    </>
-  );
-}
 export function RadioLinkMatchReason({ state }: { state: RadioLinkState }) {
   const { radio, editing, link } = state;
   return (
@@ -95,7 +65,7 @@ export function RadioIndexTable({ state }: { state: RadioLinkState }) {
       data={{
         state: 'ready',
         content: (
-          <DataTable>
+          <DataTable tableId="radio-link-index">
             <thead>
               <tr>
                 <th>AP</th>

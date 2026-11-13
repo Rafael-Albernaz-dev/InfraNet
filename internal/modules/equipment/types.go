@@ -192,6 +192,7 @@ type Job struct {
 }
 
 type View struct {
+	TablePreference    *TablePreference  `json:"table_preference,omitempty"`
 	PulseNetwork       string            `json:"pulse_network,omitempty"`
 	ImportItems        []ImportItem      `json:"import_items,omitempty"`
 	ImportReceipt      *ImportReceipt    `json:"import_receipt,omitempty"`

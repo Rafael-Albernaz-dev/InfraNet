@@ -98,30 +98,6 @@ function DiagnosticToolbar(p: DiagnosticListContentProps) {
     </div>
   );
 }
-function DiagnosticPager({ view }: DiagnosticListContentProps) {
-  return (
-    <div className="pager">
-      <Button
-        aria-label="Início do diagnóstico"
-        disabled={!view.cursor}
-        onClick={view.first}
-      >
-        Início
-      </Button>
-      <span>
-        Página {view.cursor ? 2 : 1}
-        {!view.next ? ' de 1' : ''}
-      </span>
-      <Button
-        aria-label="Próxima página do diagnóstico"
-        disabled={view.pageLoading || !!view.pageError || !view.next}
-        onClick={view.more}
-      >
-        Próxima
-      </Button>
-    </div>
-  );
-}
 export function DiagnosticStoredRows(p: DiagnosticListContentProps) {
   const { view, scope } = p;
   if (!view.meta) return null;
@@ -142,7 +118,6 @@ export function DiagnosticStoredRows(p: DiagnosticListContentProps) {
         view.rows[0]?.kind === 'aaa' && (
           <p>Nenhum servidor RADIUS configurado nesta leitura.</p>
         )}
-      <DiagnosticPager {...p} />
       {scope === 'catalog' && (
         <p className="muted">
           VLANs e faixas representam configuração. Não comprovam vínculo

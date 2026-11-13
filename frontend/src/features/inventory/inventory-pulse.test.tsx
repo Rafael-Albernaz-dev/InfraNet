@@ -69,7 +69,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 it('renews every five seconds preserving filters, cursor, selection, row and scroll without flashing', async () => {
-  vi.mocked(equipmentAPI.list).mockResolvedValue(result('ONLINE', 16));
+  const all = result('ONLINE');
+  const target = all.data!.devices[0];
+  all.data!.devices = Array.from({ length: 50 }, (_, i) => ({
+    ...target,
+    id: `other-${i}`,
+    name: `Other ${i}`,
+  })).concat(target);
+  vi.mocked(equipmentAPI.list).mockResolvedValue(all);
   open();
   await flush();
   fireEvent.change(screen.getByLabelText('Estado'), {
@@ -97,11 +104,12 @@ it('renews every five seconds preserving filters, cursor, selection, row and scr
     'p',
     'a',
     '',
-    16,
+    0,
     false,
-    expect.objectContaining({ state: 'ONLINE' }),
+    expect.objectContaining({ all: true }),
   );
   expect(screen.getByLabelText('Estado')).toHaveValue('ONLINE');
+  expect(screen.getByText('Página 2 de 2')).toBeVisible();
   expect(
     screen.getByRole('checkbox', { name: 'Selecionar Synthetic pulse' }),
   ).toBeChecked();
@@ -111,7 +119,7 @@ it('renews every five seconds preserving filters, cursor, selection, row and scr
     screen.queryByText('Carregando equipamentos…'),
   ).not.toBeInTheDocument();
 });
-it('discards an old response after changing the state filter', async () => {
+it('applies the active local filter to a late full snapshot and the next renewal', async () => {
   open();
   await flush();
   let resolveOld: (r: EquipmentResult) => void = () => {
@@ -133,6 +141,11 @@ it('discards an old response after changing the state filter', async () => {
   await flush();
   await act(async () => {
     resolveOld(result('ONLINE'));
+  });
+  expect(screen.queryByText(device.name)).not.toBeInTheDocument();
+  expect(screen.getByLabelText('Estado')).toHaveValue('OFFLINE');
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(5000);
   });
   const row = screen.getByText(device.name).closest('tr')!;
   expect(within(row).getByText('OFFLINE')).toHaveClass('st-off');
@@ -195,11 +208,7 @@ it.each([
   },
 );
 it('distinguishes an empty state filter from an empty inventory and recovers through clear filters', async () => {
-  const empty = result('');
-  empty.data!.devices = [];
-  vi.mocked(equipmentAPI.list).mockImplementation(async (...args) =>
-    args[5]?.state ? empty : result(),
-  );
+  vi.mocked(equipmentAPI.list).mockResolvedValue(result());
   open();
   await flush();
   fireEvent.change(screen.getByLabelText('Estado'), {

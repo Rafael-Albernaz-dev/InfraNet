@@ -59,7 +59,8 @@ it('inactive filtering stays explicit; no remote work happens while listing or e
   fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
   fireEvent.click(screen.getByRole('checkbox', { name: 'Mostrar inativos' }));
   await waitFor(() =>
-    expect(api.list).toHaveBeenLastCalledWith('X', 'a', '', 0, true, {
+    expect(api.list).toHaveBeenLastCalledWith('X', 'a', '', 0, false, {
+      all: true,
       role: '',
       block: '',
       block_empty: false,
@@ -163,11 +164,18 @@ it('full detail interfaces survive a subsequent list projection and a new contex
   );
   await screen.findByText('ether1');
   fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
-  fireEvent.change(screen.getByLabelText('Buscar'), {
+  fireEvent.change(screen.getByLabelText('Buscar em todas as colunas'), {
     target: { value: 'Router' },
   });
   await waitFor(() =>
-    expect(api.list).toHaveBeenLastCalledWith('X', 'a', 'Router', 0, false),
+    expect(api.list).toHaveBeenLastCalledWith(
+      'X',
+      'a',
+      '',
+      0,
+      false,
+      expect.objectContaining({ all: true }),
+    ),
   );
   await openDeviceSheet('Router X');
   fireEvent.click(screen.getByRole('tab', { name: 'Interfaces e saúde' }));
@@ -213,24 +221,18 @@ it('late detail cannot restore an old selected device', async () => {
   expect(screen.getByRole('heading', { name: 'Router B' })).toBeInTheDocument();
 });
 it('inactive filtering and an empty search recover through the frozen list and explicit sheet', async () => {
-  vi.mocked(api.list).mockImplementation(
-    async (_p, _a, search, _cursor, inactive) => ({
-      ...data(search || !inactive ? [] : [{ ...device, active: false }]),
-      data: {
-        ...data(search || !inactive ? [] : [{ ...device, active: false }])
-          .data!,
-        total_devices: 1,
-      },
-    }),
-  );
+  vi.mocked(api.list).mockResolvedValue({
+    ...data([{ ...device, active: false }]),
+    data: { ...data([{ ...device, active: false }]).data!, total_devices: 1 },
+  });
   render(<Equipment profile="inactive-only" activation="a" connected />);
-  await screen.findByText('Nenhum equipamento cadastrado');
+  await screen.findByText('Nenhum equipamento ativo');
   expect(screen.getByLabelText('Estado')).toBeEnabled();
   const options = within(screen.getByLabelText('Estado')).getAllByRole(
     'option',
   );
   expect(options.map((o) => o.textContent)).toEqual([
-    'Todos',
+    'Estado: todos',
     'ONLINE',
     'OFFLINE',
     'Sem estado',
@@ -241,15 +243,15 @@ it('inactive filtering and an empty search recover through the frozen list and e
   await openDeviceSheet('Router X');
   expect(screen.getByRole('button', { name: 'Reativar' })).toBeEnabled();
   fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
-  fireEvent.change(screen.getByLabelText('Buscar'), {
+  fireEvent.change(screen.getByLabelText('Buscar em todas as colunas'), {
     target: { value: 'absent' },
   });
   await screen.findByText('Nenhum equipamento encontrado');
   expect(screen.getByRole('table')).toBeVisible();
   expect(screen.queryByText('Detalhes do equipamento')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }));
-  await screen.findByText('Nenhum equipamento cadastrado');
-  expect(screen.getByLabelText('Buscar')).toHaveValue('');
+  await screen.findByText('Nenhum equipamento ativo');
+  expect(screen.getByLabelText('Buscar em todas as colunas')).toHaveValue('');
   expect(
     screen.getByRole('checkbox', { name: 'Mostrar inativos' }),
   ).not.toBeChecked();

@@ -104,6 +104,16 @@ export function presentationMock(
   fallback: Record<string, Record<string, unknown>> = {},
 ) {
   return {
+    tablePreferenceAPI: {
+      get: vi.fn(async (...args: unknown[]) => {
+        const method = overrides.tablePreferenceAPI?.get;
+        return typeof method === 'function' ? method(...args) : undefined;
+      }),
+      set: vi.fn(async (...args: unknown[]) => {
+        const method = overrides.tablePreferenceAPI?.set;
+        if (typeof method === 'function') return method(...args);
+      }),
+    },
     access: { ...accessMock(fallback.access), ...overrides.access },
     equipmentAPI: {
       ...equipmentAPIMock(fallback.equipmentAPI),

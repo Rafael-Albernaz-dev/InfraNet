@@ -1,3 +1,4 @@
+import { TablePreferenceProvider } from './table-preference-provider';
 import { NetworkPulseProvider } from '../features/equipment/network-pulse';
 import type { PerformFn } from '../features/access/access-session';
 import {
@@ -77,7 +78,12 @@ export function AuthenticatedShell(props: AuthenticatedShellProps) {
       connected={connected}
       doc={props.root?.ownerDocument}
     >
-      <AuthenticatedContent {...props} />
+      <TablePreferenceProvider
+        profile={view.profile_id}
+        activation={view.activation_id}
+      >
+        <AuthenticatedContent {...props} />
+      </TablePreferenceProvider>
     </NetworkPulseProvider>
   );
 }

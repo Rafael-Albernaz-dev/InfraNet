@@ -15,7 +15,7 @@ export function EquipmentPorts({
       tabIndex={0}
       aria-label="Portas físicas negociadas"
     >
-      <DataTable className="data-table">
+      <DataTable tableId="health-tables" className="data-table">
         <thead>
           <tr>
             <th>Porta</th>
@@ -28,7 +28,10 @@ export function EquipmentPorts({
           {ports.map((r) => (
             <tr key={r.name}>
               <td>{r.name}</td>
-              <td title={exactRate(r.port?.speed_bps)}>
+              <td
+                data-number={r.port?.speed_bps ?? ''}
+                title={exactRate(r.port?.speed_bps)}
+              >
                 {displayPort(r.port)}
                 {r.port?.running &&
                 ((r.port.speed_bps !== undefined &&
@@ -37,7 +40,9 @@ export function EquipmentPorts({
                   ? ' · atenção'
                   : ''}
               </td>
-              <td>{exactNumber(r.port?.link_downs)}</td>
+              <td data-number={r.port?.link_downs ?? ''}>
+                {exactNumber(r.port?.link_downs)}
+              </td>
               {!compact && <td title={r.at}>{formatDate(r.at)}</td>}
             </tr>
           ))}

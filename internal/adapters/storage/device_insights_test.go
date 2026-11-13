@@ -56,7 +56,7 @@ func TestSavedPortsRestartReplayAndReopen(t *testing.T) {
 		t.Fatal("port delta/replay", c, v.Read)
 	}
 	var version int
-	if e := j.st.unit.QueryRow("SELECT max(version) FROM schema_migrations").Scan(&version); e != nil || version != 14 {
+	if e := j.st.unit.QueryRow("SELECT max(version) FROM schema_migrations").Scan(&version); e != nil || version != 15 {
 		t.Fatal("additive migration", version, e)
 	}
 	if e := j.st.validateUnit(j.st.unit, companyX); e != nil {

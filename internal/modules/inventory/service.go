@@ -93,6 +93,8 @@ func (s *Service) Handle(ctx context.Context, q Command) (View, Code) {
 
 func (s *Service) dispatchAuthorized(ctx context.Context, q Command, v *View) Code {
 	switch q.Op {
+	case "inventory.table-preference-get", "inventory.table-preference-set":
+		return s.tablePreference(ctx, q, v)
 	case "device.query-start", "trust.inspect":
 		var c Code
 		v.Job, c = s.start(ctx, q)
@@ -195,6 +197,10 @@ func (s *Service) listDevices(st *State, q Command, v *View) Code {
 	v.Blocks, v.Models = inventoryOptions(st.Devices)
 	devices := s.withPulse(st.Devices, q.Scope.Profile, v)
 	devices = s.withLive(devices, st.Credentials, q.Scope.Profile)
+	if q.All {
+		v.Devices = filterDevices(devices, Command{IncludeInactive: true})
+		return OK
+	}
 	filtered := filterDevices(devices, q)
 	start := min(q.Cursor, len(filtered))
 	end := min(start+PageSize, len(filtered))

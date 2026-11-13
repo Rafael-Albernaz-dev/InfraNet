@@ -1,3 +1,4 @@
+import { completePPTable } from './stored-table-pages';
 import {
   CancelPPPoECollection,
   CancelPPPoEDiagnostic,
@@ -64,8 +65,12 @@ const pdBindings = {
   status: PPPoEDiagnosticStatus,
   cancel: CancelPPPoEDiagnostic,
   current: GetPPPoEDiagnostic,
-  list: (...[p, a, d, s, o, c, kind = '']: DiagnosticListArgs) =>
-    ListPPPoEDiagnostic(p, a, d, s, o, c, kind),
+  list: async (...[p, a, d, s, o, c, kind = '']: DiagnosticListArgs) =>
+    completePPTable(
+      await ListPPPoEDiagnostic(p, a, d, s, o, c, kind),
+      (next) => ListPPPoEDiagnostic(p, a, d, s, o, next, kind),
+      'diagnostic_rows',
+    ),
 };
 export const pppoeDiagnosticAPI: {
   [K in keyof typeof pdBindings]: (
@@ -92,22 +97,17 @@ const ppBindings = {
   save: SavePPPoEReference,
   references: ListPPPoEReferences,
   remove: DeletePPPoEReference,
-  compare: (...[p, a, d, b, t, q, c]: CompareArgs) =>
-    ComparePPPoE(
-      p,
-      a,
-      d,
-      b,
-      t,
-      {
-        ...q,
-        search: '',
-        sort: '',
-        desc: false,
-        duplicates_only: false,
-      } as equipment.PPQuery,
-      c,
-    ),
+  compare: async (...[p, a, d, b, t, q, c]: CompareArgs) => {
+    const query = {
+      category: q.category,
+      state: q.state || '',
+    } as equipment.PPQuery;
+    return completePPTable(
+      await ComparePPPoE(p, a, d, b, t, query, c),
+      (next) => ComparePPPoE(p, a, d, b, t, query, next),
+      'deltas',
+    );
+  },
 };
 export const pppoeAPI: {
   [K in keyof typeof ppBindings]: (
@@ -124,10 +124,23 @@ export const pppoeAPI: {
 const readBindings = {
   start: StartPPPoERead,
   stop: StopPPPoETraffic,
-  status: PPPoEReadStatus,
+  status: async (...args: Parameters<typeof PPPoEReadStatus>) => {
+    const first = await PPPoEReadStatus(...args);
+    if (first.data?.job?.state !== 'SUCCEEDED') return first;
+    return completePPTable(
+      first,
+      (next) => PPPoEReadPage(args[0], args[1], args[2], next),
+      'read',
+    );
+  },
   cancel: CancelPPPoERead,
   cancelOperation: CancelPPPoEReadOperation,
-  page: PPPoEReadPage,
+  page: async (...args: Parameters<typeof PPPoEReadPage>) =>
+    completePPTable(
+      await PPPoEReadPage(...args),
+      (next) => PPPoEReadPage(args[0], args[1], args[2], next),
+      'read',
+    ),
 };
 export const pppoeReadAPI: {
   [K in keyof typeof readBindings]: (
@@ -135,7 +148,12 @@ export const pppoeReadAPI: {
   ) => Promise<PPResult>;
 } = readBindings;
 export const deviceMonitoringAPI = {
-  current: GetDeviceMonitoring as (
+  current: async (
     ...args: Parameters<typeof GetDeviceMonitoring>
-  ) => Promise<PPResult>,
+  ): Promise<PPResult> =>
+    completePPTable(
+      await GetDeviceMonitoring(...args),
+      (next) => GetDeviceMonitoring(args[0], args[1], args[2], args[3], next),
+      'read',
+    ),
 };

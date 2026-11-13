@@ -23,7 +23,11 @@ func (s *Store) ReadEquipment(ctx context.Context, id string) (equipment.State, 
 	return st, equipment.OK
 }
 func (s *Store) loadEquipment(ctx context.Context, q queryer, id string) (equipment.State, error) {
-	st := equipment.State{Installation: s.installation, Company: id, Credentials: []equipment.SealedCredential{}, Devices: []equipment.Device{}, Operations: []equipment.Operation{}}
+	st := equipment.State{Installation: s.installation,
+		Company:     id,
+		Credentials: []equipment.SealedCredential{},
+		Devices:     []equipment.Device{},
+		Operations:  []equipment.Operation{}}
 	if err := loadEquipmentCredentials(ctx, q, &st); err != nil {
 		return st, err
 	}

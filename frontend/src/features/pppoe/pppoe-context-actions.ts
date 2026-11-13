@@ -24,8 +24,14 @@ export function ppReadMessage(code: string) {
 
 export const freshQuery = (): PPQuery => ({
   search: '',
+  state: '',
+  plan: '',
+  vlan: '',
+  service: '',
+  duplicity: '',
   duplicates_only: false,
-  sort: 'login',
+  sort: '',
+  page_size: 50,
   desc: false,
   category: '',
 });

@@ -1,3 +1,6 @@
+import { TablePreferenceProvider } from '../table-preference-provider';
+import type { ComponentProps } from 'react';
+import type { TablePreference } from '../../shared/ui/table-model';
 import {
   fireEvent,
   render,
@@ -17,6 +20,25 @@ import { RadioRoles } from '../../features/equipment/radio-contract';
 const prefs = vi.hoisted(() => ({ saved: [] as string[] }));
 vi.mock('../../platform/wails/presentation', async () =>
   (await import('../../shared/testing/presentation-mock')).presentationMock({
+    tablePreferenceAPI: {
+      get: vi.fn(async () =>
+        prefs.saved.length
+          ? {
+              columns: prefs.saved,
+              filters: {},
+              search: '',
+              sort: null,
+              manual: [],
+              page_size: 50,
+            }
+          : undefined,
+      ),
+      set: vi.fn(
+        async (_p: string, _a: string, _id: string, state: TablePreference) => {
+          prefs.saved = state.columns;
+        },
+      ),
+    },
     access: {
       status: vi.fn(async () => ({ code: 'OK', columns: prefs.saved })),
       setColumns: vi.fn(async (columns: string[]) => {
@@ -85,7 +107,7 @@ beforeEach(() => {
 });
 
 it('does not open the sheet from a checkbox and clears selection on filter and company changes', async () => {
-  const view = render(<Equipment profile="X" activation="a" connected />);
+  const view = render(<Subject profile="X" activation="a" connected />);
   fireEvent.click(
     await screen.findByRole('checkbox', { name: 'Selecionar Synthetic AP' }),
   );
@@ -102,19 +124,19 @@ it('does not open the sheet from a checkbox and clears selection on filter and c
     screen.getByRole('checkbox', { name: 'Selecionar Synthetic Switch' }),
   );
   expect(screen.getByText('1 selecionado')).toBeVisible();
-  view.rerender(<Equipment profile="Y" activation="b" connected />);
+  view.rerender(<Subject profile="Y" activation="b" connected />);
   await screen.findByRole('checkbox', { name: 'Selecionar Other company' });
   expect(screen.queryByText('1 selecionado')).not.toBeInTheDocument();
   fireEvent.click(
     screen.getByRole('checkbox', { name: 'Selecionar Other company' }),
   );
-  view.rerender(<Equipment profile="X" activation="a" connected />);
+  view.rerender(<Subject profile="X" activation="a" connected />);
   await screen.findByRole('checkbox', { name: 'Selecionar Synthetic Switch' });
   expect(screen.queryByText('1 selecionado')).not.toBeInTheDocument();
 });
 
 it('persists a hidden column after remount and closes the menu only on escape or outside click', async () => {
-  const first = render(<Equipment profile="X" activation="a" connected />);
+  const first = render(<Subject profile="X" activation="a" connected />);
   await screen.findByRole('checkbox', { name: 'Selecionar Synthetic AP' });
   fireEvent.click(screen.getByRole('button', { name: 'Colunas' }));
   const menu = screen.getByRole('menu', { name: 'Colunas' });
@@ -136,8 +158,12 @@ it('persists a hidden column after remount and closes the menu only on escape or
   expect(
     screen.queryByRole('menu', { name: 'Colunas' }),
   ).not.toBeInTheDocument();
+  await waitFor(() => {
+    expect(prefs.saved.length).toBeGreaterThan(0);
+    expect(prefs.saved).not.toContain('cpu');
+  });
   first.unmount();
-  render(<Equipment profile="X" activation="a" connected />);
+  render(<Subject profile="X" activation="a" connected />);
   await waitFor(() =>
     expect(
       screen.queryByRole('columnheader', { name: 'CPU' }),
@@ -148,7 +174,7 @@ it('persists a hidden column after remount and closes the menu only on escape or
 
 it('submits selected device revisions to the bulk service without opening the sheet', async () => {
   vi.mocked(equipmentAPI.bulk).mockResolvedValue(result('X', []));
-  render(<Equipment profile="X" activation="a" connected />);
+  render(<Subject profile="X" activation="a" connected />);
   fireEvent.click(
     await screen.findByRole('checkbox', { name: 'Selecionar Synthetic AP' }),
   );
@@ -180,12 +206,12 @@ it('submits selected device revisions to the bulk service without opening the sh
 });
 
 it('reorders visible columns and restores the default order', async () => {
-  render(<Equipment profile="X" activation="a" connected />);
+  render(<Subject profile="X" activation="a" connected />);
   await screen.findByRole('checkbox', { name: 'Selecionar Synthetic AP' });
   fireEvent.click(screen.getByRole('button', { name: 'Colunas' }));
   fireEvent.click(screen.getByRole('button', { name: 'Subir Papel' }));
   await waitFor(() =>
-    expect(prefs.saved.slice(0, 3)).toEqual(['equipment', 'role', 'status']),
+    expect(prefs.saved.slice(0, 3)).toEqual(['role', 'status', 'block']),
   );
   const headers = screen
     .getAllByRole('columnheader')
@@ -193,6 +219,14 @@ it('reorders visible columns and restores the default order', async () => {
   expect(headers.indexOf('Papel')).toBeLessThan(headers.indexOf('Estado'));
   fireEvent.click(screen.getByRole('button', { name: 'Restaurar padrão' }));
   await waitFor(() =>
-    expect(prefs.saved.slice(0, 3)).toEqual(['equipment', 'status', 'role']),
+    expect(prefs.saved.slice(0, 3)).toEqual(['status', 'role', 'block']),
   );
 });
+
+function Subject(p: ComponentProps<typeof Equipment>) {
+  return (
+    <TablePreferenceProvider profile={p.profile} activation={p.activation}>
+      <Equipment {...p} />
+    </TablePreferenceProvider>
+  );
+}

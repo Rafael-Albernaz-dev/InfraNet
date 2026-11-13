@@ -8,7 +8,6 @@ import type { Device } from '../equipment/equipment-api';
 import {
   RadioEquipmentLimits,
   RadioEquipmentInterfaces,
-  RadioEquipmentPagination,
 } from './radio-equipment-parts';
 import { createPortal } from 'react-dom';
 import { Button } from '../../shared/ui/Button';
@@ -87,7 +86,6 @@ function RadioEquipmentReading({
       tab={tab}
       limits={<RadioEquipmentLimits state={state} />}
       interfaces={<RadioEquipmentInterfaces state={state} />}
-      pagination={<RadioEquipmentPagination state={state} />}
     />
   );
 }

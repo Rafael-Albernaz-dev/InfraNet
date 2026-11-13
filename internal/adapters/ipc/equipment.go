@@ -9,26 +9,46 @@ import (
 )
 
 var equipmentFields = map[string][]string{
-	"credential.default-set":   {"id", "operation_id", "role", "credential_id"},
-	"trust.reset":              {"operation_id", "id", "revision"},
-	"inventory.enroll":         {"operation_id", "id", "name", "role", "address", "port", "transport", "user", "secret", "block"},
-	"inventory.enroll-status":  {"operation_id", "id"},
-	"inventory.list":           {"search", "cursor", "inactive", "include_inactive", "role", "block", "block_empty", "model", "state"},
+	"inventory.table-preference-get": {"table"},
+	"inventory.table-preference-set": {"table", "table_preference"},
+	"credential.default-set":         {"id", "operation_id", "role", "credential_id"},
+	"trust.reset":                    {"operation_id", "id", "revision"},
+	"inventory.enroll":               {"operation_id", "id", "name", "role", "address", "port", "transport", "user", "secret", "block"},
+	"inventory.enroll-status":        {"operation_id", "id"},
+	"inventory.list": {"all",
+		"search",
+		"cursor",
+		"inactive",
+		"include_inactive",
+		"role",
+		"block",
+		"block_empty",
+		"model",
+		"state"},
 	"inventory.get":            {"id"},
 	"inventory.import-preview": {"import"},
 	"inventory.import-confirm": {"operation_id", "import"},
 	"inventory.bulk-update":    {"operation_id", "bulk"},
 	"inventory.create":         {"operation_id", "id", "name", "role", "address", "port", "transport", "credential_id", "block"},
-	"inventory.update":         {"operation_id", "id", "revision", "name", "role", "address", "port", "transport", "credential_id", "block"},
-	"inventory.set-active":     {"operation_id", "id", "revision", "active"},
-	"credential.list":          {"cursor"},
-	"credential.delete":        {"operation_id", "id", "revision"},
-	"credential.put":           {"operation_id", "id", "revision", "alias", "user", "secret", "affected_links"},
-	"trust.inspect":            {"operation_id", "id", "revision"},
-	"trust.confirm":            {"operation_id", "job_id", "id", "revision", "fingerprint"},
-	"device.query-start":       {"operation_id", "id", "revision"},
-	"device.query-status":      {"job_id"},
-	"device.query-cancel":      {"job_id"},
+	"inventory.update": {"operation_id",
+		"id",
+		"revision",
+		"name",
+		"role",
+		"address",
+		"port",
+		"transport",
+		"credential_id",
+		"block"},
+	"inventory.set-active": {"operation_id", "id", "revision", "active"},
+	"credential.list":      {"cursor"},
+	"credential.delete":    {"operation_id", "id", "revision"},
+	"credential.put":       {"operation_id", "id", "revision", "alias", "user", "secret", "affected_links"},
+	"trust.inspect":        {"operation_id", "id", "revision"},
+	"trust.confirm":        {"operation_id", "job_id", "id", "revision", "fingerprint"},
+	"device.query-start":   {"operation_id", "id", "revision"},
+	"device.query-status":  {"job_id"},
+	"device.query-cancel":  {"job_id"},
 }
 
 func isEquipment(op string) bool { _, ok := equipmentFields[op]; return ok }
@@ -36,7 +56,17 @@ func validateEquipment(b []byte, q Request, fields map[string]json.RawMessage) (
 	if q.ContractRevision != ProductRevision {
 		return q, foundation.Version
 	}
-	for _, key := range []string{"version", "request_id", "op", "capability", "contract_revision", "session", "profile_id", "activation_id", "expected_profile", "expected_activation", "equipment"} {
+	for _, key := range []string{"version",
+		"request_id",
+		"op",
+		"capability",
+		"contract_revision",
+		"session",
+		"profile_id",
+		"activation_id",
+		"expected_profile",
+		"expected_activation",
+		"equipment"} {
 		if _, ok := fields[key]; !ok {
 			return q, foundation.Invalid
 		}
@@ -58,6 +88,9 @@ func validateEquipment(b []byte, q Request, fields map[string]json.RawMessage) (
 		if !allowed[k] {
 			return q, foundation.Invalid
 		}
+	}
+	if q.Op == "inventory.table-preference-set" && !unambiguousTablePreference(nested["table_preference"]) {
+		return q, foundation.Invalid
 	}
 	// Required nonzero semantic fields are checked again by the capability.
 	return q, foundation.OK
@@ -83,6 +116,12 @@ func (s *Server) dispatchEquipment(ctx context.Context, uid uint32, q Request, o
 		r.Code = foundation.Code(equipment.Limit)
 		return r
 	}
-	r.Data = &Data{ContractRevision: ProductRevision, ProductVersion: ProductVersion, Instance: s.identity.Instance, Profile: q.Profile, Activation: q.Activation, Authenticated: true, Equipment: &v}
+	r.Data = &Data{ContractRevision: ProductRevision,
+		ProductVersion: ProductVersion,
+		Instance:       s.identity.Instance,
+		Profile:        q.Profile,
+		Activation:     q.Activation,
+		Authenticated:  true,
+		Equipment:      &v}
 	return r
 }

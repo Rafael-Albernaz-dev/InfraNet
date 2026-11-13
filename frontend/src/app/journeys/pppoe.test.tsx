@@ -1,3 +1,7 @@
+import {
+  sessionTable,
+  sessionSearch,
+} from '../../shared/testing/session-ready';
 import { waitForSessionReady } from '../../shared/testing/session-ready';
 import {
   act,
@@ -177,7 +181,7 @@ it.each(['success', 'error', 'reject'] as const)(
     trigger.focus();
     fireEvent.click(trigger);
     fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
-    const search = screen.getByLabelText('Buscar sessões');
+    const search = sessionSearch();
     search.focus();
     fireEvent.change(search, { target: { value: 'nova intenção' } });
     await waitFor(() =>
@@ -217,7 +221,7 @@ it('A-H01: returning and changing the filter invalidates a pending detail, while
     screen.getByRole('button', { name: 'Detalhar duplicado row-2' }),
   );
   fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
-  fireEvent.change(screen.getByLabelText('Buscar sessões'), {
+  fireEvent.change(sessionSearch(), {
     target: { value: 'nova intenção' },
   });
   await act(async () => old.resolve(result({ rows: [rows[1]], total: 1 })));
@@ -290,25 +294,30 @@ it.each(['none', 'loading', 'reject'] as const)(
   'A-H02: %s comparison/page cannot retain a sessions count or actionable cursor',
   async (phase) => {
     vi.mocked(api.list).mockResolvedValueOnce(
-      result({ rows, total: 17, next_cursor: 'old-cursor' }),
+      result({ rows, total: 51, next_cursor: 'old-cursor' }),
     );
     showPP();
-    await screen.findByRole('button', { name: 'Próxima página' });
+    await sessionTable().findByRole('button', { name: 'Próxima' });
     if (phase === 'none') {
       fireEvent.click(screen.getByRole('tab', { name: 'Comparação' }));
     } else {
       const page = deferred<PPResult>();
       vi.mocked(api.list).mockReturnValueOnce(page.promise);
-      fireEvent.change(screen.getByLabelText('Buscar sessões'), {
+      fireEvent.change(sessionSearch(), {
         target: { value: 'next' },
       });
       await screen.findByText('Carregando página armazenada…');
       if (phase === 'reject')
         await act(async () => page.reject(new Error('transport')));
     }
-    expect(
-      screen.getByRole('button', { name: 'Próxima página' }),
-    ).toBeDisabled();
+    if (phase === 'none')
+      expect(
+        screen.queryByRole('group', { name: 'Sessões PPPoE' }),
+      ).not.toBeInTheDocument();
+    else
+      expect(
+        sessionTable().getByRole('button', { name: 'Próxima' }),
+      ).toBeDisabled();
     expect(
       screen.queryByRole('status', { name: '17 resultados' }),
     ).not.toBeInTheDocument();
@@ -320,7 +329,7 @@ it('A-H01: returning to the list and clearing filters keeps focus on search', as
     result({ rows: [rows[0]], total: 1 }),
   );
   showPP();
-  const search = await screen.findByLabelText('Buscar sessões');
+  const search = await screen.findByLabelText('Buscar em todas as colunas');
   fireEvent.change(search, { target: { value: 'duplicado' } });
   fireEvent.click(
     await screen.findByRole('button', { name: 'Detalhar duplicado row-1' }),
@@ -333,7 +342,7 @@ it('A-H01: returning to the list and clearing filters keeps focus on search', as
   expect(
     screen.queryByRole('region', { name: 'Detalhes da sessão' }),
   ).not.toBeInTheDocument();
-  expect(screen.getByLabelText('Buscar sessões')).toHaveFocus();
+  expect(sessionSearch()).toHaveFocus();
 });
 it('A-H01: newer detail wins when two queries resolve in reverse order', async () => {
   const first = deferred<PPResult>(),
@@ -369,7 +378,7 @@ it('A-H01: filter change keeps a durable pending save and its successful reconci
       name: 'Salvar referência desta leitura',
     }),
   );
-  fireEvent.change(screen.getByLabelText('Buscar sessões'), {
+  fireEvent.change(sessionSearch(), {
     target: { value: 'new query' },
   });
   await act(async () =>
@@ -468,7 +477,7 @@ it('opens stored reading without collection, preserves duplicate rows and saves 
 });
 it('filters and recovers locally, keeps page and detail IDs immutable', async () => {
   vi.mocked(api.list).mockResolvedValue(
-    result({ rows, total: 17, next_cursor: 'signed-page' }),
+    result({ rows, total: 51, next_cursor: 'signed-page' }),
   );
   vi.mocked(api.detail).mockResolvedValue(
     result({ rows: [rows[1]], total: 1 }),
@@ -494,12 +503,12 @@ it('filters and recovers locally, keeps page and detail IDs immutable', async ()
     'row-2',
   );
   fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }));
+  fireEvent.click(sessionTable().getByRole('button', { name: 'Próxima' }));
   await waitFor(() =>
     expect(vi.mocked(api.list).mock.calls.at(-1)?.at(-1)).toBe('signed-page'),
   );
   vi.mocked(api.list).mockResolvedValue(result({ rows: [], total: 0 }));
-  fireEvent.change(screen.getByLabelText('Buscar sessões'), {
+  fireEvent.change(sessionSearch(), {
     target: { value: 'sem resultado' },
   });
   await screen.findByText('Nenhuma sessão corresponde aos filtros.');
@@ -507,8 +516,6 @@ it('filters and recovers locally, keeps page and detail IDs immutable', async ()
     screen.getAllByRole('button', { name: 'Limpar filtros' }),
   ).toHaveLength(1);
   fireEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }));
-  await waitFor(() =>
-    expect(screen.getByLabelText('Buscar sessões')).toHaveValue(''),
-  );
+  await waitFor(() => expect(sessionSearch()).toHaveValue(''));
   expect(api.start).not.toHaveBeenCalled();
 });

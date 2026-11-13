@@ -182,9 +182,12 @@ it.each(['mouse', 'alt-left', 'backspace'])(
 
 it('guards each back trigger when the add screen has changes', async () => {
   await inventory();
-  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Buscar' }), {
-    key: 'Backspace',
-  });
+  fireEvent.keyDown(
+    screen.getByRole('textbox', { name: 'Buscar em todas as colunas' }),
+    {
+      key: 'Backspace',
+    },
+  );
   expect(screen.getByRole('heading', { name: 'Equipamentos' })).toBeVisible();
   fireEvent.click(
     screen.getByRole('button', { name: 'Adicionar equipamento' }),

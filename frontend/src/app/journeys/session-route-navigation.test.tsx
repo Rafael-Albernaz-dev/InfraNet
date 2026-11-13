@@ -1,3 +1,7 @@
+import {
+  sessionTable,
+  sessionSearch,
+} from '../../shared/testing/session-ready';
 import { waitForSessionReady } from '../../shared/testing/session-ready';
 import {
   fireEvent,
@@ -137,7 +141,7 @@ beforeEach(() => {
     async (_p, _a, _d, _o, _q, cursor) =>
       pp({
         rows: cursor ? [rows[1]] : [rows[0]],
-        total: 2,
+        total: 51,
         next_cursor: cursor ? '' : 'next',
       }),
   );
@@ -168,7 +172,7 @@ it.each(['button', 'alt-left', 'backspace', 'mouse'])(
   'returns from the session with %s and preserves the list page and search',
   async (trigger) => {
     await openList();
-    fireEvent.change(screen.getByLabelText('Buscar sessões'), {
+    fireEvent.change(sessionSearch(), {
       target: { value: 'fixture' },
     });
     await waitFor(() =>
@@ -176,7 +180,7 @@ it.each(['button', 'alt-left', 'backspace', 'mouse'])(
         'fixture',
       ),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }));
+    fireEvent.click(sessionTable().getByRole('button', { name: 'Próxima' }));
     fireEvent.click(
       await screen.findByRole('button', { name: /Detalhar segundo/ }),
     );
@@ -210,7 +214,7 @@ it.each(['button', 'alt-left', 'backspace', 'mouse'])(
         screen.getByRole('button', { name: /Detalhar segundo/ }),
       ).toHaveFocus(),
     );
-    expect(screen.getByLabelText('Buscar sessões')).toHaveValue('fixture');
+    expect(sessionSearch()).toHaveValue('fixture');
     expect(vi.mocked(pppoeAPI.list).mock.calls.at(-1)?.[5]).toBe('next');
   },
 );
@@ -222,9 +226,7 @@ it('cancels a live observation on leaving and starts it again on return', async 
   vi.mocked(pppoeReadAPI.status).mockResolvedValue(
     pp({ job: { id: 'live-fixture', state: 'RUNNING', code: 'OK' }, total: 0 }),
   );
-  await openList();
-  fireEvent.click(screen.getByRole('button', { name: /Detalhar primeiro/ }));
-  await screen.findByRole('heading', { name: 'primeiro' });
+  await openFirstSession();
   await waitFor(() => expect(pppoeReadAPI.start).toHaveBeenCalledOnce());
   await waitFor(() => expect(pppoeReadAPI.status).toHaveBeenCalled());
   fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
@@ -249,9 +251,7 @@ it('cancels live on a tab change and starts it on returning to traffic', async (
   vi.mocked(pppoeReadAPI.status).mockResolvedValue(
     pp({ job: { id: 'live-tab', state: 'RUNNING', code: 'OK' }, total: 0 }),
   );
-  await openList();
-  fireEvent.click(screen.getByRole('button', { name: /Detalhar primeiro/ }));
-  await screen.findByRole('heading', { name: 'primeiro' });
+  await openFirstSession();
   await waitFor(() => expect(pppoeReadAPI.status).toHaveBeenCalled());
   fireEvent.click(screen.getByRole('tab', { name: 'Informações' }));
   await waitFor(() =>
@@ -291,9 +291,7 @@ it('clears the visible session and its URL when changing company', async () => {
   vi.mocked(pppoeReadAPI.status).mockResolvedValue(
     pp({ job: { id: 'live-scope', state: 'RUNNING', code: 'OK' }, total: 0 }),
   );
-  await openList();
-  fireEvent.click(screen.getByRole('button', { name: /Detalhar primeiro/ }));
-  await screen.findByRole('heading', { name: 'primeiro' });
+  await openFirstSession();
   await waitFor(() => expect(pppoeReadAPI.status).toHaveBeenCalled());
   fireEvent.click(screen.getByRole('link', { name: /Empresa um/ }));
   await waitFor(() =>
@@ -319,9 +317,7 @@ it('clears the visible session and its URL when changing company', async () => {
 });
 
 it('shows the unbuilt history without a simulated table', async () => {
-  await openList();
-  fireEvent.click(screen.getByRole('button', { name: /Detalhar primeiro/ }));
-  await screen.findByRole('heading', { name: 'primeiro' });
+  await openFirstSession();
   fireEvent.click(screen.getByRole('tab', { name: 'Histórico' }));
   const session = screen.getByRole('region', { name: 'Detalhes da sessão' });
   expect(
@@ -396,8 +392,13 @@ it('pages the AP index for the exact session without a new remote read', async (
   const index = {
     observed_at: '2026-11-06T00:00:00Z',
     complete: true,
-    targets: {},
-    total: 12,
+    targets: Object.fromEntries(
+      Array.from({ length: 51 }, (_, i) => [`ap-${i}`, 'OK']),
+    ),
+    labels: Object.fromEntries(
+      Array.from({ length: 51 }, (_, i) => [`ap-${i}`, `AP sintético ${i}`]),
+    ),
+    total: 51,
     offset: 0,
     next_offset: 8,
     more: true,
@@ -406,29 +407,25 @@ it('pages the AP index for the exact session without a new remote read', async (
     code: 'OK',
     profile_id: 'company',
     activation_id: 'activation',
-    data: { index, total: 12, more: true, next_offset: 8 },
+    data: { index, total: 51, more: true, next_offset: 8 },
   };
   vi.mocked(radioAPI.link).mockResolvedValue(reply);
   vi.mocked(radioAPI.indexPage).mockResolvedValue({
     ...reply,
     data: { ...reply.data, index: { ...index, offset: 8, more: false } },
   });
-  await openList();
-  fireEvent.click(screen.getByRole('button', { name: /Detalhar primeiro/ }));
-  await screen.findByRole('heading', { name: 'primeiro' });
+  await openFirstSession();
   fireEvent.click(screen.getByRole('tab', { name: 'Enlace' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Próximos APs' }));
-  await waitFor(() =>
-    expect(radioAPI.indexPage).toHaveBeenCalledWith(
-      'company',
-      'activation',
-      'ccr-fixture',
-      'obs',
-      'row-0',
-      8,
-    ),
+  await screen.findByRole('group', { name: 'Tabela de AP' });
+  const table = within(screen.getByRole('group', { name: 'Tabela de AP' }));
+  fireEvent.change(
+    table.getByRole('textbox', { name: 'Buscar em todas as colunas' }),
+    { target: { value: 'AP sintético 50' } },
   );
-  expect(await screen.findByText('APs 9–12 de 12')).toBeVisible();
+  expect(
+    await table.findByRole('cell', { name: 'AP sintético 50' }),
+  ).toBeVisible();
+  expect(radioAPI.indexPage).not.toHaveBeenCalled();
 });
 
 function ChangingTarget() {
@@ -518,9 +515,7 @@ it('runs ping only for the selected session from the information tab', async () 
       total: 0,
     }),
   );
-  await openList();
-  fireEvent.click(screen.getByRole('button', { name: /Detalhar primeiro/ }));
-  await screen.findByRole('heading', { name: 'primeiro' });
+  await openFirstSession();
   fireEvent.click(screen.getByRole('tab', { name: 'Informações' }));
   const ping = await screen.findByRole('button', { name: 'Ping' });
   await waitFor(() => expect(ping).toBeEnabled());
@@ -558,3 +553,9 @@ it('opens the loading session immediately from the list and reads the detail onl
   );
   expect(screen.getByRole('heading', { name: 'primeiro' })).toBeVisible();
 });
+
+async function openFirstSession() {
+  await openList();
+  fireEvent.click(screen.getByRole('button', { name: /Detalhar primeiro/ }));
+  await screen.findByRole('heading', { name: 'primeiro' });
+}

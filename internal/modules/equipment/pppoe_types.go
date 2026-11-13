@@ -61,19 +61,20 @@ type PPQuality struct {
 }
 
 type PPRow struct {
-	Context     *PPContext `json:"context,omitempty"`
-	State       string     `json:"state,omitempty"`
-	AbsentStart string     `json:"absent_start,omitempty"`
-	AbsentEnd   string     `json:"absent_end,omitempty"`
-	ID          string     `json:"row_id"`
-	RemoteID    string     `json:"remote_id"`
-	SessionID   string     `json:"session_id"`
-	Login       string     `json:"login"`
-	Address     string     `json:"address"`
-	Caller      string     `json:"caller_id"`
-	Uptime      PPInterval `json:"uptime"`
-	Sample      PPInterval `json:"sample"`
-	Duplicates  int        `json:"duplicates"`
+	LinkedDeviceName string     `json:"linked_device_name,omitempty"`
+	Context          *PPContext `json:"context,omitempty"`
+	State            string     `json:"state,omitempty"`
+	AbsentStart      string     `json:"absent_start,omitempty"`
+	AbsentEnd        string     `json:"absent_end,omitempty"`
+	ID               string     `json:"row_id"`
+	RemoteID         string     `json:"remote_id"`
+	SessionID        string     `json:"session_id"`
+	Login            string     `json:"login"`
+	Address          string     `json:"address"`
+	Caller           string     `json:"caller_id"`
+	Uptime           PPInterval `json:"uptime"`
+	Sample           PPInterval `json:"sample"`
+	Duplicates       int        `json:"duplicates"`
 }
 
 type PPObservation struct {
@@ -112,6 +113,11 @@ type PPReference struct {
 }
 
 type PPQuery struct {
+	PageSize   int    `json:"page_size,omitempty"`
+	Plan       string `json:"plan,omitempty"`
+	VLAN       string `json:"vlan,omitempty"`
+	Service    string `json:"service,omitempty"`
+	Duplicity  string `json:"duplicity,omitempty"`
 	State      string `json:"state,omitempty"`
 	Type       string `json:"type,omitempty"`
 	Search     string `json:"search,omitempty"`
@@ -180,29 +186,30 @@ type PPGroup struct {
 }
 
 type PPView struct {
-	MonitoringGeneration string          `json:"-"`
-	Read                 *PPReadResult   `json:"read,omitempty"`
-	Groups               []PPGroup       `json:"groups,omitempty"`
-	Diagnostic           *PDDiagnostic   `json:"diagnostic,omitempty"`
-	DiagnosticRows       []PDRow         `json:"diagnostic_rows,omitempty"`
-	ExportDiagnostics    []PDRow         `json:"export_diagnostics,omitempty"`
-	ExportDeltas         []PPExportDelta `json:"export_deltas,omitempty"`
-	Current              *PPObservation  `json:"current,omitempty"`
-	Attempt              *PPAttempt      `json:"attempt,omitempty"`
-	Job                  *Job            `json:"job,omitempty"`
-	Rows                 []PPRow         `json:"rows,omitempty"`
-	References           []PPReference   `json:"references,omitempty"`
-	Reference            *PPReference    `json:"reference,omitempty"`
-	Deltas               []PPDelta       `json:"deltas,omitempty"`
-	Counts               map[string]int  `json:"counts,omitempty"`
-	Total                int             `json:"total"`
-	Next                 string          `json:"next_cursor,omitempty"`
-	More                 bool            `json:"-"`
-	NextOffset           int             `json:"-"`
-	Reason               string          `json:"-"`
-	Entity               string          `json:"-"`
-	Effect               string          `json:"effect_state,omitempty"`
-	ExportRows           []PPExportRow   `json:"export_rows,omitempty"`
+	Options              map[string][]string `json:"options,omitempty"`
+	MonitoringGeneration string              `json:"-"`
+	Read                 *PPReadResult       `json:"read,omitempty"`
+	Groups               []PPGroup           `json:"groups,omitempty"`
+	Diagnostic           *PDDiagnostic       `json:"diagnostic,omitempty"`
+	DiagnosticRows       []PDRow             `json:"diagnostic_rows,omitempty"`
+	ExportDiagnostics    []PDRow             `json:"export_diagnostics,omitempty"`
+	ExportDeltas         []PPExportDelta     `json:"export_deltas,omitempty"`
+	Current              *PPObservation      `json:"current,omitempty"`
+	Attempt              *PPAttempt          `json:"attempt,omitempty"`
+	Job                  *Job                `json:"job,omitempty"`
+	Rows                 []PPRow             `json:"rows,omitempty"`
+	References           []PPReference       `json:"references,omitempty"`
+	Reference            *PPReference        `json:"reference,omitempty"`
+	Deltas               []PPDelta           `json:"deltas,omitempty"`
+	Counts               map[string]int      `json:"counts,omitempty"`
+	Total                int                 `json:"total"`
+	Next                 string              `json:"next_cursor,omitempty"`
+	More                 bool                `json:"-"`
+	NextOffset           int                 `json:"-"`
+	Reason               string              `json:"-"`
+	Entity               string              `json:"-"`
+	Effect               string              `json:"effect_state,omitempty"`
+	ExportRows           []PPExportRow       `json:"export_rows,omitempty"`
 }
 
 type PPExportRow struct {

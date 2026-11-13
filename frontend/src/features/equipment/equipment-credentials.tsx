@@ -1,10 +1,9 @@
+import type { TableFilter } from '../../shared/ui/table-model';
 import { useCredentialUsage } from './credential-usage';
-import { useState } from 'react';
 import type { useEquipmentState } from './equipment-state';
 import { DefaultCredentialDetails } from './equipment-credential-form';
 import { Button } from '../../shared/ui/Button';
 import { DataTable } from '../../shared/ui/DataTable';
-import { Select } from '../../shared/ui/Select';
 import { RadioRoles } from './radio-contract';
 
 export function EquipmentCredentials({
@@ -18,57 +17,35 @@ export function EquipmentCredentials({
   activation: string;
   locked: boolean;
 }) {
-  const [search, setSearch] = useState('');
-  const [role, setRole] = useState('');
-  const [use, setUse] = useState('');
   const usage = useCredentialUsage(profile, activation);
-  const needle = search.toLocaleLowerCase();
-  const rows = s.credentials.filter(
-    (c) =>
-      `${c.alias} ${c.user}`.toLocaleLowerCase().includes(needle) &&
-      (!role || s.credentialDefaults[role] === c.id) &&
-      (!use || (use === 'used' ? c.links > 0 : c.links === 0)),
-  );
+  const rows = s.credentials;
+  const filters: TableFilter[] = [
+    {
+      id: 'default',
+      label: 'Padrão em',
+      options: [RadioRoles.ap, RadioRoles.cpe, RadioRoles.ptp].map((value) => ({
+        value,
+        label: value.toUpperCase(),
+      })),
+      matches: (r, v) => s.credentialDefaults[v] === r.props['data-row-id'],
+    },
+    {
+      id: 'use',
+      label: 'Uso',
+      options: [
+        { value: 'used', label: 'Em uso' },
+        { value: 'unused', label: 'Sem uso' },
+      ],
+      matches: (r, v) =>
+        v === 'used'
+          ? Number(r.props['data-links']) > 0
+          : Number(r.props['data-links']) === 0,
+    },
+  ];
   return (
     <>
       <h1>Credenciais</h1>
       <div className="toolbar">
-        <input
-          aria-label="Buscar credencial"
-          placeholder="Buscar nome ou usuário"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <Select
-          aria-label="Padrão em"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-        >
-          <option value="">Padrão em: todos</option>
-          <option value={RadioRoles.ap}>AP</option>
-          <option value={RadioRoles.cpe}>CPE</option>
-          <option value={RadioRoles.ptp}>PTP</option>
-        </Select>
-        <Select
-          aria-label="Uso"
-          value={use}
-          onChange={(e) => setUse(e.target.value)}
-        >
-          <option value="">Uso: todas</option>
-          <option value="used">Em uso</option>
-          <option value="unused">Sem uso</option>
-        </Select>
-        {(search || role || use) && (
-          <Button
-            onClick={() => {
-              setSearch('');
-              setRole('');
-              setUse('');
-            }}
-          >
-            Limpar filtros
-          </Button>
-        )}
         <span className="grow" />
         <Button
           kind="primary"
@@ -78,7 +55,7 @@ export function EquipmentCredentials({
           Adicionar credencial
         </Button>
       </div>
-      <DataTable>
+      <DataTable tableId="credentials" filters={filters}>
         <thead>
           <tr>
             <th>Nome</th>
@@ -97,6 +74,8 @@ export function EquipmentCredentials({
             return (
               <tr
                 key={credential.id}
+                data-row-id={credential.id}
+                data-links={credential.links}
                 className="click"
                 tabIndex={0}
                 onClick={() => s.setCredentialForm(credential)}

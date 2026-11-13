@@ -240,13 +240,13 @@ func PPValidQuery(q *PPQuery) bool {
 	if q == nil {
 		return true
 	}
-	if !utf8.ValidString(q.Type) || len(q.Type) > 64 || !utf8.ValidString(q.Search) || len(q.Search) > 160 {
+	if !utf8.ValidString(q.Type) || len(q.Type) > 64 || !utf8.ValidString(q.Search) || utf8.RuneCountInString(q.Search) > 160 {
 		return false
 	}
 	if strings.IndexFunc(q.Type, func(r rune) bool { return r < 32 || r == 127 }) >= 0 {
 		return false
 	}
-	return PPValidSort(q.Sort) && validPPCategory(q.Category) && PPValidState(q.State)
+	return validPPTableQuery(q) && PPValidSort(q.Sort) && validPPCategory(q.Category) && PPValidState(q.State)
 }
 
 func validPPCategory(cat string) bool {

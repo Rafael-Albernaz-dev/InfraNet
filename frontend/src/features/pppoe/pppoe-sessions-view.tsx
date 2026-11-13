@@ -1,3 +1,8 @@
+import { cloneElement } from 'react';
+import {
+  useSessionTable,
+  type SessionTableControl,
+} from './session-table-control';
 import { sessionPlan, planDiffers, appliedSpeed } from './pppoe-plan';
 import type { PPRow } from '../../platform/wails/presentation';
 import {
@@ -5,14 +10,12 @@ import {
   formatDate,
   uptimeTitle,
 } from '../equipment/network-format';
-import { FRESH_QUERY } from './pppoe-context-actions';
 import { runPPExport } from './pppoe-export';
 import { formatPPUptime } from '../equipment/pppoe-format';
-import type { PPObservation, PPQuery } from '../../platform/wails/pppoe-types';
+import type { PPObservation } from '../../platform/wails/pppoe-types';
 import { SessionCPE } from './session-cpe';
 import { Button } from '../../shared/ui/Button';
 import { DataTable } from '../../shared/ui/DataTable';
-import { Select } from '../../shared/ui/Select';
 export function PPPoEObsActions(p: {
   profile: string;
   activation: string;
@@ -92,91 +95,6 @@ export function PPPoEObsActions(p: {
     </>
   );
 }
-function SortAndCheckFilters(p: {
-  query: PPQuery;
-  change: (q: Partial<PPQuery>) => void;
-}) {
-  const { query, change } = p;
-  return (
-    <>
-      <label>
-        Ordenar
-        <Select
-          value={query.sort}
-          onChange={(e) => change({ sort: e.target.value })}
-        >
-          <option value="login">Usuário</option>
-          <option value="address">IP</option>
-          <option value="uptime">Conectado há</option>
-          <option value="state">Estado</option>
-        </Select>
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          checked={query.desc}
-          onChange={(e) => change({ desc: e.target.checked })}
-        />
-        Decrescente
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          checked={query.duplicates_only}
-          onChange={(e) => change({ duplicates_only: e.target.checked })}
-        />
-        Somente duplicados
-      </label>
-    </>
-  );
-}
-export function PPPoESessionFilters(p: {
-  query: PPQuery;
-  change: (q: Partial<PPQuery>) => void;
-  setQuery: (q: PPQuery) => void;
-  setCursor: (c: string) => void;
-  setHistory: (h: string[]) => void;
-  searchControlRef: React.RefObject<HTMLInputElement | null>;
-}) {
-  const { query, change, searchControlRef } = p;
-  return (
-    <div className="pppoe-filters">
-      <label className="sr-only" htmlFor="session-search">
-        Buscar sessões
-      </label>
-      <input
-        id="session-search"
-        placeholder="Buscar sessões"
-        ref={searchControlRef}
-        value={query.search}
-        onChange={(e) => change({ search: e.target.value })}
-      />
-      <Select
-        aria-label="Estado"
-        value={query.state || ''}
-        onChange={(e) => change({ state: e.target.value as PPQuery['state'] })}
-      >
-        <option value="">Todos</option>
-        <option value="ONLINE">ONLINE</option>
-        <option value="OFFLINE">OFFLINE</option>
-      </Select>
-      <SortAndCheckFilters query={query} change={change} />
-      {(query.search || query.duplicates_only || query.state) && (
-        <Button
-          type="submit"
-          onClick={() => {
-            p.setQuery(FRESH_QUERY());
-            p.setCursor('');
-            p.setHistory([]);
-            p.searchControlRef.current?.focus();
-          }}
-        >
-          Limpar filtros
-        </Button>
-      )}
-    </div>
-  );
-}
 function SessionPlanCell({
   row,
   fastTrack,
@@ -203,6 +121,7 @@ function SessionPlanCell({
 }
 type SessionsTableProps = {
   rows: PPRow[];
+  control?: SessionTableControl;
   fastTrack?: number;
   contextOmitted?: boolean;
   profile?: string;
@@ -212,12 +131,12 @@ type SessionsTableProps = {
   openEquipment?: (id: string) => void;
   onDetail: (row: PPRow, trigger: HTMLElement) => void;
 };
-function PPPoESessionRowItem(
+function renderPPPoESessionRow(
   p: Omit<SessionsTableProps, 'rows'> & { row: PPRow },
 ) {
   const { row } = p;
   return (
-    <tr className="click">
+    <tr className="click" data-row-id={row.row_id}>
       <td>
         <Button
           className="row-trigger"
@@ -228,11 +147,15 @@ function PPPoESessionRowItem(
         </Button>
       </td>
       <td>{row.address || 'Não informado nesta leitura'}</td>
-      <SessionPlanCell row={row} fastTrack={p.fastTrack} />
+      {SessionPlanCell({ row, fastTrack: p.fastTrack })}
       <td title={uptimeTitle(row.uptime)}>
         {row.state === 'OFFLINE' ? '—' : formatPPUptime(row.uptime, true)}
       </td>
-      <td>{row.state || 'ONLINE'}</td>
+      <td>
+        <span className={row.state === 'OFFLINE' ? 'st-off' : 'st-on'}>
+          {row.state || 'ONLINE'}
+        </span>
+      </td>
       <td>
         <SessionCPE
           profile={p.profile || ''}
@@ -243,85 +166,68 @@ function PPPoESessionRowItem(
           open={p.openEquipment}
         />
       </td>
+      {optionalSessionCells(row)}
     </tr>
   );
 }
 export function PPPoESessionsTable(p: SessionsTableProps) {
+  const table = useSessionTable(p.control);
   return (
     <div
       className="table-region"
       tabIndex={0}
       aria-label="Tabela de sessões PPPoE"
     >
-      <DataTable>
+      <DataTable
+        tableId="sessions"
+        aria-label="Sessões PPPoE"
+        preference={table.preference}
+        service={table.service}
+        filters={table.filters}
+        defaultColumns={['address', 'plan', 'uptime', 'state', 'linked_device']}
+      >
         <thead>
           <tr>
-            {['Usuário', 'IP', 'Plano', 'Conectado há', 'Estado', 'CPE'].map(
-              (label) => (
-                <th key={label}>{label}</th>
-              ),
-            )}
+            {[
+              ['login', 'Usuário'],
+              ['address', 'IP'],
+              ['plan', 'Plano'],
+              ['uptime', 'Conectado há'],
+              ['state', 'Estado'],
+              ['linked_device', 'CPE'],
+              ['caller_id', 'Caller ID'],
+              ['vlan', 'VLAN'],
+              ['service', 'Serviço'],
+              ['interface', 'Interface'],
+              ['session_id', 'Session ID'],
+              ['duplicates', 'Duplicidade'],
+            ].map(([id, label]) => (
+              <th key={id} data-column={id}>
+                {label}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {p.rows.map((row) => (
-            <PPPoESessionRowItem key={row.row_id} {...p} row={row} />
-          ))}
+          {p.rows.map((row) =>
+            cloneElement(renderPPPoESessionRow({ ...p, row }), {
+              key: row.row_id,
+            }),
+          )}
         </tbody>
       </DataTable>
     </div>
   );
 }
-export function PPPoEPaginationActions(p: {
-  history: string[];
-  setHistory: React.Dispatch<React.SetStateAction<string[]>>;
-  cursor: string;
-  setCursor: (c: string) => void;
-  next: string;
-  pageState: string;
-  total: number;
-  select: (r: PPRow | undefined) => void;
-  searchControlRef: React.RefObject<HTMLInputElement | null>;
-}) {
+function optionalSessionCells(row: PPRow) {
   return (
-    <div className="pager">
-      <Button
-        aria-label="Início da lista"
-        disabled={!p.cursor}
-        onClick={() => {
-          p.setCursor('');
-          p.setHistory([]);
-          p.searchControlRef.current?.focus();
-        }}
-      >
-        Início
-      </Button>
-      <span role="status" aria-label={`${p.total} resultados`}>
-        Página {p.history.length + 1}
-      </span>
-      <Button
-        aria-label="Próxima página"
-        disabled={p.pageState !== 'ready' || !p.next}
-        onClick={() => {
-          p.setHistory((v) => [...v, p.cursor]);
-          p.setCursor(p.next);
-          p.select(undefined);
-          p.searchControlRef.current?.focus();
-        }}
-      >
-        Próxima
-      </Button>
-      {p.history.length > 0 && (
-        <Button
-          onClick={() => {
-            p.setCursor(p.history[p.history.length - 1]);
-            p.setHistory(p.history.slice(0, -1));
-            p.searchControlRef.current?.focus();
-          }}
-        >
-          Página anterior
-        </Button>
-      )}
-    </div>
+    <>
+      <td>{row.caller_id || '—'}</td>
+      <td>{row.context?.vlan ?? '—'}</td>
+      <td>{row.context?.service || '—'}</td>
+      <td>{row.context?.interface || '—'}</td>
+      <td>{row.session_id || '—'}</td>
+      <td>{row.duplicates > 1 ? 'Com' : 'Sem'}</td>
+    </>
   );
 }

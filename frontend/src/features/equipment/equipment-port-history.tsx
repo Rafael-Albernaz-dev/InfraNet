@@ -10,8 +10,6 @@ export function EquipmentPortHistory({
   limited,
   at,
   now,
-  cursor,
-  setCursor,
   close,
 }: {
   read?: { rows: PPReadRow[]; next: string; error: boolean };
@@ -55,7 +53,7 @@ export function EquipmentPortHistory({
                     : 'Nenhuma mudança de porta detectada entre as leituras disponíveis.'}
                 </p>
               ) : (
-                <DataTable>
+                <DataTable tableId="port-history">
                   <thead>
                     <tr>
                       <th>Quando</th>
@@ -79,22 +77,6 @@ export function EquipmentPortHistory({
                   </tbody>
                 </DataTable>
               )}
-              <div className="pager">
-                <Button disabled={!cursor} onClick={() => setCursor('')}>
-                  Início
-                </Button>
-                <span>
-                  Página {cursor ? 2 : 1}
-                  {!read?.next ? ' de 1' : ''}
-                </span>
-                <Button
-                  aria-label="Próxima página do histórico de portas"
-                  disabled={!read?.next}
-                  onClick={() => setCursor(read?.next || '')}
-                >
-                  Próxima
-                </Button>
-              </div>
             </>
           ),
         }}

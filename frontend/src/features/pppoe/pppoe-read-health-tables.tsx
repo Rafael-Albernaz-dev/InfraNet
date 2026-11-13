@@ -1,3 +1,4 @@
+import { cloneElement } from 'react';
 import { exactNumber } from '../equipment/network-format';
 import type {
   PPReadResult,
@@ -11,22 +12,18 @@ function flag(value?: boolean) {
   if (value === undefined) return 'Não informado nesta leitura';
   return value ? 'Sim' : 'Não';
 }
-function UplinkRow({ r }: { r: PPReadRow }) {
+function renderUplinkRow({ r }: { r: PPReadRow }) {
   return (
     <tr>
       <td>{r.name}</td>
-      <td>
-        <RateValue rate={r.tx} />
-      </td>
-      <td>
-        <RateValue rate={r.rx} />
-      </td>
+      <td data-value={r.tx?.min ?? ''}>{RateValue({ rate: r.tx })}</td>
+      <td data-value={r.rx?.min ?? ''}>{RateValue({ rate: r.rx })}</td>
       <td>{flag(r.running)}</td>
       <td>{flag(r.disabled)}</td>
-      <td>{exactNumber(r.rx_errors)}</td>
-      <td>{exactNumber(r.tx_errors)}</td>
-      <td>{exactNumber(r.rx_drops)}</td>
-      <td>{exactNumber(r.tx_drops)}</td>
+      <td data-number={r.rx_errors ?? ''}>{exactNumber(r.rx_errors)}</td>
+      <td data-number={r.tx_errors ?? ''}>{exactNumber(r.tx_errors)}</td>
+      <td data-number={r.rx_drops ?? ''}>{exactNumber(r.rx_drops)}</td>
+      <td data-number={r.tx_drops ?? ''}>{exactNumber(r.tx_drops)}</td>
     </tr>
   );
 }
@@ -37,7 +34,7 @@ function UplinkTable({ uplinks }: { uplinks: PPReadRow[] }) {
       tabIndex={0}
       aria-label="Interfaces estáticas"
     >
-      <DataTable className="data-table">
+      <DataTable tableId="read-health-tables" className="data-table">
         <thead>
           <tr>
             <th>Interface</th>
@@ -52,9 +49,9 @@ function UplinkTable({ uplinks }: { uplinks: PPReadRow[] }) {
           </tr>
         </thead>
         <tbody>
-          {uplinks.map((r, i) => (
-            <UplinkRow key={i} r={r} />
-          ))}
+          {uplinks.map((r, i) =>
+            cloneElement(renderUplinkRow({ r: r }), { key: i }),
+          )}
         </tbody>
       </DataTable>
     </div>
@@ -74,7 +71,7 @@ function PoolBody({ result }: { result: PPReadResult }) {
     );
   return (
     <div className="table-region" tabIndex={0} aria-label="Pools IPv4">
-      <DataTable className="data-table">
+      <DataTable tableId="read-health-tables-2" className="data-table">
         <thead>
           <tr>
             <th>Pool</th>

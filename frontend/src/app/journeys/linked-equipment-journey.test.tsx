@@ -48,12 +48,13 @@ function fixtures() {
       credentials: [],
       next_cursor: 0,
       vault_available: true,
-      total: 1,
+      total: 51,
       ...data,
     },
   });
   const bindings = {
     ListEquipment: vi.fn(async () => result()),
+    ListEquipmentFiltered: vi.fn(async () => result()),
     ListCredentials: vi.fn(async () => result()),
     GetEquipment: vi.fn(async (...args: [string, string, string]) =>
       result({ device: devices.find((d) => d.id === args[2]) }),

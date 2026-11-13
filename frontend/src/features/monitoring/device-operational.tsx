@@ -31,7 +31,7 @@ export function DeviceOperationalTable({
   );
   return (
     <div className="table-region" tabIndex={0} aria-label="Tabela operacional">
-      <DataTable className="data-table">
+      <DataTable tableId="device-operational" className="data-table">
         <thead>
           <tr>
             <th>Item</th>
@@ -49,7 +49,7 @@ export function DeviceOperationalTable({
                   ? OP_LABELS[group]
                   : r.kind || 'Não informado nesta leitura'}
               </td>
-              <td>
+              <td data-number={operationalNumber(r)}>
                 {r.kind === 'service' && r.disabled !== undefined
                   ? r.disabled
                     ? 'Desativado'
@@ -150,4 +150,9 @@ export function DeviceOperationalTables({ result }: { result: PPReadResult }) {
       <DeviceOperationalTable result={result} group={group} />
     </section>
   );
+}
+
+function operationalNumber(row: PPReadResult['rows'][number]) {
+  if (row.kind === 'service' && row.disabled !== undefined) return undefined;
+  return row.used ?? row.size;
 }

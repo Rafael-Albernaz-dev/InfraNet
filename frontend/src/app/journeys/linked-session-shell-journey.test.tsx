@@ -130,7 +130,7 @@ beforeEach(() => {
     async (_p, _a, _d, _o, _q, cursor) =>
       pp({
         rows: cursor ? [rows[1]] : [rows[0]],
-        total: 2,
+        total: 51,
         next_cursor: cursor ? '' : 'next',
       }),
   );

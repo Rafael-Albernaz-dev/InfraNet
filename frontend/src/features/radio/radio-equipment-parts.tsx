@@ -1,16 +1,12 @@
 import { DataBlock } from '../../shared/ui/DataBlock';
 import { KeyValues } from '../../shared/ui/KeyValues';
-import { Pager } from '../../shared/ui/Pager';
 import { readingAge } from '../equipment/equipment-reading-format';
 import { Button } from '../../shared/ui/Button';
 import { RadioFamilies, RadioRoles } from '../equipment/radio-contract';
 import type { RadioInterface, RadioReading } from '../equipment/radio-api';
 import { exactNumber, formatRadioFamily } from '../equipment/network-format';
 import { Metrics } from './radio-reading';
-import {
-  createEquipmentPage,
-  createFamilyConfirmation,
-} from './radio-equipment-state';
+import { createFamilyConfirmation } from './radio-equipment-state';
 import type { RadioEquipmentState } from './radio-equipment-state';
 export function RadioUnsupportedNotice({ reading }: { reading: RadioReading }) {
   return (
@@ -223,30 +219,6 @@ export function RadioEquipmentInterfaces({ state }: { state: ReadyEquipment }) {
           }}
         />
       ))}
-    </>
-  );
-}
-
-export function RadioEquipmentPagination({ state }: { state: ReadyEquipment }) {
-  const { offset, radio } = state,
-    page = createEquipmentPage(state);
-  return (
-    <>
-      <Pager
-        page={Math.floor(offset / 8) + 1}
-        total={radio.view?.more ? undefined : Math.floor(offset / 8) + 1}
-        hasNext={Boolean(radio.view?.more)}
-        first={() => void page(0)}
-        next={() => void page(radio.view?.next_offset || 0)}
-      />
-      {offset > 0 && (
-        <Button
-          disabled={radio.busy}
-          onClick={() => void page(Math.max(0, offset - 8))}
-        >
-          Clientes anteriores
-        </Button>
-      )}
     </>
   );
 }

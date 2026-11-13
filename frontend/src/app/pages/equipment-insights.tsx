@@ -10,7 +10,6 @@ import {
   PPReadActionButtons,
   PPReadStatusBanners,
 } from '../../features/pppoe/pppoe-read-views';
-import { PPReadResultPagination } from '../../features/pppoe/pppoe-read-result';
 import {
   readingAge,
   formatRestarts,
@@ -256,9 +255,6 @@ export function EquipmentInsights(p: {
                 <DeviceOperationalTables result={read.result} />
               ) : (
                 <p>Ainda sem leitura</p>
-              )}
-              {read.result && (
-                <PPReadResultPagination s={read} pProps={readProps} />
               )}
             </>
           ),

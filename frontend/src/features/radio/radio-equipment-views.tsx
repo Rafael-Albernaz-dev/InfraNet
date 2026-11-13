@@ -30,7 +30,7 @@ type ViewProps = {
   tab: string;
   limits: React.ReactNode;
   interfaces: React.ReactNode;
-  pagination: React.ReactNode;
+  pagination?: React.ReactNode;
 };
 function metric(reading: RadioReading, name: string) {
   const value = reading.metrics.find(

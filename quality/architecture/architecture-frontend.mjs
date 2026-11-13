@@ -288,6 +288,8 @@ function inspect(name, code) {
           "ListEquipmentFiltered",
           "BulkUpdateEquipment",
           "SetInventoryColumns",
+          "GetTablePreference",
+          "SetTablePreference",
           "PutCredential",
           "DeleteCredential",
           "QueryStatus",

@@ -152,6 +152,10 @@ export const defaultColumns = [
 ];
 export const columnById = (id: string) => columns.find((c) => c.id === id);
 
+const pulseColors: Record<string, string> = {
+  ONLINE: 'st-on',
+  OFFLINE: 'st-off',
+};
 function pulseCell({ device }: Context) {
   const p = device.pulse;
   const age = p?.checked_at
@@ -161,8 +165,58 @@ function pulseCell({ device }: Context) {
   const title =
     age === undefined ? 'Ainda sem ping' : `Ping há ${formatDuration(age)}`;
   return (
-    <span className={state === 'OFFLINE' ? 'st-off' : undefined} title={title}>
+    <span className={pulseColors[state || '']} title={title}>
       {state || '—'}
     </span>
+  );
+}
+
+// Values are typed per metric; IPs, versions and names always keep text ordering.
+const sortMetrics: Record<string, (c: Context) => number | string> = {
+  cpu: (c) => latestSavedReading(c.device, c.now).cpu ?? '',
+  online: ({ device: d, now }) =>
+    liveReading(d, now)?.clients ??
+    d.pppoe?.online ??
+    d.radio_summary?.clients ??
+    '',
+  offline: ({ device }) => device.pppoe?.offline ?? '',
+  uptime: (c) => durationSeconds(latestSavedReading(c.device, c.now).uptime),
+  temperature: ({ device }) =>
+    latest(device).radio?.temperature ??
+    latest(device).monitoring?.temperature ??
+    '',
+  voltage: ({ device }) => latest(device).radio?.voltage ?? '',
+  memory: ({ device }) => {
+    const text = memory(device);
+    return text === '—'
+      ? ''
+      : Number(text.replace('%', '').replace(',', '.').trim());
+  },
+  last_reading: (c) => {
+    const at = latestSavedReading(c.device, c.now).at;
+    return at ? Date.parse(at) : '';
+  },
+};
+export function inventorySortValue(
+  id: string,
+  c: Context,
+): number | string | undefined {
+  return sortMetrics[id]?.(c);
+}
+function durationSeconds(text: string): number | string {
+  const units: Record<string, number> = {
+    w: 604800,
+    d: 86400,
+    h: 3600,
+    min: 60,
+    m: 60,
+    s: 1,
+  };
+  const values = [...text.matchAll(/(\d[\d.,]*)\s*(min|[wdhms])/g)];
+  if (!values.length) return '';
+  return values.reduce(
+    (sum, m) =>
+      sum + Number(m[1].replace(/\./g, '').replace(',', '.')) * units[m[2]],
+    0,
   );
 }

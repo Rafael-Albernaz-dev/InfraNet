@@ -10,12 +10,6 @@ export function RadioClientRow({
   name: string;
   open?: (id: string) => void;
 }) {
-  const value = (field: string) => {
-    const metric = radioMetric(client.metrics, field);
-    return metric
-      ? formatMetric(metric.value, metric.unit).replace(' %', '%')
-      : 'Não informado nesta leitura';
-  };
   const linked = Boolean(client.cpe_id && open);
   const navigate = () => {
     if (client.cpe_id) open?.(client.cpe_id);
@@ -37,18 +31,21 @@ export function RadioClientRow({
       }}
     >
       <td
+        data-value={name}
         title={
           client.cpe_id
             ? 'Vínculo confirmado por MAC, interface e BSSID'
             : 'Nome observado; sem vínculo confirmado'
         }
       >
-        <ClientName client={client} name={name} navigate={navigate} />
+        {ClientName({ client, name, navigate })}
       </td>
-      <td>{value('signal')}</td>
-      <td>{value(radioMetric(client.metrics, 'ccq') ? 'ccq' : 'ccq_tx')}</td>
-      <td>{radioRatePair(client.metrics)}</td>
-      <td>{value('occupancy')}</td>
+      {renderClientMetric(client, 'signal')}
+      {renderClientMetric(client, 'ccq', 'ccq_tx')}
+      <td data-value={radioMetric(client.metrics, 'rate_tx')?.value ?? ''}>
+        {radioRatePair(client.metrics)}
+      </td>
+      {renderClientMetric(client, 'occupancy')}
     </tr>
   );
 }
@@ -75,5 +72,17 @@ function ClientName({
     </a>
   ) : (
     <>{name}</>
+  );
+}
+
+function renderClientMetric(client: RadioClient, name: string, fallback = '') {
+  const metric =
+    radioMetric(client.metrics, name) || radioMetric(client.metrics, fallback);
+  return (
+    <td data-value={metric?.value ?? ''}>
+      {metric
+        ? formatMetric(metric.value, metric.unit).replace(' %', '%')
+        : 'Não informado nesta leitura'}
+    </td>
   );
 }

@@ -1,3 +1,4 @@
+import { cloneElement } from 'react';
 import type { useImportState } from './add-import-state';
 import { roleGroups } from './equipment-role-options';
 import type { ImportItem } from '../../platform/wails/presentation';
@@ -12,17 +13,17 @@ const labels: Record<ImportItem['status'], string> = {
   conflict: 'Conflito',
   ignored: 'Ignorada',
 };
-type ImportRowViewProps = {
+type renderImportRowProps = {
   item: ImportItem;
   state: State;
   correct: () => void;
 };
 
-function ImportRowView(p: ImportRowViewProps) {
+function renderImportRow(p: renderImportRowProps) {
   const { item, state: s } = p;
   const row = item.row;
   return (
-    <tr>
+    <tr data-situation={item.status}>
       <td className="import-check">
         <Checkbox
           aria-label={`Selecionar linha ${row.line}`}
@@ -84,7 +85,21 @@ export function ImportPreviewTable({
   setEditing: React.Dispatch<React.SetStateAction<ImportItem | undefined>>;
 }) {
   return (
-    <DataTable aria-label="Prévia da importação">
+    <DataTable
+      tableId="import-preview"
+      filters={[
+        {
+          id: 'situation',
+          label: 'Situação',
+          options: Object.entries(labels).map(([value, label]) => ({
+            value,
+            label,
+          })),
+          matches: (r, v) => r.props['data-situation'] === v,
+        },
+      ]}
+      aria-label="Prévia da importação"
+    >
       <thead>
         <tr>
           <th className="import-check"></th>
@@ -100,14 +115,16 @@ export function ImportPreviewTable({
         </tr>
       </thead>
       <tbody>
-        {visible.map((item) => (
-          <ImportRowView
-            key={item.row.line}
-            item={item}
-            state={s}
-            correct={() => setEditing(item)}
-          />
-        ))}
+        {visible.map((item) =>
+          cloneElement(
+            renderImportRow({
+              item: item,
+              state: s,
+              correct: () => setEditing(item),
+            }),
+            { key: item.row.line },
+          ),
+        )}
         {!visible.length && (
           <tr>
             <td colSpan={10}>Nenhuma linha nesta situação</td>

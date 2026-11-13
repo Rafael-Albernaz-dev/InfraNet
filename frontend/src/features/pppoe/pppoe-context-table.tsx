@@ -56,7 +56,7 @@ export function ContextGroupsList({
   threshold: number;
 }) {
   return (
-    <DataTable>
+    <DataTable tableId="context-table">
       <thead>
         <tr>
           <th>VLAN</th>
@@ -70,7 +70,7 @@ export function ContextGroupsList({
           <tr key={i}>
             <td>{g.vlan ?? 'Não informado nesta leitura'}</td>
             <td>{g.service || 'Não informado nesta leitura'}</td>
-            <td>
+            <td data-value={g.count}>
               {g.count}
               {validPolicy &&
                 g.peak_7d !== undefined &&

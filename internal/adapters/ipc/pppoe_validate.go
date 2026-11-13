@@ -92,7 +92,7 @@ func validMonitorScope(scope string) bool {
 }
 
 func validPPQueryObject(op string, query json.RawMessage) bool {
-	allowedQuery := []string{"search", "duplicates_only", "sort", "desc", "state"}
+	allowedQuery := []string{"search", "duplicates_only", "sort", "desc", "state", "page_size", "plan", "vlan", "service", "duplicity"}
 	if op == "pppoe.diagnostic-list" {
 		allowedQuery = []string{"type"}
 	}

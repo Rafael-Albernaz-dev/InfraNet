@@ -43,7 +43,7 @@ func TestRadioMigration13PreservesFixtureAndRollsBack(t *testing.T) {
 	if !reflect.DeepEqual(before, after) {
 		t.Fatal("migration changed credentials/vault/inventory/operations")
 	}
-	if err := j.st.unit.QueryRow("SELECT max(version) FROM schema_migrations").Scan(&n); err != nil || n != 14 {
-		t.Fatal("schema14 missing", n, err)
+	if err := j.st.unit.QueryRow("SELECT max(version) FROM schema_migrations").Scan(&n); err != nil || n != 15 {
+		t.Fatal("schema15 missing", n, err)
 	}
 }
