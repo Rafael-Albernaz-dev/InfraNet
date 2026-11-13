@@ -1,4 +1,5 @@
-import { useId } from 'react';
+import { GroupPathSelect, GroupSelect } from './group-select';
+import type { Group } from './groups';
 import { AddCredentialField } from './add-equipment-access-field';
 import type { Credential } from './equipment-api';
 import type { useFieldErrors } from '../access/equipment-draft';
@@ -12,6 +13,7 @@ export type AddEquipmentFieldsProps = {
   change: (v: Partial<ImportRow>) => void;
   credentials: Credential[];
   blocks?: string[];
+  groups?: Group[];
   credentialById?: boolean;
   addCredential?: () => void;
   correction?: boolean;
@@ -24,19 +26,8 @@ function AddIdentityFields(p: AddEquipmentFieldsProps) {
     <>
       <Field
         layout="form"
-        label="Nome"
-        disabled={p.disabled}
-        aria-label="Nome"
-        {...p.validation?.attrs('name')}
-        value={row.name}
-        maxLength={80}
-        onChange={(e) => change({ name: e.target.value })}
-      >
-        {p.validation?.message('name')}
-      </Field>
-      <Field
-        layout="form"
         label="IP de gerenciamento"
+        placeholder="192.0.2.40"
         disabled={p.disabled}
         aria-label="IP de gerenciamento"
         {...p.validation?.attrs('address')}
@@ -64,7 +55,7 @@ function AddIdentityFields(p: AddEquipmentFieldsProps) {
 }
 function AddRoleFields(p: AddEquipmentFieldsProps) {
   const { row, change } = p;
-  const blockList = useId();
+
   return (
     <>
       <label className="field">
@@ -79,22 +70,20 @@ function AddRoleFields(p: AddEquipmentFieldsProps) {
           <RoleOptions />
         </Select>
       </label>
-      <Field
-        layout="form"
-        label="Bloco"
-        disabled={p.disabled}
-        value={row.block}
-        maxLength={80}
-        placeholder="Região, torre ou outro nome"
-        list={blockList}
-        onChange={(e) => change({ block: e.target.value })}
-      >
-        <datalist id={blockList}>
-          {(p.blocks || []).map((block) => (
-            <option key={block} value={block} />
-          ))}
-        </datalist>
-      </Field>
+      {p.correction ? (
+        <GroupPathSelect
+          groups={p.groups || []}
+          value={row.group || ''}
+          change={(group) => change({ group })}
+        />
+      ) : (
+        <GroupSelect
+          groups={p.groups || []}
+          value={row.group_id || ''}
+          disabled={p.disabled}
+          change={(group_id) => change({ group_id })}
+        />
+      )}
     </>
   );
 }

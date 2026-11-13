@@ -234,7 +234,8 @@ it('não abre confiança nem aplica resultado tardio da ficha depois de trocar p
     />,
   );
   await screen.findByRole('heading', { name: 'Router sintético' });
-  fireEvent.click(screen.getByRole('button', { name: 'Conectar' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Acesso' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Verificar identidade' }));
   await waitFor(() => expect(bindings.InspectTrust).toHaveBeenCalledOnce());
   view.rerender(
     <Equipment

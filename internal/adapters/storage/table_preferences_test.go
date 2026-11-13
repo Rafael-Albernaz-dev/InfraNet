@@ -116,7 +116,7 @@ func TestEquipmentArrangementSeedsLegacyColumnsOncePerCompany(t *testing.T) {
 	q.Columns = &old
 	j.call(q, access.OK)
 	first, c := j.st.GetTablePreference(context.Background(), companyX, "equipment")
-	if c != inventory.OK || first == nil || !reflect.DeepEqual(first.Columns, old) {
+	if c != inventory.OK || first == nil || !reflect.DeepEqual(first.Columns, []string{"equipment", "group", "cpu"}) {
 		t.Fatal(first, c)
 	}
 	next := []string{"equipment", "address"}

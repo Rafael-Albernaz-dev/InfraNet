@@ -68,10 +68,7 @@ export function EquipmentAccessDetails(p: {
         ? 'há ' + formatDuration((now - Date.parse(at)) / 1000)
         : 'Ainda sem leitura',
     ],
-    [
-      'Identidade SSH',
-      selected.fingerprint ? 'Chave salva' : 'Primeira conexão pendente',
-    ],
+    ['Chave SSH', keyAcceptanceLabel(selected)],
   ];
   return (
     <>
@@ -142,4 +139,11 @@ export function EquipmentSecondaryActions(p: {
       </Button>
     </>
   );
+}
+
+function keyAcceptanceLabel(device: Device) {
+  if (!device.fingerprint)
+    return 'O app tenta sozinho quando o equipamento responder';
+  const at = device.trust_acceptance?.accepted_at;
+  return `Guardada sozinha no primeiro acesso · ${at ? formatDate(at) : 'Data não registrada'}`;
 }

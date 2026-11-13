@@ -124,24 +124,7 @@ func (s *ppExportJourney) setupAccountAndPeer(t *testing.T, uid uint32) {
 	}
 	s.d = DeviceInput{ID: uuid.NewString(), Operation: uuid.NewString(), Name: "Saved router", Address: "127.0.0.1",
 		Port: s.peer.Port(), Transport: string(equipment.TransportSSH), User: "reader", Secret: sshfixture.Password}
-	saved := s.app.SaveEquipment(s.profile, s.activation, s.d)
-	if saved.Code != "OK" || saved.Data.Device == nil {
-		t.Fatal("enroll", saved.Code)
-	}
-	again := s.app.SaveEquipment(s.profile, s.activation, s.d)
-	if again.Code != "OK" || again.Data.Device.ID != saved.Data.Device.ID {
-		t.Fatal("enroll replay")
-	}
-	if s.peer.Auth.Load() != 0 || s.peer.Commands.Load() != 0 {
-		t.Fatal("save unexpectedly connected")
-	}
-	inspect := s.app.InspectTrust(s.profile, s.activation, s.d.ID, uuid.NewString(), 1)
-	candidate := s.waitTrustJob(t, inspect.Data.Job)
-	accepted := s.app.ConfirmTrust(s.profile, s.activation, s.d.ID, uuid.NewString(), candidate.ID, candidate.Fingerprint, 1)
-	if accepted.Code != "OK" {
-		t.Fatal(accepted.Code)
-	}
-
+	s.enrollAndInspect(t)
 }
 
 func (s *ppExportJourney) waitTrustJob(t *testing.T, job *equipment.Job) *equipment.Job {
@@ -257,6 +240,27 @@ func (s *ppExportJourney) prepareExport(t *testing.T) {
 
 	if json.Unmarshal(s.raw, &s.file) != nil {
 		t.Fatal("invalid JSON")
+	}
+
+}
+
+func (s *ppExportJourney) enrollAndInspect(t *testing.T) {
+	saved := s.app.equipmentCall("inventory.enroll", s.profile, s.activation, makeDeviceInput(s.d))
+	if saved.Code != "OK" || saved.Data.Device == nil {
+		t.Fatal("enroll", saved.Code)
+	}
+	again := s.app.equipmentCall("inventory.enroll", s.profile, s.activation, makeDeviceInput(s.d))
+	if again.Code != "OK" || again.Data.Device.ID != saved.Data.Device.ID {
+		t.Fatal("enroll replay")
+	}
+	if s.peer.Auth.Load() != 0 || s.peer.Commands.Load() != 0 {
+		t.Fatal("save unexpectedly connected")
+	}
+	inspect := s.app.InspectTrust(s.profile, s.activation, s.d.ID, uuid.NewString(), 1)
+	candidate := s.waitTrustJob(t, inspect.Data.Job)
+	accepted := s.app.GetEquipment(s.profile, s.activation, s.d.ID)
+	if accepted.Code != "OK" || accepted.Data.Device.Fingerprint != candidate.Fingerprint {
+		t.Fatal(accepted.Code)
 	}
 
 }

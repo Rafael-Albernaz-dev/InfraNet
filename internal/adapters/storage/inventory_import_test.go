@@ -14,6 +14,7 @@ import (
 	"infradesktop/internal/modules/access"
 	"infradesktop/internal/modules/equipment"
 	"infradesktop/internal/modules/inventory"
+	"infradesktop/internal/testsupport/contactprobe"
 )
 
 func importFixture(t *testing.T) (*journey, *inventory.Service) {
@@ -22,7 +23,8 @@ func importFixture(t *testing.T) (*journey, *inventory.Service) {
 	j.create(companyX, "X", access.OK)
 	j.selectCompany(companyX, access.OK)
 	key := vault.New(func() ([]byte, error) { return bytes.Repeat([]byte{37}, 32), nil })
-	s := inventory.New(j.svc, j.st, key, routerssh.Adapter{}, equipmentIDs{}, time.Now)
+	s := inventory.New(j.svc, j.st, key, &contactprobe.Adapter{Remote: routerssh.Adapter{}}, equipmentIDs{}, time.Now)
+	seedImportCredential(t, j, s)
 	s.Parser, s.Digester = importfile.Parser{}, importfile.Parser{}
 	t.Cleanup(s.Close)
 	return j, s
@@ -30,9 +32,25 @@ func importFixture(t *testing.T) (*journey, *inventory.Service) {
 
 func importCall(t *testing.T, s *inventory.Service, q equipment.Command, want equipment.Code) equipment.View {
 	t.Helper()
+	if q.Op == "inventory.import-confirm" && q.Import != nil {
+		for i := range q.Import.Rows {
+			row := &q.Import.Rows[i]
+			if row.Credential == "" && (row.Role == "Concentrador" || row.Role == "concentrator") {
+				row.Credential = "import-fixture"
+			}
+		}
+	}
 	v, code := s.Handle(context.Background(), q)
 	if code != want {
 		t.Fatalf("%s got %s want %s", q.Op, code, want)
+	}
+	if q.Op == "inventory.import-confirm" && code == equipment.OK && v.ImportReceipt == nil {
+		s.WG.Wait()
+		q.Op = "inventory.import-status"
+		v, code = s.Handle(context.Background(), q)
+		if code != equipment.OK {
+			t.Fatal("queue status", code)
+		}
 	}
 	return v
 }
@@ -57,13 +75,13 @@ func TestImportPreviewConfirmReplayAndConflicts(t *testing.T) {
 	if replay.ImportReceipt == nil || replay.ImportReceipt.Created != 1 {
 		t.Fatal(replay.ImportReceipt)
 	}
-	q.Import.Rows[0].Name = "Alterado"
+	q.Import.Rows[0].Address = "192.0.2.9"
 	importCall(t, s, q, equipment.Revision)
-	q.Import.Rows[0].Name = row.Name
+	q.Import.Rows[0].Address = row.Address
 	q.Operation = uuid.NewString()
 	importCall(t, s, q, equipment.Revision)
 	state, code := j.st.ReadEquipment(context.Background(), companyX)
-	if code != equipment.OK || len(state.Devices) != 1 || len(state.Operations) != 1 {
+	if code != equipment.OK || len(state.Devices) != 1 || len(state.Operations) != 2 {
 		t.Fatal(code, len(state.Devices), len(state.Operations))
 	}
 }
@@ -97,11 +115,20 @@ func TestImportPersistsFiveHundredWithinBudget(t *testing.T) {
 		q.Import.Rows = append(q.Import.Rows, row)
 	}
 	started := time.Now()
-	got := importCall(t, s, q, equipment.OK)
+	initial, code := s.Handle(context.Background(), q)
+	if code != equipment.OK || initial.OperationState != "RUNNING" {
+		t.Fatal(code, initial.OperationState)
+	}
 	elapsed := time.Since(started)
 	t.Logf("500 registros: %s; orçamento: %s", elapsed, equipment.PPPersistenceBudget)
-	if got.ImportReceipt == nil || got.ImportReceipt.Created != 500 || elapsed >= equipment.PPPersistenceBudget {
-		t.Fatal("budget or receipt", elapsed, got.ImportReceipt)
+	if elapsed >= equipment.PPPersistenceBudget {
+		t.Fatal("queue admission budget", elapsed)
+	}
+	s.WG.Wait()
+	q.Op = "inventory.import-status"
+	got := importCall(t, s, q, equipment.OK)
+	if got.ImportReceipt == nil || got.ImportReceipt.Created != 500 {
+		t.Fatal("queue result", got.ImportReceipt)
 	}
 	state, code := j.st.ReadEquipment(context.Background(), companyX)
 	if code != equipment.OK || len(state.Devices) != 500 {
@@ -122,5 +149,28 @@ func TestImportConfirmRejectsMoreThanFiveHundred(t *testing.T) {
 	st, code := j.st.ReadEquipment(context.Background(), companyX)
 	if code != equipment.OK || len(st.Devices) != 0 {
 		t.Fatal("excess rows wrote devices", code)
+	}
+}
+
+func seedImportCredential(t *testing.T, j *journey, s *inventory.Service) {
+	t.Helper()
+	state, code := j.st.ReadEquipment(context.Background(), j.st.unitID)
+	if code != equipment.OK {
+		t.Fatal(code)
+	}
+	id := uuid.NewString()
+	envelope, wrapped, code := s.Vault.Seal(state.Installation, state.Company, id, 1, "synthetic-only", state.WrappedKey)
+	if code != equipment.OK {
+		t.Fatal(code)
+	}
+	code = j.st.UpdateEquipment(context.Background(), state.Company, func(current *equipment.State) equipment.Code {
+		current.WrappedKey = wrapped
+		current.Credentials = append(current.Credentials, equipment.SealedCredential{
+			Metadata: equipment.Credential{ID: id, Alias: "import-fixture", User: "fixture", Revision: 1}, Envelope: envelope})
+		current.CredentialDefaults = map[string]string{string(equipment.RoleAP): id}
+		return equipment.OK
+	})
+	if code != equipment.OK {
+		t.Fatal(code)
 	}
 }

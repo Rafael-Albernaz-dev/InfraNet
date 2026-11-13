@@ -223,6 +223,7 @@ func (s *Service) Watch(ctx context.Context, j *RunningJob) func() {
 			case <-watcherDone:
 				return
 			case <-ticker.C:
+				// ignored: only the validation outcome is needed here.
 				if _, _, c := s.Check(ctx, j, false); c != OK {
 					j.Cancel()
 					return
@@ -256,6 +257,7 @@ func (s *Service) executeRemoteQuery(ctx context.Context, j *RunningJob) (*Obser
 		fp, code := s.Remote.Inspect(ctx, j.Device)
 		return nil, fp, code
 	}
+	// ignored: only the validation outcome is needed here.
 	checkFn := func() Code { _, _, code := s.Check(ctx, j, false); return code }
 	obs, code := s.Remote.Query(ctx, j.Device, user, secret, checkFn)
 	return obs, "", code
@@ -335,7 +337,7 @@ func (s *Service) applyQueryUpdate(
 	if d == nil || d.Revision != j.Device.Revision || !d.Active {
 		return Revision
 	}
-	if j.Command.Op == "trust.inspect" && *outcome == OK && (d.Role == RoleAP || d.Role == RoleCPE) {
+	if j.Command.Op == "trust.inspect" && *outcome == OK {
 		return s.applyAutomaticTOFU(st, d, j, fingerprint, outcome)
 	}
 	if j.Command.Op == "device.query-start" {
@@ -347,8 +349,10 @@ func (s *Service) applyQueryUpdate(
 func (s *Service) applyAutomaticTOFU(
 	st *State, d *Device, j *RunningJob, fingerprint string, outcome *Code,
 ) Code {
-	if d.Fingerprint != "" && d.Fingerprint != fingerprint {
-		*outcome = TrustChanged
+	// ignored: only the validation outcome is needed here.
+	_, code := FirstContactKey(d.Fingerprint, fingerprint)
+	if code != OK {
+		*outcome = code
 		return OK
 	}
 	if d.Fingerprint == "" {
@@ -381,6 +385,7 @@ func (s *Service) applyDeviceQueryResult(
 	if outcome == OK && result != nil {
 		preserveStaleInterfaces(d, result)
 		d.Result = result
+		d.Identity = result.Identity
 	}
 	return OK
 }

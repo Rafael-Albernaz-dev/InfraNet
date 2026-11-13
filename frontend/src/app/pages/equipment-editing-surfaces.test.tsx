@@ -38,7 +38,7 @@ for (const active of [true, false]) {
         ...data(),
         data: {
           ...data().data!,
-          device: { ...current, name: 'Edited name', revision: 2 },
+          device: { ...current, address: '192.0.2.42', revision: 2 },
         },
       });
       render(<Equipment profile="X" activation="a" connected />);
@@ -50,8 +50,8 @@ for (const active of [true, false]) {
       fireEvent.click(
         screen.getByRole('button', { name: 'Editar equipamento' }),
       );
-      fireEvent.change(screen.getByLabelText('Nome'), {
-        target: { value: 'Edited name' },
+      fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
+        target: { value: '192.0.2.42' },
       });
       fireEvent.click(
         screen.getByRole('button', { name: 'Salvar equipamento' }),
@@ -65,9 +65,9 @@ for (const active of [true, false]) {
         expect.objectContaining({
           id: device.id,
           revision: 1,
-          name: 'Edited name',
+          name: device.name,
           credential_id: 'credential',
-          address: '127.0.0.1',
+          address: '192.0.2.42',
         }),
       );
       await act(async () => {});
@@ -112,13 +112,15 @@ for (const changeSurface of [true, false]) {
       fireEvent.click(
         screen.getByRole('button', { name: 'Editar equipamento' }),
       );
-      fireEvent.change(screen.getByLabelText('Nome'), {
-        target: { value: 'New draft' },
+      fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
+        target: { value: '192.0.2.42' },
       });
     }
     await act(async () => reject(new Error('late transport failure')));
     if (changeSurface) {
-      expect(screen.getByLabelText('Nome')).toHaveValue('New draft');
+      expect(screen.getByLabelText('IP de gerenciamento')).toHaveValue(
+        '192.0.2.42',
+      );
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
       expect(
         screen.getByRole('dialog', { name: 'Editar equipamento' }),
@@ -161,8 +163,8 @@ for (const path of ['target', 'detail']) {
         await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
         if (changed) {
           view.rerender(<Equipment {...props} addPage />);
-          fireEvent.change(screen.getByLabelText('Nome'), {
-            target: { value: 'Preserved draft' },
+          fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
+            target: { value: '192.0.2.42' },
           });
         }
         await act(async () => {
@@ -170,7 +172,9 @@ for (const path of ['target', 'detail']) {
           else complete(updated);
         });
         if (changed) {
-          expect(screen.getByLabelText('Nome')).toHaveValue('Preserved draft');
+          expect(screen.getByLabelText('IP de gerenciamento')).toHaveValue(
+            '192.0.2.42',
+          );
           expect(screen.queryByRole('alert')).not.toBeInTheDocument();
           expect(
             screen.queryByRole('heading', {
@@ -197,8 +201,8 @@ it('persists a real form request with stable operation ID and explicit company c
     .mockResolvedValueOnce(data());
   render(<Equipment profile="X" activation="a" connected addPage />);
   await screen.findByRole('heading', { name: 'Adicionar equipamento' });
-  fireEvent.change(screen.getByLabelText('Nome'), {
-    target: { value: 'New destination' },
+  fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
+    target: { value: '192.0.2.42' },
   });
   fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
     target: { value: '127.0.0.1' },
@@ -294,7 +298,6 @@ it('an uncertain enrollment never lends its operation ID to an unrelated edit', 
     target: { value: '__inline__' },
   });
   for (const [label, value] of [
-    ['Nome', 'Uncertain'],
     ['IP de gerenciamento', '127.0.0.1'],
     ['Usuário', 'reader'],
     ['Senha', 'fixture only'],

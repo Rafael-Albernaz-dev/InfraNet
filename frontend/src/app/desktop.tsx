@@ -69,7 +69,7 @@ export function Desktop(
     ...p,
     navigate: (page: Page) => {
       const next = normalizeRoute(page);
-      if (next === 'equipment' || next === 'credentials')
+      if (next === 'equipment' || next === 'credentials' || next === 'grupos')
         setExpandRequest((n) => n + 1);
       p.navigate(page);
     },

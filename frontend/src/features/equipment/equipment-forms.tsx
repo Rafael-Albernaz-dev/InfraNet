@@ -1,3 +1,5 @@
+import type { Group } from './groups';
+import { GroupSelect } from './group-select';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../shared/ui/Button';
 import type {
@@ -14,7 +16,6 @@ import {
   fieldForEquipmentCode,
   fieldMessages,
   validEquipmentAddress,
-  validEquipmentText,
 } from './equipment-validation';
 import { RadioTransports } from './radio-contract';
 export { ProtectedDialog } from '../access/protected-dialog';
@@ -22,6 +23,7 @@ export { ProtectedDialog } from '../access/protected-dialog';
 type EditProps = {
   defaults: Record<string, string>;
   blocks?: string[];
+  groups?: Group[];
   device: Device;
   credentials: Credential[];
   disabled: boolean;
@@ -34,7 +36,8 @@ function initialDraft(device: Device): DeviceInput {
     operation_id: id(),
     revision: device.revision,
     name: device.name,
-    block: device.block || '',
+    block: '',
+    group_id: device.group_id || '',
     role: device.role || 'other',
     address: device.address,
     port: device.port,
@@ -46,7 +49,6 @@ function initialDraft(device: Device): DeviceInput {
 }
 function validate(draft: DeviceInput) {
   const errors: Record<string, string> = {};
-  if (!validEquipmentText(draft.name)) errors.name = fieldMessages.name;
   if (!validEquipmentAddress(draft.address))
     errors.address = fieldMessages.address;
   if (!Number.isInteger(draft.port) || draft.port < 1 || draft.port > 65535)
@@ -56,7 +58,7 @@ function validate(draft: DeviceInput) {
 function dirty(d: DeviceInput, device: Device) {
   return (
     d.name !== device.name ||
-    d.block !== (device.block || '') ||
+    d.group_id !== (device.group_id || '') ||
     d.role !== (device.role || 'other') ||
     d.address !== device.address ||
     d.port !== device.port ||
@@ -119,10 +121,11 @@ export function DeviceForm(props: EditProps) {
             {...attrs('name')}
             value={draft.name}
             maxLength={80}
-            required
-            onChange={(e) => change({ name: e.target.value })}
+            readOnly
           />
-          {message('name')}
+          <p className="muted">
+            Para trocar, mude a identidade no WinBox; pelo app, só na L13
+          </p>
         </label>
         <DeviceRoleSelect
           draft={draft}
@@ -142,8 +145,7 @@ export function DeviceForm(props: EditProps) {
           />
           {message('address')}
         </label>
-        <details className="equipment-port">
-          <summary>Porta SSH · {draft.port}</summary>
+        <div className="equipment-port">
           <label className="field">
             Porta SSH
             <input
@@ -158,22 +160,12 @@ export function DeviceForm(props: EditProps) {
             />
             {message('port')}
           </label>
-        </details>
-        <label className="field">
-          Bloco
-          <input
-            aria-label="Bloco"
-            value={draft.block}
-            maxLength={80}
-            list="device-block-suggestions"
-            onChange={(e) => change({ block: e.target.value })}
-          />
-          <datalist id="device-block-suggestions">
-            {(props.blocks || []).map((block) => (
-              <option key={block} value={block} />
-            ))}
-          </datalist>
-        </label>
+        </div>
+        <GroupSelect
+          groups={props.groups || []}
+          value={draft.group_id || ''}
+          change={(group_id) => change({ group_id })}
+        />
         <ExistingCredentialSelect
           draft={draft}
           change={change}

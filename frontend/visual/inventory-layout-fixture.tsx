@@ -1,6 +1,40 @@
 import type { Device } from '../src/features/equipment/equipment-api';
+import { groupPath } from '../src/features/equipment/groups';
 import { RadioTransports } from '../src/features/equipment/radio-contract';
 import { prepareSecurityVisual } from './security-layout-fixture';
+
+export const visualGroups = [
+  {
+    id: '11111111-1111-4111-8111-111111111111',
+    parent_id: '',
+    name: 'Região Centro',
+  },
+  {
+    id: '22222222-2222-4222-8222-222222222222',
+    parent_id: '',
+    name: 'Região Norte',
+  },
+  {
+    id: '33333333-3333-4333-8333-333333333333',
+    parent_id: '22222222-2222-4222-8222-222222222222',
+    name: 'Torre Norte',
+  },
+  {
+    id: '44444444-4444-4444-8444-444444444444',
+    parent_id: '33333333-3333-4333-8333-333333333333',
+    name: 'Painel 04',
+  },
+  {
+    id: '55555555-5555-4555-8555-555555555555',
+    parent_id: '',
+    name: 'Região Sul',
+  },
+  {
+    id: '66666666-6666-4666-8666-666666666666',
+    parent_id: '55555555-5555-4555-8555-555555555555',
+    name: 'Torre Sul',
+  },
+];
 
 export function prepareBase5Devices(
   devices: Device[],
@@ -22,7 +56,10 @@ export function prepareBase5Devices(
     'AP-SUL': 'RB912UAG',
   };
   for (const d of devices) {
-    d.block = groups[d.id] || '';
+    d.block = '';
+    d.group_id = visualGroups.find((g) => g.name === groups[d.id])?.id || '';
+    d.group_path = groupPath(visualGroups, d.group_id);
+    d.identity = d.name;
     if (d.id === 'EQP-0001') d.credential_id = '';
     if (visualScene.startsWith('equipamentos') && d.result)
       d.result.board = models[d.id] || '';
@@ -50,7 +87,9 @@ export function prepareBase5Devices(
       id: name,
       name,
       role,
-      block: 'Torre Norte',
+      block: '',
+      group_id: visualGroups[2].id,
+      group_path: groupPath(visualGroups, visualGroups[2].id),
       address,
       port: 22,
       transport: RadioTransports.ssh,
@@ -90,7 +129,7 @@ export function createBase5List(
       devices: filtered.slice(cursor, cursor + 16),
       next_cursor: cursor + 16 < filtered.length ? cursor + 16 : 0,
       total_devices: devices.length,
-      blocks: [...new Set(devices.map((d) => d.block).filter(Boolean))],
+      groups: visualGroups,
       models: [
         ...new Set(
           devices

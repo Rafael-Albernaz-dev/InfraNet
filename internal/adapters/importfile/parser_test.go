@@ -37,9 +37,10 @@ func zipFixture(t *testing.T, sheet string, extra map[string]string) []byte {
 
 const sampleSheet = `<worksheet><sheetData>` +
 	`<row r="1"><c r="A1" t="inlineStr"><is><t>Nome</t></is></c>` +
-	`<c r="B1" t="inlineStr"><is><t>IP</t></is></c><c r="C1" t="inlineStr"><is><t>Porta</t></is></c></row>` +
+	`<c r="B1" t="inlineStr"><is><t>IP</t></is></c><c r="C1" t="inlineStr"><is><t>Porta</t></is></c>` +
+	`<c r="D1" t="inlineStr"><is><t>Grupo</t></is></c></row>` +
 	`<row r="3"><c r="A3" t="s"><v>0</v></c><c r="B3" t="inlineStr"><is><t>192.0.2.10</t></is></c>` +
-	`<c r="C3"><v>22</v></c></row></sheetData></worksheet>`
+	`<c r="C3"><v>22</v></c><c r="D3" t="inlineStr"><is><t>Norte › Torre</t></is></c></row></sheetData></worksheet>`
 
 func TestFormatsAndXLSXCellTypes(t *testing.T) {
 	p := Parser{}
@@ -49,9 +50,9 @@ func TestFormatsAndXLSXCellTypes(t *testing.T) {
 		data []byte
 		line int
 	}{
-		{"one.csv", []byte("\xef\xbb\xbfNome;IP;Porta\nRoteador;192.0.2.10;22\n"), 2},
-		{"one.csv", []byte("Nome,IP,Porta\nRoteador,192.0.2.10,22\n"), 2},
-		{"one.json", []byte(`[{"NAME":"Roteador","address":"192.0.2.10","port":22}]`), 1},
+		{"one.csv", []byte("\xef\xbb\xbfNome;IP;Porta;Grupo\nRoteador;192.0.2.10;22;Norte › Torre\n"), 2},
+		{"one.csv", []byte("Nome,IP,Porta,Grupo\nRoteador,192.0.2.10,22,Norte › Torre\n"), 2},
+		{"one.json", []byte(`[{"NAME":"Roteador","address":"192.0.2.10","port":22,"group":"Norte › Torre"}]`), 1},
 		{"one.xlsx", xlsx, 3},
 	}
 	for _, tc := range cases {
@@ -59,7 +60,7 @@ func TestFormatsAndXLSXCellTypes(t *testing.T) {
 		if err != nil || len(rows) != 1 {
 			t.Fatalf("%s: %#v %v", tc.name, rows, err)
 		}
-		if rows[0].Line != tc.line || rows[0].Name != "Roteador" ||
+		if rows[0].Line != tc.line || rows[0].Name != "" || rows[0].Group != "Norte › Torre" ||
 			rows[0].Address != "192.0.2.10" || rows[0].Port != "22" {
 			t.Fatalf("%s: %#v %v", tc.name, rows, err)
 		}

@@ -12,6 +12,10 @@ import (
 // Synthetic rewind removes migration 14 before older migration fixtures are reconstructed.
 func dropInventoryBlockFixtureSchema(t *testing.T, j *journey) {
 	t.Helper()
+	if _, err := j.st.unit.Exec(`DROP TABLE device_groups; ALTER TABLE devices DROP COLUMN group_id;
+ ALTER TABLE devices DROP COLUMN identity; DELETE FROM schema_migrations WHERE version=16`); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := j.st.unit.Exec(`DROP TABLE table_preferences; DELETE FROM schema_migrations WHERE version=15;
  DROP TABLE device_inventory_roles; ALTER TABLE devices DROP COLUMN block;
   DELETE FROM schema_migrations WHERE version=14`); err != nil {
@@ -53,7 +57,7 @@ func TestInventoryBlockMigrationPreservesStateAndRollsBack(t *testing.T) {
 	if c != equipment.OK || !reflect.DeepEqual(before, after) {
 		t.Fatal("legacy state changed during migration", c)
 	}
-	if err := j.st.unit.QueryRow("SELECT max(version) FROM schema_migrations").Scan(&n); err != nil || n != 15 {
-		t.Fatal("schema 15 missing", n, err)
+	if err := j.st.unit.QueryRow("SELECT max(version) FROM schema_migrations").Scan(&n); err != nil || n != 16 {
+		t.Fatal("schema 16 missing", n, err)
 	}
 }

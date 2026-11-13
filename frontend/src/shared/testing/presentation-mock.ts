@@ -28,6 +28,12 @@ const accessMock = (fallback: Record<string, unknown> = {}) => ({
   saveBrand: mockMethod(fallback.saveBrand),
 });
 const equipmentAPIMock = (fallback: Record<string, unknown> = {}) => ({
+  groups: mockMethod(fallback.groups),
+  createGroup: mockMethod(fallback.createGroup),
+  renameGroup: mockMethod(fallback.renameGroup),
+  deleteGroup: mockMethod(fallback.deleteGroup),
+  registrationStatus: mockMethod(fallback.registrationStatus),
+  confirmRegistration: mockMethod(fallback.confirmRegistration),
   enrollmentStatus: mockMethod(fallback.enrollmentStatus),
   get: mockMethod(fallback.get),
   save: mockMethod(fallback.save),
@@ -46,6 +52,9 @@ const equipmentAPIMock = (fallback: Record<string, unknown> = {}) => ({
   bulk: mockMethod(fallback.bulk),
 });
 const inventoryImportAPIMock = (fallback: Record<string, unknown> = {}) => ({
+  status: mockMethod(fallback.status),
+  cancel: mockMethod(fallback.cancel),
+  discarded: mockMethod(fallback.discarded),
   choose: mockMethod(fallback.choose),
   review: mockMethod(fallback.review),
   confirm: mockMethod(fallback.confirm),

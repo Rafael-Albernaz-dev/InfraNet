@@ -1,5 +1,11 @@
 import {
   BulkUpdateEquipment,
+  RegistrationStatus,
+  ConfirmRegistration,
+  EquipmentGroups,
+  CreateEquipmentGroup,
+  RenameEquipmentGroup,
+  DeleteEquipmentGroup,
   CancelQuery,
   ConfirmTrust,
   DeleteCredential,
@@ -23,6 +29,9 @@ import type { EquipmentResult } from '../../features/inventory/inventory-import-
 import type { DeviceHealth } from './pppoe-types';
 export type Observation = Omit<equipment.Observation, 'convertValues'>;
 type DeviceProjection = {
+  identity?: string;
+  group_id?: string;
+  group_path?: string;
   live?: {
     cpu?: number;
     clients?: number;
@@ -47,13 +56,19 @@ export type Job = Omit<equipment.Job, 'convertValues' | 'result'> & {
 };
 export type DeviceInput = Omit<
   presentation.DeviceInput,
-  'convertValues' | 'role'
-> & { role?: string };
+  'convertValues' | 'role' | 'group_id'
+> & { role?: string; group_id?: string };
 export type CredentialInput = Omit<
   presentation.CredentialInput,
   'convertValues'
 >;
 const equipmentBindings = {
+  registrationStatus: RegistrationStatus,
+  confirmRegistration: ConfirmRegistration,
+  groups: EquipmentGroups,
+  createGroup: CreateEquipmentGroup,
+  renameGroup: RenameEquipmentGroup,
+  deleteGroup: DeleteEquipmentGroup,
   ...createInventoryBindings(
     ListEquipment,
     (p, a, input) =>

@@ -232,7 +232,7 @@ func IdentifyAirOS(text string) (*equipment.RadioReading, bool) {
 			if !ok {
 				continue
 			}
-			if k != "firmwareVersion" && k != "platform" && k != "wlanOpmode" {
+			if k != "firmwareVersion" && k != "platform" && k != "wlanOpmode" && k != "deviceName" {
 				continue
 			}
 			if _, exists := fields[k]; exists {
@@ -247,6 +247,7 @@ func IdentifyAirOS(text string) (*equipment.RadioReading, bool) {
 	}
 	r := &equipment.RadioReading{Family: equipment.RadioUnsupported,
 		Manufacturer: "Ubiquiti",
+		Identity:     fields["deviceName"],
 		Version:      version,
 		Model:        model,
 		Mode:         fields["wlanOpmode"],

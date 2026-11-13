@@ -46,6 +46,11 @@ func (s *Store) initialTablePreference(ctx context.Context, table string) (*inve
 	if len(account.Columns) == 0 {
 		return nil, inventory.OK
 	}
+	for i, column := range account.Columns {
+		if column == "block" {
+			account.Columns[i] = "group"
+		}
+	}
 	p := inventory.TablePreference{Columns: account.Columns, PageSize: 50}
 	if c := s.writeTablePreference(ctx, table, p); c != inventory.OK {
 		return nil, c

@@ -5,13 +5,13 @@ func blockUpdateKeptRevision(q Command, v *View) bool {
 }
 
 func deviceUpdateRevision(next, old Device, operation string) uint64 {
-	if operation == "inventory.update" && next.Block != old.Block && sameDeviceConfiguration(next, old) {
+	if operation == "inventory.update" && next.GroupID != old.GroupID && sameDeviceConfiguration(next, old) {
 		return old.Revision
 	}
 	return old.Revision + 1
 }
 
 func sameDeviceConfiguration(a, b Device) bool {
-	return a.Name == b.Name && a.Role == b.Role && a.Address == b.Address &&
+	return a.Role == b.Role && a.Address == b.Address &&
 		a.Port == b.Port && a.Transport == b.Transport && a.CredentialID == b.CredentialID
 }

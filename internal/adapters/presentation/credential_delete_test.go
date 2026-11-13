@@ -23,7 +23,7 @@ func TestCredentialDeleteThroughPresentation(t *testing.T) {
 	}
 	device := DeviceInput{ID: uuid.NewString(), Operation: uuid.NewString(), Name: "Synthetic",
 		Address: "192.0.2.1", Port: 22, Transport: string(equipment.TransportSSH), CredentialID: credential.ID}
-	if r := app.SaveEquipment(selected.Profile, selected.Activation, device); r.Code != "OK" {
+	if r := app.equipmentCall("inventory.create", selected.Profile, selected.Activation, makeDeviceInput(device)); r.Code != "OK" {
 		t.Fatal("device", r.Code)
 	}
 	if r := app.DeleteCredential(selected.Profile, selected.Activation, credential.ID, uuid.NewString(), 1); r.Code != "CREDENTIAL_IN_USE" {

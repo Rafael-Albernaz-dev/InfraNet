@@ -9,7 +9,7 @@ import (
 	"infradesktop/internal/modules/equipment"
 )
 
-func TestBlockOnlyUpdatePreservesSavedReadings(t *testing.T) {
+func TestGroupOnlyUpdatePreservesSavedReadings(t *testing.T) {
 	for _, mode := range []string{"bulk", "edit"} {
 		t.Run(mode, func(t *testing.T) {
 			j, target := ppStoreSetup(t)
@@ -17,6 +17,7 @@ func TestBlockOnlyUpdatePreservesSavedReadings(t *testing.T) {
 			d := target.Device
 			d.Role = equipment.RoleAP
 			if c := j.st.UpdateEquipment(ctx, companyX, func(st *equipment.State) equipment.Code {
+				st.Groups = []equipment.Group{{ID: "00000000-0000-4000-8000-000000000009", Name: "Torre sintetica"}}
 				for i := range st.Devices {
 					if st.Devices[i].ID == d.ID {
 						st.Devices[i].Role = d.Role
@@ -37,13 +38,13 @@ func TestBlockOnlyUpdatePreservesSavedReadings(t *testing.T) {
 			q := equipmentScope(j)
 			q.Operation = uuid.NewString()
 			if mode == "bulk" {
-				block := "Torre sintetica"
+				group := "00000000-0000-4000-8000-000000000009"
 				q.Op = "inventory.bulk-update"
-				q.Bulk = &equipment.BulkUpdate{Items: []equipment.BulkItem{{ID: d.ID, Revision: d.Revision}}, Block: &block}
+				q.Bulk = &equipment.BulkUpdate{Items: []equipment.BulkItem{{ID: d.ID, Revision: d.Revision}}, GroupID: &group}
 			} else {
 				q.Op, q.ID, q.Revision = "inventory.update", d.ID, d.Revision
 				q.Name, q.Address, q.Port, q.Transport = d.Name, d.Address, d.Port, d.Transport
-				q.Role, q.CredentialID, q.Block = d.Role, d.CredentialID, "Torre sintetica"
+				q.Role, q.CredentialID, q.GroupID = d.Role, d.CredentialID, "00000000-0000-4000-8000-000000000009"
 			}
 			equipmentCall(t, s, q, equipment.OK)
 			rows, err := readEquipmentInsights(ctx, j.st.unit, d.ID, "health", time.Now())
@@ -69,12 +70,13 @@ func TestBlockOnlyUpdatePreservesSavedReadings(t *testing.T) {
 	}
 }
 
-func TestBlockWithNameChangeDoesNotPreserveReadings(t *testing.T) {
+func TestGroupWithEndpointChangeDoesNotPreserveReadings(t *testing.T) {
 	j, target := ppStoreSetup(t)
 	ctx := context.Background()
 	d := target.Device
 	d.Role = equipment.RoleAP
 	if c := j.st.UpdateEquipment(ctx, companyX, func(st *equipment.State) equipment.Code {
+		st.Groups = []equipment.Group{{ID: "00000000-0000-4000-8000-000000000009", Name: "Torre sintetica"}}
 		for i := range st.Devices {
 			if st.Devices[i].ID == d.ID {
 				st.Devices[i].Role = d.Role
@@ -94,8 +96,8 @@ func TestBlockWithNameChangeDoesNotPreserveReadings(t *testing.T) {
 	s := newEquipment(t, j)
 	q := equipmentScope(j)
 	q.Op, q.ID, q.Revision, q.Operation = "inventory.update", d.ID, d.Revision, uuid.NewString()
-	q.Name, q.Address, q.Port, q.Transport = "Outro nome", d.Address, d.Port, d.Transport
-	q.Role, q.CredentialID, q.Block = d.Role, d.CredentialID, "Torre sintetica"
+	q.Name, q.Address, q.Port, q.Transport = "ignored", d.Address, d.Port+1, d.Transport
+	q.Role, q.CredentialID, q.GroupID = d.Role, d.CredentialID, "00000000-0000-4000-8000-000000000009"
 	equipmentCall(t, s, q, equipment.OK)
 	rows, err := readEquipmentInsights(ctx, j.st.unit, d.ID, "health", time.Now())
 	if err != nil || len(rows) != 0 {

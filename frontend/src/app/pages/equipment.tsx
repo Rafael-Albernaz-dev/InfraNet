@@ -1,3 +1,4 @@
+import { EquipmentGroups } from '../../features/equipment/equipment-groups';
 import {
   EquipmentBanners,
   EquipmentDialogs,
@@ -10,7 +11,6 @@ import { EquipmentDetailPane } from './equipment-detail';
 import { EquipmentInventoryPane } from '../../features/inventory/equipment-inventory';
 import { useEquipmentState } from '../../features/equipment/equipment-state';
 import { EquipmentCredentials } from '../../features/equipment/equipment-credentials';
-import { RadioRoles } from '../../features/equipment/radio-contract';
 import { AddEquipment } from '../../features/equipment/add-equipment';
 import { useState } from 'react';
 import { SessionRoute } from '../../features/equipment/session-navigation';
@@ -26,6 +26,7 @@ function EquipmentCapabilityBody({
   connected: boolean;
   primaryInHeader: boolean;
   credentialsPage?: boolean;
+  groupsPage?: boolean;
   addPage?: boolean;
   onAdd?: () => void;
   onAddBack?: () => void;
@@ -58,16 +59,26 @@ function EquipmentCapabilityBody({
           />
         ) : (
           <>
-            <EquipmentInventoryPane
-              key={[profile, activation].join('|')}
-              {...s}
-              profile={profile}
-              activation={activation}
-              connected={connected}
-              primaryInHeader={primaryInHeader}
-              locked={locked}
-              onAdd={p.onAdd}
-            />
+            {p.groupsPage && !s.detailOpen && (
+              <EquipmentGroups
+                s={s}
+                profile={profile}
+                activation={activation}
+                locked={locked}
+              />
+            )}
+            <div hidden={p.groupsPage}>
+              <EquipmentInventoryPane
+                key={[profile, activation].join('|')}
+                {...s}
+                profile={profile}
+                activation={activation}
+                connected={connected}
+                primaryInHeader={primaryInHeader}
+                locked={locked}
+                onAdd={p.onAdd}
+              />
+            </div>
             {s.selected && s.detailOpen && (
               <EquipmentDetailPane
                 {...s}
@@ -86,6 +97,23 @@ function EquipmentCapabilityBody({
       {s.detailOpen && !s.selected && (
         <p role="status">Carregando equipamento…</p>
       )}
+      <EquipmentJobProgress s={s} profile={profile} activation={activation} />
+      <EquipmentDialogs {...p} />
+    </div>
+  );
+}
+
+function EquipmentJobProgress({
+  s,
+  profile,
+  activation,
+}: {
+  s: ReturnType<typeof useEquipmentState>;
+  profile: string;
+  activation: string;
+}) {
+  return (
+    <>
       {s.job?.state === 'RUNNING' && (
         <div className="note" role="status">
           {s.job.kind === 'trust.inspect'
@@ -104,8 +132,7 @@ function EquipmentCapabilityBody({
           </Button>
         </div>
       )}
-      <EquipmentDialogs {...p} />
-    </div>
+    </>
   );
 }
 
@@ -115,6 +142,7 @@ export type EquipmentProps = {
   connected: boolean;
   primaryInHeader?: boolean;
   credentialsPage?: boolean;
+  groupsPage?: boolean;
   addPage?: boolean;
   onAdd?: () => void;
   onAddBack?: () => void;
@@ -193,16 +221,7 @@ function EquipmentContext(props: EquipmentProps) {
       </div>
     );
   const locked = s.busy || !connected;
-  const trustOpen = Boolean(
-    !s.selected?.fingerprint &&
-    s.selected?.role !== RadioRoles.ap &&
-    s.selected?.role !== RadioRoles.cpe &&
-    s.job?.kind === 'trust.inspect' &&
-    s.job.state === 'SUCCEEDED' &&
-    s.selected &&
-    s.job.device_id === s.selected.id &&
-    s.jobDevice?.revision === s.selected.revision,
-  );
+  const trustOpen = false;
   return (
     <EquipmentCapabilityBody
       s={s}
@@ -211,6 +230,7 @@ function EquipmentContext(props: EquipmentProps) {
       connected={connected}
       primaryInHeader={primaryInHeader}
       credentialsPage={props.credentialsPage}
+      groupsPage={props.groupsPage}
       addPage={adding}
       onAdd={props.onAdd}
       onAddBack={() => {

@@ -245,6 +245,7 @@ func TestEquipmentJobRetentionAndRecordLimit(t *testing.T) {
 		if job := awaitJob(t, s, q, v.Job.ID); job.Code != equipment.OK {
 			t.Fatal(job.Code)
 		}
+		q.Revision = 2
 	}
 	q.Operation = uuid.NewString()
 	admitWhenReleased(t, s, q, equipment.Limit)

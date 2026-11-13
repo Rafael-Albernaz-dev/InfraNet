@@ -280,6 +280,7 @@ export function Scene() {
                 activation="fixture"
                 connected
                 credentialsPage={page === 'credentials'}
+                groupsPage={page === 'grupos'}
                 addPage={page === 'adicionar'}
                 onAdd={() => setPage('adicionar')}
                 onAddBack={() => setPage('equipment')}

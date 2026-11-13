@@ -85,6 +85,7 @@ func (r *radioSession) identifyAirOS() (*equipment.RadioReading, bool, equipment
 	if reading != nil {
 		reading.CommandSeconds = seconds
 		reading.Manufacturer = "Ubiquiti"
+		reading.Identity = identity.Identity
 		reading.Mode = identity.Mode
 		if c == equipment.RadioCodeUnsupported {
 			reading.DriverReason = "Firmware airOS sem driver comprovado"

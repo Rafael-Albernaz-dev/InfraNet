@@ -11,8 +11,6 @@ import (
 	"infradesktop/internal/testsupport/sshfixture"
 )
 
-func setSyntheticBlock(t *testing.T, q *equipment.Command, value string) { t.Helper(); q.Block = value }
-func readSyntheticBlock(t *testing.T, d *equipment.Device) string        { t.Helper(); return d.Block }
 func TestNewRolesAreSavedWithoutStartingRemoteReads(t *testing.T) {
 	j := newJourney(t)
 	j.create(companyX, "X", access.OK)
@@ -56,68 +54,57 @@ func TestNewRolesAreSavedWithoutStartingRemoteReads(t *testing.T) {
 		})
 	}
 }
-func TestDeviceBlockIsValidatedPersistedAndIsolated(t *testing.T) {
+func TestDeviceGroupIsValidatedPersistedAndIsolated(t *testing.T) {
 	j := newJourney(t)
 	j.create(companyX, "X", access.OK)
 	j.create(companyY, "Y", access.OK)
 	j.selectCompany(companyX, access.OK)
-	s := newEquipment(t, j)
-	_, base := setupEquipment(t, j, s, 2222)
+	service := newEquipment(t, j)
+	_, base := setupEquipment(t, j, service, 2222)
+	first, second := uuid.NewString(), uuid.NewString()
+	for id, name := range map[string]string{first: "Torre Norte", second: "Área Sul"} {
+		q := equipmentScope(j)
+		q.Op, q.ID, q.Operation, q.Name = "inventory.group-create", id, uuid.NewString(), name
+		equipmentCall(t, service, q, equipment.OK)
+	}
 	q := base
-	q.ID = uuid.NewString()
-	q.Operation = uuid.NewString()
-	setSyntheticBlock(t, &q, "Torre Norte")
-	got := equipmentCall(t, s, q, equipment.OK).Device
-	if got == nil || readSyntheticBlock(t, got) != "Torre Norte" {
-		t.Fatal("created block missing")
+	q.ID, q.Operation, q.GroupID = uuid.NewString(), uuid.NewString(), first
+	created := equipmentCall(t, service, q, equipment.OK).Device
+	if created == nil || created.GroupID != first {
+		t.Fatal("created group missing")
 	}
-	update := q
-	update.Op = "inventory.update"
-	update.Operation = uuid.NewString()
-	update.Revision = 1
-	setSyntheticBlock(t, &update, "Área Sul")
-	equipmentCall(t, s, update, equipment.OK)
+	q.Op, q.Operation, q.Revision, q.GroupID = "inventory.update", uuid.NewString(), 1, second
+	saved := equipmentCall(t, service, q, equipment.OK).Device
+	if saved.GroupID != second || saved.Revision != 1 {
+		t.Fatal("group changed collection revision", saved)
+	}
+	checkGroupNameBoundaries(t, j, service, second)
 	get := equipmentScope(j)
-	get.Op = "inventory.get"
-	get.ID = q.ID
-	if got = equipmentCall(t, s, get, equipment.OK).Device; got == nil || readSyntheticBlock(t, got) != "Área Sul" {
-		t.Fatal("updated block missing")
-	}
-	verifyBlockBoundaries(t, s, update, got)
-	old := get
+	get.Op, get.ID = "inventory.get", q.ID
 	j.selectCompany(companyY, access.OK)
-	equipmentCall(t, s, old, equipment.Changed)
+	equipmentCall(t, service, get, equipment.Changed)
 	foreign := equipmentScope(j)
-	foreign.Op = "inventory.get"
-	foreign.ID = q.ID
-	equipmentCall(t, s, foreign, equipment.Invalid)
+	foreign.Op, foreign.ID = "inventory.get", q.ID
+	equipmentCall(t, service, foreign, equipment.Invalid)
 	j.selectCompany(companyX, access.OK)
 	get = equipmentScope(j)
-	get.Op = "inventory.get"
-	get.ID = q.ID
-	if got = equipmentCall(t, s, get, equipment.OK).Device; got == nil || readSyntheticBlock(t, got) != strings.Repeat("á", 80) {
-		t.Fatal("company change lost block")
+	get.Op, get.ID = "inventory.get", q.ID
+	restored := equipmentCall(t, service, get, equipment.OK).Device
+	if restored.GroupID != second || restored.GroupPath != strings.Repeat("á", 80) {
+		t.Fatal("company change lost group", restored)
 	}
 }
-func verifyBlockBoundaries(t *testing.T, s *equipment.Service, update equipment.Command, got *equipment.Device) {
+func checkGroupNameBoundaries(t *testing.T, j *journey, service *equipment.Service, id string) {
 	t.Helper()
-	for _, valid := range []string{"", strings.Repeat("á", 80)} {
-		candidate := update
-		candidate.Operation = uuid.NewString()
-		candidate.Revision = got.Revision
-		setSyntheticBlock(t, &candidate, valid)
-		got = equipmentCall(t, s, candidate, equipment.OK).Device
-		if got == nil || readSyntheticBlock(t, got) != valid {
-			t.Fatal("valid block was not retained")
-		}
+	q := equipmentScope(j)
+	q.Op, q.ID = "inventory.group-rename", id
+	q.Operation, q.Name = uuid.NewString(), strings.Repeat("á", 80)
+	equipmentCall(t, service, q, equipment.OK)
+	for _, name := range []string{"", strings.Repeat("a", 81), "bad\nname", string([]byte{0xff}), " Norte ", "A > B"} {
+		q.Operation, q.Name = uuid.NewString(), name
+		equipmentCall(t, service, q, equipment.Invalid)
 	}
-	for _, invalid := range []string{strings.Repeat("a", 81), "bad\nblock", string([]byte{0xff})} {
-		candidate := update
-		candidate.Operation = uuid.NewString()
-		candidate.Revision = got.Revision
-		setSyntheticBlock(t, &candidate, invalid)
-		if _, c := s.Handle(context.Background(), candidate); c == equipment.OK {
-			t.Fatal("invalid block accepted")
-		}
-	}
+	deletion := equipmentScope(j)
+	deletion.Op, deletion.ID, deletion.Operation = "inventory.group-delete", id, uuid.NewString()
+	equipmentCall(t, service, deletion, equipment.Invalid)
 }

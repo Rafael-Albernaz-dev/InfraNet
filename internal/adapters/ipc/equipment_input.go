@@ -8,6 +8,9 @@ import (
 // EquipmentInput is operation-specific on the wire; presence allowlists below
 // reject unrelated fields even when their values are zero.
 type EquipmentInput struct {
+	GroupEmpty      bool                       `json:"group_empty,omitempty"`
+	GroupID         string                     `json:"group_id,omitempty"`
+	ParentID        string                     `json:"parent_id,omitempty"`
 	All             bool                       `json:"all,omitempty"`
 	Table           string                     `json:"table,omitempty"`
 	TablePreference *equipment.TablePreference `json:"table_preference,omitempty"`
@@ -42,7 +45,7 @@ type EquipmentInput struct {
 func equipmentCommand(uid uint32, owner string, q Request) equipment.Command {
 	e := q.Equipment
 	return equipment.Command{
-		Op: q.Op, UID: uid, Bulk: e.Bulk, Import: e.Import,
+		Op: q.Op, UID: uid, GroupEmpty: e.GroupEmpty, GroupID: e.GroupID, ParentID: e.ParentID, Bulk: e.Bulk, Import: e.Import,
 		All: e.All, Table: e.Table, TablePreference: e.TablePreference,
 		Scope: access.Command{Session: q.Session, Owner: owner, Profile: q.Profile, Activation: q.Activation,
 			ExpectedProfile: q.ExpectedProfile, ExpectedActivation: q.ExpectedActivation},

@@ -1,3 +1,4 @@
+import { findDevicePrimary } from './test-navigation';
 import { waitForSessionReady } from '../shared/testing/session-ready';
 import {
   fireEvent,
@@ -130,11 +131,13 @@ function fixtureDaemon() {
     SaveEquipment: vi.fn(async (_p: string, _a: string, input: DeviceInput) => {
       devices.push({
         ...input,
+        name: 'Concentrador sintético',
+        identity: 'Concentrador sintético',
         transport: RadioTransports.ssh,
         active: true,
         revision: 1,
-        fingerprint: '',
-        trust_origin: '',
+        fingerprint: 'SHA256:synthetic',
+        trust_origin: 'automatic-tofu',
       } as Device);
       return eq({ device: devices[0] });
     }),
@@ -150,14 +153,7 @@ function fixtureDaemon() {
         },
       }),
     ),
-    ConfirmTrust: vi.fn(async () => {
-      devices[0] = {
-        ...devices[0],
-        fingerprint: 'SHA256:synthetic',
-        revision: 2,
-      };
-      return eq({ device: devices[0] });
-    }),
+    ConfirmTrust: vi.fn(async () => eq()),
     StartQuery: vi.fn(async () =>
       eq({
         job: {
@@ -220,7 +216,7 @@ afterEach(() => vi.stubGlobal('go', undefined));
 it('mantém o percurso de conta, empresa, cadastro, credencial, ficha e sessão ligado aos bindings existentes', async () => {
   const { bindings, devices } = fixtureDaemon();
   vi.stubGlobal('go', { presentation: { App: bindings } });
-  render(<App />);
+  const { baseElement } = render(<App />);
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'Entrar' })).toBeEnabled(),
   );
@@ -240,9 +236,7 @@ it('mantém o percurso de conta, empresa, cadastro, credencial, ficha e sessão 
   );
   await screen.findByRole('heading', { name: 'Adicionar equipamento' });
   const form = within(screen.getByRole('main'));
-  fireEvent.change(form.getByLabelText('Nome'), {
-    target: { value: 'Concentrador sintético' },
-  });
+  expect(form.queryByLabelText('Nome')).not.toBeInTheDocument();
   fireEvent.change(form.getByLabelText('IP de gerenciamento'), {
     target: { value: '192.0.2.1' },
   });
@@ -257,18 +251,15 @@ it('mantém o percurso de conta, empresa, cadastro, credencial, ficha e sessão 
     target: { value: 'credential' },
   });
   fireEvent.click(form.getByRole('button', { name: /^Salvar$/ }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Ver na lista' }));
   fireEvent.click(
     await screen.findByRole('cell', { name: 'Concentrador sintético' }),
   );
   expect(bindings.InspectTrust).not.toHaveBeenCalled();
-  fireEvent.click(await screen.findByRole('button', { name: 'Conectar' }));
-  const trust = within(
-    await screen.findByRole('dialog', { name: 'Primeira conexão' }),
-  );
-  expect(bindings.StartQuery).not.toHaveBeenCalled();
   fireEvent.click(
-    trust.getByRole('button', { name: 'Confiar neste equipamento e conectar' }),
+    await findDevicePrimary(baseElement, 'Concentrador sintético'),
   );
+  expect(bindings.ConfirmTrust).not.toHaveBeenCalled();
   await waitFor(() => expect(bindings.StartQuery).toHaveBeenCalledOnce());
   expect(bindings.Login).toHaveBeenCalledWith(
     'operador',
@@ -277,15 +268,7 @@ it('mantém o percurso de conta, empresa, cadastro, credencial, ficha e sessão 
   );
   expect(bindings.SelectCompany).toHaveBeenCalledWith('company');
   expect(bindings.SaveEquipment).toHaveBeenCalledOnce();
-  expect(bindings.ConfirmTrust).toHaveBeenCalledWith(
-    'company',
-    'a',
-    devices[0].id,
-    expect.any(String),
-    'trust',
-    'SHA256:synthetic',
-    1,
-  );
+  expect(bindings.ConfirmTrust).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('link', { name: 'Credenciais' }));
   fireEvent.click(
     await screen.findByRole('button', { name: 'Adicionar credencial' }),
@@ -338,7 +321,7 @@ it('mantém o percurso de conta, empresa, cadastro, credencial, ficha e sessão 
       'traffic',
       'observation',
       ['row'],
-      2,
+      1,
     ),
   );
   fireEvent.click(await session.findByRole('button', { name: 'Parar' }));

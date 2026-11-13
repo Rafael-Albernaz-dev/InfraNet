@@ -13,12 +13,14 @@ import (
 	"infradesktop/internal/testsupport/jobprobe"
 )
 
-func TestImportIPCUsesScopedLargeFrameAndDoesNotReadEquipment(t *testing.T) {
+func TestImportIPCUsesScopedLargeFrameAndConnectsOnlyConfirmedRows(t *testing.T) {
 	j := newPPJourney(t)
+	probe := prepareImportProbe(t, j)
 	if !jobprobe.SetParser(j.svc, importfile.Parser{}) {
 		t.Fatal("fixture parser unavailable")
 	}
 	before := j.peer.Auth.Load()
+	beforeProbe := probe.Calls.Load()
 	body := "Nome,IP,Porta,Papel,Nota\nRouter,192.0.2.1,22,AP," + strings.Repeat("x", 70000) + "\n"
 	q := Request{Op: "inventory.import-preview", ExpectedProfile: j.client.profile, ExpectedActivation: j.client.activation,
 		Equipment: &EquipmentInput{Import: &equipment.ImportInput{Filename: "fixture.csv", Data: []byte(body)}}}
@@ -30,6 +32,10 @@ func TestImportIPCUsesScopedLargeFrameAndDoesNotReadEquipment(t *testing.T) {
 	q.Op = "inventory.import-confirm"
 	q.Equipment = &EquipmentInput{Operation: uuid.NewString(), Import: &equipment.ImportInput{Rows: []equipment.ImportRow{row}}}
 	r = j.client.Call(context.Background(), q)
+	if r.Code != foundation.OK {
+		t.Fatal("start", r.Code)
+	}
+	r = awaitImportIPC(t, j)
 	if r.Code != foundation.OK || r.Data.Equipment.ImportReceipt.Created != 1 {
 		t.Fatal("confirm failed", r.Code)
 	}
@@ -37,8 +43,8 @@ func TestImportIPCUsesScopedLargeFrameAndDoesNotReadEquipment(t *testing.T) {
 	if r.Code != foundation.OK || r.Data.Equipment.ImportReceipt.Created != 1 {
 		t.Fatal("replay failed", r.Code)
 	}
-	if j.peer.Auth.Load() != before {
-		t.Fatal("import triggered equipment connection")
+	if j.peer.Auth.Load() != before || probe.Calls.Load()-beforeProbe != 1 {
+		t.Fatal("import probe count or replay changed")
 	}
 }
 
@@ -57,6 +63,7 @@ func TestImportIPCRejectsPasswordWithoutEcho(t *testing.T) {
 
 func TestImportIPCPreviewAndConfirmFiveHundred(t *testing.T) {
 	j := newPPJourney(t)
+	prepareImportProbe(t, j)
 	if !jobprobe.SetParser(j.svc, importfile.Parser{}) {
 		t.Fatal("fixture parser unavailable")
 	}
@@ -87,6 +94,10 @@ func TestImportIPCPreviewAndConfirmFiveHundred(t *testing.T) {
 	q.Op = "inventory.import-confirm"
 	q.Equipment = &EquipmentInput{Operation: uuid.NewString(), Import: &equipment.ImportInput{Rows: rows}}
 	r = client.Call(context.Background(), q)
+	if r.Code != foundation.OK {
+		t.Fatal("start", r.Code)
+	}
+	r = awaitImportIPC(t, j)
 	if r.Code != foundation.OK || r.Data.Equipment.ImportReceipt.Created != 500 {
 		t.Fatal("confirm", r.Code)
 	}
@@ -111,4 +122,5 @@ func selectEmptyImportCompany(t *testing.T, client *AccountClient) {
 	if r := client.Call(context.Background(), Request{Op: "company.select", Name: company}); r.Code != foundation.OK {
 		t.Fatal(r.Code)
 	}
+	configureImportCredential(t, client)
 }

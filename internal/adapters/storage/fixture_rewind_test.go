@@ -3,7 +3,7 @@ package storage
 import "testing"
 
 // latestCompanySchema is the newest company migration the synthetic fixtures know.
-const latestCompanySchema = 15
+const latestCompanySchema = 16
 
 func dropRadioFixtureSchema(t *testing.T, j *journey) {
 	t.Helper()

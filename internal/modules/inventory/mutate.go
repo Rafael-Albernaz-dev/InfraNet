@@ -6,11 +6,19 @@ import (
 	"infradesktop/internal/modules/equipment"
 	"net/netip"
 	"strings"
+	"time"
 )
 
 func canonicalizeMutation(q *Command) Code {
-	if q.Op == "inventory.enroll" || q.Op == "inventory.create" || q.Op == "inventory.update" {
-		q.Name = strings.TrimSpace(q.Name)
+	if q.Op == "inventory.register" || q.Op == "inventory.enroll" || q.Op == "inventory.create" || q.Op == "inventory.update" {
+		q.Name = strings.TrimSpace(q.Address)
+		q.Block = ""
+		if q.Op == "inventory.register" {
+			q.Name = strings.TrimSpace(q.Address)
+		}
+		if q.Name == "" {
+			q.Name = strings.TrimSpace(q.Address)
+		}
 		if q.Role == "" {
 			q.Role = RoleOther
 		}
@@ -22,7 +30,7 @@ func canonicalizeMutation(q *Command) Code {
 			q.Address = ip.String()
 		}
 	}
-	if q.Op == "inventory.enroll" || q.Op == "credential.put" {
+	if q.Op == "inventory.register" || q.Op == "inventory.enroll" || q.Op == "credential.put" {
 		q.User = strings.TrimSpace(q.User)
 		q.Alias = strings.TrimSpace(q.Alias)
 	}
@@ -38,7 +46,7 @@ func buildMutationStamp(q Command, secretStamp string) string {
 		q.CredentialID, fmt.Sprint(q.Revision), fmt.Sprint(q.Active),
 		q.Alias, q.User, secretStamp, fmt.Sprint(q.Affected),
 	}
-	stamp := fmt.Sprintf("%q", parts)
+	stamp := fmt.Sprintf("%q", parts) + fmt.Sprintf(";group:%q;contact-secret:%q", q.GroupID, q.ContactSecretStamp)
 	if q.Block != "" {
 		stamp += fmt.Sprintf(";block:%q", q.Block)
 	}
@@ -77,6 +85,11 @@ func (s *Service) applyMutationState(st *State, q Command, stamp *string, v *Vie
 	}
 	if len(st.Operations) >= MaxOperations {
 		return Limit
+	}
+	if q.PendingCredential != nil {
+		if code := commitInlineCredential(st, q); code != OK {
+			return code
+		}
 	}
 	if c := s.dispatchMutationOp(st, q, stamp, v); c != OK {
 		return c
@@ -162,8 +175,11 @@ func (s *Service) mutateEnroll(st *State, q Command, v *View) Code {
 		return Limit
 	}
 	d := Device{
-		Role: q.Role, ID: q.ID, Name: q.Name, Block: q.Block, Address: q.Address, Port: q.Port,
+		Role: q.Role, ID: q.ID, Name: q.Name, Block: q.Block, GroupID: q.GroupID, Address: q.Address, Port: q.Port,
 		Transport: q.Transport, CredentialID: q.ID, Revision: 1, Active: true,
+	}
+	if !groupExists(st.Groups, d.GroupID) {
+		return Invalid
 	}
 	if c := ValidateDevice(d); c != OK {
 		return c
@@ -213,7 +229,7 @@ func mutateTrustReset(st *State, q Command, stamp *string, v *View) Code {
 func mutateDeviceSave(st *State, q Command, v *View) Code {
 	old := DeviceByID(st, q.ID)
 	d := Device{
-		Role: q.Role, ID: q.ID, Name: q.Name, Block: q.Block, Address: q.Address, Port: q.Port,
+		Role: q.Role, ID: q.ID, Name: q.Name, Block: q.Block, GroupID: q.GroupID, Address: q.Address, Port: q.Port,
 		Transport: q.Transport, CredentialID: q.CredentialID, Revision: 1, Active: true,
 	}
 	if q.Op == "inventory.create" {
@@ -225,11 +241,17 @@ func mutateDeviceSave(st *State, q Command, v *View) Code {
 			return c
 		}
 	}
+	if !groupExists(st.Groups, d.GroupID) {
+		return Invalid
+	}
 	if c := ValidateDevice(d); c != OK {
 		return c
 	}
 	if d.CredentialID != "" && CredentialByID(st, d.CredentialID) == nil {
 		return MissingCredential
+	}
+	if code := applyContactOutcome(st, q, &d); code != OK {
+		return code
 	}
 	if old != nil {
 		*old = d
@@ -257,6 +279,7 @@ func prepareDeviceUpdate(old *Device, q Command, d *Device) Code {
 	if old == nil || old.Revision != q.Revision {
 		return Revision
 	}
+	d.Name = old.Name
 	d.Revision = deviceUpdateRevision(*d, *old, q.Op)
 	d.Active = old.Active
 	if q.Op == "inventory.set-active" {
@@ -265,6 +288,7 @@ func prepareDeviceUpdate(old *Device, q Command, d *Device) Code {
 		d.Revision++
 	}
 	if sameDeviceEndpoint(*d, *old) {
+		d.Identity = old.Identity
 		d.Fingerprint = old.Fingerprint
 		d.TrustOrigin = old.TrustOrigin
 		d.TrustAcceptance = old.TrustAcceptance
@@ -278,4 +302,23 @@ func prepareDeviceUpdate(old *Device, q Command, d *Device) Code {
 
 func sameDeviceEndpoint(a, b Device) bool {
 	return a.Address == b.Address && a.Port == b.Port && a.Transport == b.Transport
+}
+
+func applyContactOutcome(st *State, q Command, d *Device) Code {
+	if q.Contact != nil {
+		acceptContact(d, q.Contact, q.Scope.Profile, q.UID, time.Now())
+	}
+	if q.ContactCode != "" && q.ContactCode != OK {
+		d.LastAttempt = &Attempt{Code: q.ContactCode, State: "FAILED", At: PPTime(time.Now()), DeviceRevision: d.Revision}
+		if cr := CredentialByID(st, d.CredentialID); cr != nil {
+			d.LastAttempt.CredentialRevision = cr.Metadata.Revision
+		}
+	}
+	if q.ContactCredentialRevision != 0 {
+		cr := CredentialByID(st, d.CredentialID)
+		if cr == nil || cr.Metadata.Revision != q.ContactCredentialRevision {
+			return Revision
+		}
+	}
+	return OK
 }

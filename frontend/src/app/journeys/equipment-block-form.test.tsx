@@ -14,13 +14,13 @@ import {
   RadioTransports,
 } from '../../features/equipment/radio-contract';
 
-it('keeps block edits protected and applies the default credential when changing radio role', async () => {
+it('keeps group edits protected and applies the default credential when changing radio role', async () => {
   const device = {
     id: 'synthetic',
     revision: 1,
     name: 'Switch',
     role: 'switch',
-    block: 'Torre Norte',
+    group_id: '11111111-1111-4111-8111-111111111111',
     address: '192.0.2.1',
     port: 22,
     transport: RadioTransports.ssh,
@@ -39,15 +39,29 @@ it('keeps block edits protected and applies the default credential when changing
       <DeviceForm
         defaults={{ [RadioRoles.ap]: 'radio-default' }}
         device={device}
+        groups={[
+          {
+            id: '11111111-1111-4111-8111-111111111111',
+            parent_id: '',
+            name: 'Torre Norte',
+          },
+          {
+            id: '22222222-2222-4222-8222-222222222222',
+            parent_id: '',
+            name: 'Torre Sul',
+          },
+        ]}
         credentials={credentials}
         disabled={false}
         save={save}
       />
     </ProtectedDialog>,
   );
-  expect(screen.getByLabelText('Bloco')).toHaveValue('Torre Norte');
-  fireEvent.change(screen.getByLabelText('Bloco'), {
-    target: { value: 'Torre Sul' },
+  expect(screen.getByLabelText('Grupo')).toHaveValue(
+    '11111111-1111-4111-8111-111111111111',
+  );
+  fireEvent.change(screen.getByLabelText('Grupo'), {
+    target: { value: '22222222-2222-4222-8222-222222222222' },
   });
   fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
   expect(
@@ -61,7 +75,7 @@ it('keeps block edits protected and applies the default credential when changing
   await waitFor(() =>
     expect(save).toHaveBeenCalledWith(
       expect.objectContaining({
-        block: 'Torre Sul',
+        group_id: '22222222-2222-4222-8222-222222222222',
         role: RadioRoles.ap,
         credential_id: 'radio-default',
       }),

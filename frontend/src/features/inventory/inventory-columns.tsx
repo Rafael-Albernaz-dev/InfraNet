@@ -2,6 +2,7 @@ import './inventory-pulse.css';
 import type { Device, Credential } from '../equipment/equipment-api';
 import { equipmentType } from '../equipment/equipment-layout';
 import {
+  equipmentPulseState,
   latestSavedReading,
   liveReading,
 } from '../equipment/equipment-reading-format';
@@ -49,7 +50,11 @@ export const columns: Column[] = [
     label: 'Papel',
     cell: ({ device }) => equipmentType(device.role),
   },
-  { id: 'block', label: 'Bloco', cell: ({ device }) => device.block || '—' },
+  {
+    id: 'group',
+    label: 'Grupo',
+    cell: ({ device }) => device.group_path || '—',
+  },
   {
     id: 'model',
     label: 'Modelo',
@@ -141,7 +146,7 @@ export const defaultColumns = [
   'equipment',
   'status',
   'role',
-  'block',
+  'group',
   'model',
   'address',
   'online',
@@ -161,7 +166,7 @@ function pulseCell({ device }: Context) {
   const age = p?.checked_at
     ? Math.max(0, (Date.now() - Date.parse(p.checked_at)) / 1000)
     : undefined;
-  const state = device.active && age !== undefined && age <= 90 ? p?.state : '';
+  const state = equipmentPulseState(device);
   const title =
     age === undefined ? 'Ainda sem ping' : `Ping há ${formatDuration(age)}`;
   return (
@@ -220,3 +225,5 @@ function durationSeconds(text: string): number | string {
     0,
   );
 }
+
+export { equipmentPulseState } from '../equipment/equipment-reading-format';

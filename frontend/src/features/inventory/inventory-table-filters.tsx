@@ -1,3 +1,4 @@
+import { groupOptions, groupContains } from '../equipment/groups';
 import type { InventoryState } from './inventory-selection-state';
 import type { TableFilter } from '../../shared/ui/table-model';
 import { rowCells, cellValue } from '../../shared/ui/table-model';
@@ -26,14 +27,20 @@ export function inventoryFilters(p: InventoryState): TableFilter[] {
       matches: (r, v) => r.props['data-role'] === v,
     },
     {
-      id: 'block',
-      label: 'Bloco',
+      id: 'group',
+      label: 'Grupo',
       options: [
-        { value: 'none', label: 'Sem bloco' },
-        ...p.blocks.map((v) => ({ value: `b:${v}`, label: v })),
+        { value: 'none', label: 'Sem grupo' },
+        ...groupOptions(p.groups || []),
       ],
       matches: (r, v) =>
-        r.props['data-block'] === (v === 'none' ? '' : v.slice(2)),
+        v === 'none'
+          ? !r.props['data-group']
+          : groupContains(
+              p.groups || [],
+              v,
+              String(r.props['data-group'] || ''),
+            ),
     },
     {
       id: 'model',

@@ -93,11 +93,11 @@ export async function confirmImport(c: ImportContext) {
       c.s.items.map((item) => item.row),
     );
     if (!c.life.current.alive) return;
-    if (r.code !== 'OK' || !own(c, r) || !r.data?.import_receipt) {
+    if (r.code !== 'OK' || !own(c, r) || !r.data) {
       c.s.setError(importMessage(r.code));
       return;
     }
-    c.s.setReceipt(r.data.import_receipt);
+    acceptQueue(c, r);
   } catch {
     unavailable(c);
   } finally {
@@ -105,10 +105,32 @@ export async function confirmImport(c: ImportContext) {
   }
 }
 export function resetImport(c: ImportContext) {
+  c.life.current.ignoreCompleted = true;
+  c.s.setRunning(false);
   c.s.setItems([]);
   c.s.setFilename('');
   c.s.setReceipt(undefined);
   c.s.setSelected([]);
   c.s.setError('');
   c.life.current.operation = id();
+}
+
+function acceptQueue(c: ImportContext, r: InventoryImportResult) {
+  if (!c.life.current.alive || !own(c, r) || !r.data) return;
+  if (r.data.operation_state === 'RUNNING')
+    c.life.current.ignoreCompleted = false;
+  if (c.life.current.ignoreCompleted || !r.data.operation_state) return;
+  c.s.setRunning(r.data.operation_state === 'RUNNING');
+  c.s.setItems(r.data.import_items || []);
+  c.s.setReceipt(r.data.import_receipt);
+  if (r.data.operation_state === 'FAILED')
+    c.s.setError(importMessage(r.data.contact_code || 'SERVICE_UNAVAILABLE'));
+}
+export async function recoverImport(c: ImportContext) {
+  try {
+    const result = await inventoryImportAPI.status(c.profile, c.activation);
+    if (result.code === 'OK') acceptQueue(c, result);
+  } catch {
+    unavailable(c);
+  }
 }

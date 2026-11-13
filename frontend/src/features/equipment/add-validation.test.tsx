@@ -21,9 +21,7 @@ it('reports an invalid IP on the field and does not call the service', async () 
       back={vi.fn()}
     />,
   );
-  fireEvent.change(screen.getByLabelText('Nome'), {
-    target: { value: 'AP fixture' },
-  });
+  expect(screen.queryByLabelText('Nome')).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
     target: { value: '10001' },
   });
@@ -57,9 +55,7 @@ it('associates a daemon address rejection with the field without leaving the dra
       back={vi.fn()}
     />,
   );
-  fireEvent.change(screen.getByLabelText('Nome'), {
-    target: { value: 'AP fixture' },
-  });
+  expect(screen.queryByLabelText('Nome')).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
     target: { value: '192.0.2.31' },
   });
@@ -67,6 +63,6 @@ it('associates a daemon address rejection with the field without leaving the dra
   const ip = screen.getByLabelText('IP de gerenciamento');
   await vi.waitFor(() => expect(ip).toHaveAttribute('aria-invalid', 'true'));
   expect(ip).toHaveFocus();
-  expect(screen.getByLabelText('Nome')).toHaveValue('AP fixture');
+  expect(screen.queryByLabelText('Nome')).not.toBeInTheDocument();
   expect(ip).toHaveValue('192.0.2.31');
 });

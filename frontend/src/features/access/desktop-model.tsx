@@ -7,6 +7,7 @@ export type RouteName =
   | 'adicionar'
   | 'sessao'
   | 'vitrine'
+  | 'grupos'
   | 'credentials'
   | 'pppoe'
   | 'topology'
@@ -28,6 +29,7 @@ const ROUTE_TO_LEGACY: Record<RouteName, LegacyPage> = {
   adicionar: 4,
   sessao: 4,
   credentials: 4,
+  grupos: 4,
   vitrine: 4,
   pppoe: 5,
   topology: 6,

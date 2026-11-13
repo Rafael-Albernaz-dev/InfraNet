@@ -1,3 +1,5 @@
+import type { Group } from '../equipment/groups';
+import { GroupSelect } from '../equipment/group-select';
 import { useRef, useState } from 'react';
 import type { Credential, Device } from '../equipment/equipment-api';
 import { equipmentAPI, equipmentMessage } from '../equipment/equipment-api';
@@ -11,7 +13,7 @@ export function InventoryBulkDialog({
   activation,
   selected,
   credentials,
-  blocks,
+  groups,
   close,
   applied,
 }: {
@@ -20,7 +22,8 @@ export function InventoryBulkDialog({
   activation: string;
   selected: Device[];
   credentials: Credential[];
-  blocks: string[];
+  groups: Group[];
+  blocks?: string[];
   close: () => void;
   applied: () => void;
 }) {
@@ -35,7 +38,7 @@ export function InventoryBulkDialog({
     try {
       const input = {
         items: selected.map(({ id, revision }) => ({ id, revision })),
-        ...(mode === 'block' ? { block: value } : { credential_id: value }),
+        ...(mode === 'block' ? { group_id: value } : { credential_id: value }),
       };
       const result = await equipmentAPI.bulk(
         profile,
@@ -56,26 +59,12 @@ export function InventoryBulkDialog({
   }
   return (
     <Dialog
-      title={mode === 'block' ? 'Definir bloco' : 'Definir credencial'}
+      title={mode === 'block' ? 'Definir grupo' : 'Definir credencial'}
       close={close}
       inactive={busy}
     >
       {mode === 'block' ? (
-        <label className="field">
-          Bloco
-          <input
-            aria-label="Bloco"
-            value={value}
-            maxLength={80}
-            list="inventory-blocks"
-            onChange={(e) => setValue(e.target.value)}
-          />
-          <datalist id="inventory-blocks">
-            {blocks.map((b) => (
-              <option key={b} value={b} />
-            ))}
-          </datalist>
-        </label>
+        <GroupSelect groups={groups} value={value} change={setValue} />
       ) : (
         <label className="field">
           Credencial

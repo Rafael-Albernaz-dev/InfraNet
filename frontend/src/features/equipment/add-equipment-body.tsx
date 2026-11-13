@@ -1,3 +1,5 @@
+import { inventoryImportAPI } from '../../platform/wails/presentation';
+import { ImportProgress, ImportDiscarded } from './add-import-progress';
 import type { AddEquipmentProps } from './add-equipment';
 import { ImportFile, ImportSteps } from './add-import-file';
 import { ImportPreview } from './add-import-preview';
@@ -24,16 +26,35 @@ function ImportReceipt(p: AddBodyProps) {
   if (!s.receipt) return null;
   return (
     <>
-      <ImportSteps step={3} />
+      <ImportSteps step={4} />
       <section className="import-card">
         <h2>Importação concluída</h2>
         <p>
           <b>{s.receipt.created} equipamentos cadastrados</b>,{' '}
-          {s.receipt.ignored} linhas ignoradas. Nenhuma consulta foi feita.
+          {s.receipt.ignored} linhas descartadas.
         </p>
+        <p className="muted">
+          Corrija as linhas descartadas e importe de novo. Nenhuma senha vai no
+          arquivo.
+        </p>
+        <ImportDiscarded items={s.items} />
         <div className="actions">
           <Button kind="primary" onClick={p.back}>
             Ver equipamentos
+          </Button>
+          <Button
+            onClick={() =>
+              void inventoryImportAPI
+                .discarded(p.profile, p.activation)
+                .then((code) => {
+                  if (code !== 'OK' && code !== 'EXPORT_CANCELLED')
+                    s.setError(
+                      'Não foi possível baixar as linhas descartadas.',
+                    );
+                })
+            }
+          >
+            Baixar linhas descartadas (.csv)
           </Button>
           <Button onClick={s.reset}>Importar outro arquivo</Button>
         </div>
@@ -43,17 +64,25 @@ function ImportReceipt(p: AddBodyProps) {
 }
 function ImportFlow(p: AddBodyProps) {
   const { s, back, guard } = p.model;
+  if (s.running) return <ImportProgress state={s} />;
   if (s.receipt) return <ImportReceipt {...p} />;
   if (s.items.length)
     return (
       <ImportPreview
         state={s}
         credentials={p.s.credentials}
+        groups={p.s.groups || []}
         cancel={back}
         replace={() => guard.attempt(s.reset)}
       />
     );
-  return <ImportFile state={s} credentials={p.s.credentials} />;
+  return (
+    <ImportFile
+      state={s}
+      credentials={p.s.credentials}
+      groups={p.s.groups || []}
+    />
+  );
 }
 export function AddEquipmentBody(p: AddBodyProps) {
   const { tab, enrollment } = p.model;

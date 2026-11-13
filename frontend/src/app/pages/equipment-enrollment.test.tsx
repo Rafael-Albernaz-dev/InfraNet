@@ -83,7 +83,6 @@ it('lost direct response clears the password, blocks blind resend and reconciles
     target: { value: '__inline__' },
   });
   for (const [label, value] of [
-    ['Nome', 'New direct'],
     ['IP de gerenciamento', '127.0.0.1'],
     ['Usuário', 'reader'],
     ['Senha', 'transient fixture secret'],
@@ -150,7 +149,6 @@ it('a missing receipt permits only a deliberate retry with the original IDs, nev
   });
   const fill = () => {
     for (const [label, value] of [
-      ['Nome', 'Retry'],
       ['IP de gerenciamento', '127.0.0.1'],
       ['Usuário', 'reader'],
       ['Senha', 'retry fixture secret'],
@@ -182,9 +180,7 @@ it('creation with an existing credential also reconciles a lost response without
   });
   render(<Equipment profile="reuse-lost" activation="a" connected addPage />);
   await screen.findByRole('heading', { name: 'Adicionar equipamento' });
-  fireEvent.change(screen.getByLabelText('Nome'), {
-    target: { value: 'Reuse' },
-  });
+  expect(screen.queryByLabelText('Nome')).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
     target: { value: '127.0.0.1' },
   });

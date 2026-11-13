@@ -6,6 +6,7 @@ import (
 )
 
 type DeviceInput struct {
+	GroupID      string `json:"group_id"`
 	User         string `json:"user"`
 	Secret       string `json:"secret"`
 	ID           string `json:"id"`
@@ -22,7 +23,7 @@ type DeviceInput struct {
 
 func makeDeviceInput(d DeviceInput) ipc.EquipmentInput {
 	return ipc.EquipmentInput{ID: d.ID, Operation: d.Operation, Revision: d.Revision, Role: equipment.Role(d.Role),
-		Name: d.Name, Block: d.Block, Address: d.Address, Port: d.Port, Transport: equipment.Transport(d.Transport),
+		Name: d.Name, GroupID: d.GroupID, Block: d.Block, Address: d.Address, Port: d.Port, Transport: equipment.Transport(d.Transport),
 		CredentialID: d.CredentialID, User: d.User, Secret: d.Secret}
 }
 
@@ -30,8 +31,6 @@ func deviceOperation(d DeviceInput) string {
 	if d.Revision != 0 {
 		return "inventory.update"
 	}
-	if d.User != "" || d.Secret != "" {
-		return "inventory.enroll"
-	}
-	return "inventory.create"
+
+	return "inventory.register"
 }

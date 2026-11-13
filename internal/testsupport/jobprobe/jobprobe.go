@@ -73,3 +73,21 @@ func SetParser(service *equipment.Service, parser inventory.ImportParser) bool {
 	fixture.inv.Digester, ok = parser.(inventory.ImportDigester)
 	return ok
 }
+
+// SetContactRemote replaces only the SSH boundary in an isolated test service.
+func SetContactRemote(service *equipment.Service, remote equipment.Remote) bool {
+	fixture, ok := service.Handler.(*tracked)
+	if !ok {
+		return false
+	}
+	fixture.inv.Remote = remote
+	return true
+}
+func WaitImport(service *equipment.Service) bool {
+	fixture, ok := service.Handler.(*tracked)
+	if !ok {
+		return false
+	}
+	fixture.inv.WG.Wait()
+	return true
+}

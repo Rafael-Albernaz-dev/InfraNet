@@ -29,48 +29,36 @@ vi.mock('../../platform/wails/presentation', async () =>
 );
 beforeEach(resetEquipmentMocks);
 import { resetEquipmentMocks } from '../../shared/testing/equipment-setup';
-it('first acceptance is deliberate without an invented origin and failed acceptance cannot authenticate', async () => {
+it('changed key stays visible without trust confirmation or authentication', async () => {
+  const pinned = { ...device, fingerprint: 'SHA256:saved' };
+  vi.mocked(api.list).mockResolvedValue(data([pinned]));
+  vi.mocked(api.get).mockResolvedValue({
+    ...data(),
+    data: { ...data().data!, device: pinned },
+  });
   vi.mocked(api.inspect).mockResolvedValue({
     ...data(),
     data: {
       ...data().data!,
       job: {
-        id: 'j',
+        id: 'changed',
         device_id: device.id,
         kind: 'trust.inspect',
-        state: 'SUCCEEDED',
-        code: 'OK',
-        fingerprint: 'SHA256:fixture',
+        state: 'FAILED',
+        code: 'TRUST_CHANGED',
       },
     },
-  } as EquipmentResult);
-  vi.mocked(api.confirm).mockResolvedValue({
-    ...data(),
-    code: 'TRUST_CHANGED',
   });
   render(<Equipment profile="X" activation="a" connected />);
   await openDeviceSheet('Router X');
   fireEvent.click(screen.getByRole('button', { name: 'Verificar identidade' }));
-  await screen.findByRole('dialog', { name: 'Primeira conexão' });
-  expect(api.start).not.toHaveBeenCalled();
-  expect(
-    screen.getByRole('button', {
-      name: 'Confiar neste equipamento e conectar',
-    }),
-  ).toBeEnabled();
-  expect(
-    screen.queryByLabelText('Origem da conferência'),
-  ).not.toBeInTheDocument();
-  fireEvent.click(
-    screen.getByRole('button', {
-      name: 'Confiar neste equipamento e conectar',
-    }),
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'A chave do destino mudou',
   );
-  await waitFor(() => expect(api.confirm).toHaveBeenCalledTimes(1));
   expect(
-    await within(screen.getByRole('dialog')).findByRole('alert'),
-  ).toHaveTextContent('A chave do destino mudou');
-  expect(screen.getAllByRole('alert')).toHaveLength(1);
+    screen.queryByRole('dialog', { name: 'Primeira conexão' }),
+  ).not.toBeInTheDocument();
+  expect(api.confirm).not.toHaveBeenCalled();
   expect(api.start).not.toHaveBeenCalled();
 });
 it.each(['OK', 'TRUST_CHANGED'])(
@@ -135,7 +123,7 @@ it.each(['OK', 'TRUST_CHANGED'])(
     expect(api.start).not.toHaveBeenCalled();
   },
 );
-it('completed inspection polling on its original surface still offers deliberate trust confirmation', async () => {
+it('completed inspection polling updates the automatic pin without a confirmation modal', async () => {
   const job = {
     id: 'original-inspect-job',
     device_id: device.id,
@@ -157,16 +145,10 @@ it('completed inspection polling on its original surface still offers deliberate
   render(<Equipment profile="inspect-original" activation="a" connected />);
   await openDeviceSheet('Router X');
   fireEvent.click(screen.getByRole('button', { name: 'Verificar identidade' }));
-  const panel = await screen.findByRole('dialog', {
-    name: 'Primeira conexão',
-  });
-  expect(screen.getAllByRole('dialog')).toHaveLength(1);
-  expect(within(panel).getByText('SHA256:fixture')).toBeInTheDocument();
+  await waitFor(() => expect(api.get).toHaveBeenCalled());
   expect(
-    within(panel).getByRole('button', {
-      name: 'Confiar neste equipamento e conectar',
-    }),
-  ).toBeEnabled();
+    screen.queryByRole('dialog', { name: 'Primeira conexão' }),
+  ).not.toBeInTheDocument();
   expect(api.start).not.toHaveBeenCalled();
   expect(api.confirm).not.toHaveBeenCalled();
 });

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"infradesktop/internal/adapters/importfile"
+	"infradesktop/internal/adapters/ipc"
 	"infradesktop/internal/adapters/routerssh"
 	"infradesktop/internal/adapters/storage"
 	"infradesktop/internal/adapters/vault"
@@ -18,11 +19,15 @@ import (
 
 func composeEquipment(
 	service *access.Service, store *storage.Store, provider vault.Provider, collector *pulse.Collector, reader *pulse.ReadCollector,
+	server ...*ipc.Server,
 ) *equipment.Service {
 	mon := monitoring.New(service, store)
 	inv := inventory.New(service, store, vault.New(provider), routerssh.Adapter{}, equipmentIDs{}, time.Now)
 	inv.Pulse = collector
 	inv.Live = reader
 	inv.Parser, inv.Digester = importfile.Parser{}, importfile.Parser{}
+	if len(server) > 0 {
+		composeFirstContacts(server[0], service, inv, collector)
+	}
 	return &equipment.Service{Handler: radio.NewComposite(inv, pppoe.New(inv, mon), radio.New(inv), mon)}
 }

@@ -77,7 +77,14 @@ const result = (profile: string, devices: Device[]) =>
     data: {
       devices,
       credentials: [],
-      blocks: ['Norte', 'Sul'],
+      blocks: [],
+      groups: [
+        {
+          id: '11111111-1111-4111-8111-111111111111',
+          parent_id: '',
+          name: 'Novo grupo',
+        },
+      ],
       models: [],
       next_cursor: 0,
       vault_available: true,
@@ -181,10 +188,10 @@ it('submits selected device revisions to the bulk service without opening the sh
   fireEvent.click(
     screen.getByRole('checkbox', { name: 'Selecionar Synthetic Switch' }),
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Definir bloco' }));
-  const dialog = screen.getByRole('dialog', { name: 'Definir bloco' });
-  fireEvent.change(within(dialog).getByLabelText('Bloco'), {
-    target: { value: 'Novo bloco' },
+  fireEvent.click(screen.getByRole('button', { name: 'Definir grupo' }));
+  const dialog = screen.getByRole('dialog', { name: 'Definir grupo' });
+  fireEvent.change(within(dialog).getByLabelText('Grupo'), {
+    target: { value: '11111111-1111-4111-8111-111111111111' },
   });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Aplicar' }));
   await waitFor(() =>
@@ -197,7 +204,7 @@ it('submits selected device revisions to the bulk service without opening the sh
           { id: 'x1', revision: 1 },
           { id: 'x2', revision: 1 },
         ],
-        block: 'Novo bloco',
+        group_id: '11111111-1111-4111-8111-111111111111',
       },
     ),
   );
@@ -211,7 +218,7 @@ it('reorders visible columns and restores the default order', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Colunas' }));
   fireEvent.click(screen.getByRole('button', { name: 'Subir Papel' }));
   await waitFor(() =>
-    expect(prefs.saved.slice(0, 3)).toEqual(['role', 'status', 'block']),
+    expect(prefs.saved.slice(0, 3)).toEqual(['role', 'status', 'group']),
   );
   const headers = screen
     .getAllByRole('columnheader')
@@ -219,7 +226,7 @@ it('reorders visible columns and restores the default order', async () => {
   expect(headers.indexOf('Papel')).toBeLessThan(headers.indexOf('Estado'));
   fireEvent.click(screen.getByRole('button', { name: 'Restaurar padrão' }));
   await waitFor(() =>
-    expect(prefs.saved.slice(0, 3)).toEqual(['status', 'role', 'block']),
+    expect(prefs.saved.slice(0, 3)).toEqual(['status', 'role', 'group']),
   );
 });
 

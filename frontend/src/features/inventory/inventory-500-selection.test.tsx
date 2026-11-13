@@ -37,6 +37,13 @@ const result = (page: Device[], next = 0) => ({
   data: {
     devices: page,
     credentials: [],
+    groups: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        parent_id: '',
+        name: 'Torre sintética',
+      },
+    ],
     next_cursor: next,
     vault_available: true,
     total_devices: 500,
@@ -51,10 +58,10 @@ it('selects all 500 filtered synthetic devices across pages and submits their ex
   expect(screen.getByText('Página 1 de 10')).toBeVisible();
   fireEvent.click(screen.getByRole('checkbox', { name: 'Selecionar todos' }));
   expect(screen.getByText('500 selecionados')).toBeVisible();
-  fireEvent.click(screen.getByRole('button', { name: 'Definir bloco' }));
-  const dialog = screen.getByRole('dialog', { name: 'Definir bloco' });
-  fireEvent.change(within(dialog).getByLabelText('Bloco'), {
-    target: { value: 'Torre sintética' },
+  fireEvent.click(screen.getByRole('button', { name: 'Definir grupo' }));
+  const dialog = screen.getByRole('dialog', { name: 'Definir grupo' });
+  fireEvent.change(within(dialog).getByLabelText('Grupo'), {
+    target: { value: '11111111-1111-4111-8111-111111111111' },
   });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Aplicar' }));
   await waitFor(() => expect(equipmentAPI.bulk).toHaveBeenCalledOnce());
@@ -62,6 +69,6 @@ it('selects all 500 filtered synthetic devices across pages and submits their ex
   expect(input.items).toEqual(
     devices.map(({ id, revision }) => ({ id, revision })),
   );
-  expect(input.block).toBe('Torre sintética');
+  expect(input.group_id).toBe('11111111-1111-4111-8111-111111111111');
   expect(equipmentAPI.start).not.toHaveBeenCalled();
 });

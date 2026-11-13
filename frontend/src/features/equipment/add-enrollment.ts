@@ -1,3 +1,4 @@
+import { confirmFailedRegistration } from './registration-actions';
 import { useEffect, useRef, useState } from 'react';
 import { reconcileEnrollment, saveEnrollment } from './add-enrollment-actions';
 import type { EquipmentPerformFn } from './equipment-dialogs';
@@ -16,6 +17,14 @@ export type EnrollmentProps = {
 
 export function useEnrollmentState(key: string) {
   const receipt = pendingEnrollments.get(key);
+  const [completed, setCompleted] = useState(false);
+  const [contact, setContact] = useState<{
+    job: string;
+    address: string;
+    code: string;
+  }>();
+  const [notice, setNotice] = useState('');
+  const contactAddress = useRef('');
   const [ids, setIDs] = useState(() => ({
     device: receipt?.id || id(),
     operation: receipt?.operation_id || id(),
@@ -34,6 +43,13 @@ export function useEnrollmentState(key: string) {
   }, []);
 
   return {
+    completed,
+    setCompleted,
+    contact,
+    setContact,
+    notice,
+    setNotice,
+    contactAddress,
     key,
     ids,
     setIDs,
@@ -57,6 +73,15 @@ export function useAddEnrollment(p: EnrollmentProps) {
       s.setIDs((old) => ({ ...old, operation: id() }));
   };
   return {
+    completed: s.completed,
+    another: () => {
+      s.setCompleted(false);
+      s.setNotice('');
+    },
+    contact: s.contact,
+    notice: s.notice,
+    dismissFailure: () => s.setContact(undefined),
+    confirmFailure: () => confirmFailedRegistration(p, s),
     uncertain: s.uncertain,
     checking: s.checking,
     retry: s.retry,

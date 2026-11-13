@@ -49,7 +49,7 @@ export function InventoryTable({ p }: { p: InventoryState }) {
               data-row-id={d.id}
               data-active={d.active}
               data-role={d.role}
-              data-block={d.block}
+              data-group={d.group_id || ''}
               data-model={d.result?.board || d.radio_summary?.model || ''}
               className="click"
               tabIndex={0}

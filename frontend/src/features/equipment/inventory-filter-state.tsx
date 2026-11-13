@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import type { Group } from './groups';
 
 export function useInventoryFilterState() {
+  const [groups, setGroups] = useState<Group[]>([]);
   const [stateFilter, setStateFilter] = useState('');
   const [pulseNetwork, setPulseNetwork] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -9,6 +11,8 @@ export function useInventoryFilterState() {
   const [blocks, setBlocks] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
   return {
+    groups,
+    setGroups,
     stateFilter,
     setStateFilter,
     pulseNetwork,

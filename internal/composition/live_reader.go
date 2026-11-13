@@ -53,6 +53,9 @@ func (i liveInventory) eligible(ctx context.Context, profile string, d equipment
 	case equipment.RoleConcentrator:
 		return true
 	case equipment.RoleAP:
+		if d.Result != nil && (d.Result.Family == equipment.RouterFamilyV6 || d.Result.Family == equipment.RouterFamilyV7) {
+			return true
+		}
 		// ignored: Eligibility uses the confirmed profile, not the saved reading.
 		_, p, code := i.store.RadioCurrent(ctx, profile, d.ID)
 		return code == equipment.OK && p != nil && p.Confirmed && p.Family == equipment.RadioRouterOSWirelessV6
@@ -89,6 +92,9 @@ func (d liveDialer) Dial(ctx context.Context, want pulse.ReadTarget) (pulse.Read
 	}
 	session, fault := routerssh.OpenLive(ctx, target.Device, target.Credential.Metadata.User, secret)
 	secret = ""
+	if fault == pulse.ReadOK {
+		return &identityReadSession{ReadSession: session, inventory: d.inventory, profile: profile, target: target}, fault
+	}
 	return session, fault
 }
 func composeLiveReader(server *ipc.Server, inv liveInventory, vault equipment.Vault, ping *pulse.Collector) *pulse.ReadCollector {

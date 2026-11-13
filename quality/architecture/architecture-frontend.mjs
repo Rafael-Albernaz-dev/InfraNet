@@ -219,6 +219,15 @@ function inspect(name, code) {
         n.moduleSpecifier.text === "../../../wailsjs/go/presentation/App"
       ) {
         const approved = new Set([
+          "RegistrationStatus",
+          "ConfirmRegistration",
+          "EquipmentGroups",
+          "CreateEquipmentGroup",
+          "RenameEquipmentGroup",
+          "DeleteEquipmentGroup",
+          "InventoryImportStatus",
+          "CancelInventoryImport",
+          "SaveDiscardedImport",
           "ChooseInventoryImport",
           "ReviewInventoryImport",
           "ConfirmInventoryImport",

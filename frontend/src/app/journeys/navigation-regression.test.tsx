@@ -192,8 +192,8 @@ it('guards each back trigger when the add screen has changes', async () => {
   fireEvent.click(
     screen.getByRole('button', { name: 'Adicionar equipamento' }),
   );
-  fireEvent.change(screen.getByLabelText('Nome'), {
-    target: { value: 'AP novo' },
+  fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
+    target: { value: '192.0.2.42' },
   });
   const doc = screen.getByRole('main').ownerDocument;
   for (const trigger of [
@@ -236,7 +236,10 @@ it('blocks back navigation while an equipment operation is pending', async () =>
     }),
   );
   fireEvent.click(await inventory());
-  fireEvent.click(await screen.findByRole('button', { name: 'Conectar' }));
+  fireEvent.click(await screen.findByRole('tab', { name: 'Acesso' }));
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Verificar identidade' }),
+  );
   await waitFor(() => expect(equipmentAPI.inspect).toHaveBeenCalledOnce());
   fireEvent.keyDown(screen.getByRole('main').ownerDocument, {
     key: 'ArrowLeft',
@@ -253,15 +256,20 @@ it('asks before discarding a dirty form for a navigation click', async () => {
   fireEvent.click(
     screen.getByRole('button', { name: 'Adicionar equipamento' }),
   );
-  fireEvent.change(screen.getByRole('textbox', { name: 'Nome' }), {
-    target: { value: 'rascunho' },
-  });
+  fireEvent.change(
+    screen.getByRole('textbox', { name: 'IP de gerenciamento' }),
+    {
+      target: { value: 'rascunho' },
+    },
+  );
   fireEvent.click(screen.getByRole('link', { name: 'Visão geral' }));
   expect(
     screen.getByRole('dialog', { name: 'Descartar alterações?' }),
   ).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Continuar editando' }));
-  expect(screen.getByRole('textbox', { name: 'Nome' })).toHaveValue('rascunho');
+  expect(
+    screen.getByRole('textbox', { name: 'IP de gerenciamento' }),
+  ).toHaveValue('rascunho');
   fireEvent.click(screen.getByRole('link', { name: 'Visão geral' }));
   fireEvent.click(screen.getByRole('button', { name: 'Descartar alterações' }));
   expect(

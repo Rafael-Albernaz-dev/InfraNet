@@ -48,7 +48,7 @@ func loadEquipmentCredentials(ctx context.Context, q queryer, st *equipment.Stat
 
 const equipmentDeviceQuery = `SELECT d.id,d.name,d.address,d.port,d.transport,COALESCE(d.credential_id,''),
  d.revision,d.active,d.fingerprint,d.trust_origin,d.observation,d.trust_acceptance,d.last_attempt,
- COALESCE(extra.role,radio.role,d.role),d.block,h.health_json,h.stamp,o.meta_json,r.body
+ COALESCE(extra.role,radio.role,d.role),d.block,d.group_id,d.identity,h.health_json,h.stamp,o.meta_json,r.body
  FROM devices d
  LEFT JOIN device_inventory_roles extra ON extra.device_id=d.id
  LEFT JOIN device_radio_roles radio ON radio.device_id=d.id
@@ -66,7 +66,7 @@ func scanEquipmentDevice(rows *sql.Rows) (equipment.Device, error) {
 	var d equipment.Device
 	var raw deviceJSONFields
 	err := rows.Scan(&d.ID, &d.Name, &d.Address, &d.Port, &d.Transport, &d.CredentialID, &d.Revision, &d.Active,
-		&d.Fingerprint, &d.TrustOrigin, &raw.observation, &raw.acceptance, &raw.attempt, &d.Role, &d.Block,
+		&d.Fingerprint, &d.TrustOrigin, &raw.observation, &raw.acceptance, &raw.attempt, &d.Role, &d.Block, &d.GroupID, &d.Identity,
 		&raw.health, &raw.healthAt, &raw.pppoe, &raw.radio)
 	if err != nil {
 		return d, err

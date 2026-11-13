@@ -61,7 +61,7 @@ func liveTestInventory(devices ...equipment.Device) (liveInventory, *liveTestSto
 func TestLiveEligibilityRequiresAssignedCredentialAndConfirmedRouterOS(t *testing.T) {
 	base := equipment.Device{ID: "d", Role: equipment.RoleAP, Active: true, Transport: equipment.TransportSSH,
 		CredentialID: "c", Fingerprint: "trusted", Revision: 3}
-	cases := []string{"confirmed", "concentrator", "subscriber", "lhg", "unconfirmed",
+	cases := []string{"confirmed", "identified-v6", "identified-v7", "concentrator", "subscriber", "lhg", "unconfirmed",
 		"no-key", "no-credential", "inactive", "other-transport"}
 	for _, state := range cases {
 		t.Run(state, func(t *testing.T) {
@@ -71,7 +71,7 @@ func TestLiveEligibilityRequiresAssignedCredentialAndConfirmedRouterOS(t *testin
 			d = liveEligibilityCase(state, d, store)
 			store.devices = []equipment.Device{d}
 			profile, targets, ok := inv.ReadTargets(context.Background())
-			want := state == "confirmed" || state == "concentrator"
+			want := state == "confirmed" || state == "concentrator" || state == "identified-v6" || state == "identified-v7"
 			if !ok || profile != "p" || (len(targets) == 1) != want {
 				t.Fatal(profile, targets, ok)
 			}
@@ -86,6 +86,12 @@ func TestLiveEligibilityRequiresAssignedCredentialAndConfirmedRouterOS(t *testin
 }
 func liveEligibilityCase(state string, d equipment.Device, store *liveTestStore) equipment.Device {
 	switch state {
+	case "identified-v6":
+		store.profile.Confirmed = false
+		d.Result = &equipment.Observation{Family: equipment.RouterFamilyV6}
+	case "identified-v7":
+		store.profile.Confirmed = false
+		d.Result = &equipment.Observation{Family: equipment.RouterFamilyV7}
 	case "concentrator":
 		d.Role = equipment.RoleConcentrator
 	case "subscriber":

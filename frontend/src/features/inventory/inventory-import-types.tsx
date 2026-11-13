@@ -7,6 +7,8 @@ import type {
 export type ImportRow = {
   line: number;
   name: string;
+  group?: string;
+  group_id?: string;
   address: string;
   port: string;
   role: string;
@@ -17,6 +19,7 @@ export type ImportRow = {
 export type ImportItem = {
   row: ImportRow;
   status: string;
+  identity?: string;
   reason?: string;
   credential_id?: string;
 };
@@ -26,6 +29,8 @@ export type EquipmentResult = {
   activation_id: string;
   data?: {
     pulse_network?: string;
+    contact_code?: string;
+    groups?: { id: string; parent_id: string; name: string }[];
     devices: Device[];
     credentials: Credential[];
     device?: Device;

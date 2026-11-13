@@ -4,12 +4,15 @@ import {
   confirmImport,
   resetImport,
   reviewImport,
+  recoverImport,
 } from './add-import-actions';
 import { id } from './equipment-reading-format';
+import { inventoryImportAPI } from '../../platform/wails/presentation';
 import type { ImportItem, ImportRow } from '../../platform/wails/presentation';
 
 type Receipt = { created: number; ignored: number };
 function useImportStore() {
+  const [running, setRunning] = useState(false);
   const [items, setItems] = useState<ImportItem[]>([]);
   const [filename, setFilename] = useState('');
   const [block, setBlock] = useState('');
@@ -19,6 +22,8 @@ function useImportStore() {
   const [receipt, setReceipt] = useState<Receipt>();
   const [selected, setSelected] = useState<number[]>([]);
   return {
+    running,
+    setRunning,
     items,
     setItems,
     filename,
@@ -46,6 +51,7 @@ export type ImportContext = {
     operation: string;
     alive: boolean;
     working: boolean;
+    ignoreCompleted?: boolean;
   }>;
 };
 export function useImportState(profile: string, activation: string) {
@@ -59,7 +65,32 @@ export function useImportState(profile: string, activation: string) {
     };
   }, []);
   const c: ImportContext = { profile, activation, s, life };
+  const setters = useRef(c);
+  useEffect(() => {
+    setters.current = c;
+  });
+  useEffect(() => {
+    let stopped = false;
+    let pending = false;
+    const read = async () => {
+      if (stopped || pending) return;
+      pending = true;
+      try {
+        await recoverImport(setters.current);
+      } finally {
+        pending = false;
+      }
+    };
+    void read();
+    const timer = setInterval(() => void read(), 1000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [profile, activation]);
   return {
+    running: s.running,
+    cancel: () => inventoryImportAPI.cancel(profile, activation),
     items: s.items,
     filename: s.filename,
     block: s.block,

@@ -81,7 +81,6 @@ function draftErrors(d: SingleDraft, shownRow: ImportRow) {
   const row = d.row,
     port = Number(row.port),
     errors: Record<string, string> = {};
-  if (!validEquipmentText(row.name)) errors.name = fieldMessages.name;
   if (!validEquipmentAddress(row.address))
     errors.address = fieldMessages.address;
   if (!Number.isInteger(port) || port < 1 || port > 65535)
@@ -125,8 +124,9 @@ function useSingleEquipment(p: AddEquipmentProps) {
     reloadCredentials: p.s.reloadCredentials,
     setErrors: d.validation.setErrors,
     saved: (another) => {
+      p.s.reload((n) => n + 1);
       d.reset();
-      if (!another) p.back();
+      if (another) d.setSingleDirty(false);
     },
   });
   const shownRow = d.credentialChosen
@@ -153,13 +153,14 @@ export function useAddEquipmentPage(p: AddEquipmentProps) {
       : !!s.items.length && !s.receipt,
     s.busy || p.s.busy,
     !p.s.credentialForm,
+    tab === 'file' && s.running,
   );
   const back = () => guard.attempt(p.back);
   const changeTab = (next: 'one' | 'file') => {
     if (next === tab) return;
     guard.attempt(() => {
       if (next === tab) return;
-      if (tab === 'file') s.reset();
+      if (tab === 'file' && !s.running) s.reset();
       else single.reset();
       setTab(next);
     });

@@ -18,7 +18,7 @@ type HeaderProps = {
 };
 function headerActionLabel(p: Props) {
   if (p.job?.state === 'RUNNING') return 'Parar';
-  return p.selected.fingerprint ? 'Atualizar' : 'Conectar';
+  return 'Atualizar';
 }
 function runHeaderAction(p: Props) {
   if (p.job?.state === 'RUNNING')
@@ -39,7 +39,8 @@ function EquipmentHeaderActions({
   isRadio,
   setRadioActions,
 }: HeaderProps) {
-  if (driverOwners[p.selected.role || '']) return null;
+  if (!p.selected.fingerprint || driverOwners[p.selected.role || ''])
+    return null;
   if (isRadio || tab === 'Sessões' || tab === 'Serviços')
     return <div ref={setRadioActions} className="actions header-actions" />;
   return (
@@ -69,7 +70,7 @@ export function EquipmentSheetHeader(props: HeaderProps) {
       meta={
         <>
           {device.name} · {equipmentType(role)}
-          {device.block && ` · ${device.block}`} ·{' '}
+          {device.group_path && ` · ${device.group_path}`} ·{' '}
           {saved.version || 'Não informado nesta leitura'} ·{' '}
           {saved.at ? `atualizado ${age}` : age}
         </>

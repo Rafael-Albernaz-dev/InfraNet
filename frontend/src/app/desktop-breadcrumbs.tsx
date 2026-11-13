@@ -11,6 +11,7 @@ export function DesktopBreadcrumbs({ p, route, detailTitle }: BreadcrumbProps) {
   return (
     <nav className="bc" aria-label="Caminho">
       {(route === 'credentials' ||
+        route === 'grupos' ||
         route === 'adicionar' ||
         route === 'sessao' ||
         (route === 'equipment' && detailTitle)) && (
@@ -61,6 +62,7 @@ function currentLabel(
         overview: 'Visão geral',
         settings: 'Configurações',
         credentials: 'Credenciais',
+        grupos: 'Grupos',
         adicionar: 'Adicionar equipamento',
       } as Partial<Record<RouteName, string>>
     )[route] || 'Equipamentos'

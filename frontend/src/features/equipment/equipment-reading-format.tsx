@@ -75,3 +75,10 @@ export function formatRestarts(row?: PPReadRow) {
     'Detectados entre leituras; reinícios múltiplos no mesmo intervalo contam como um.'
   );
 }
+
+export function equipmentPulseState(device: Device, now = Date.now()) {
+  const at = device.pulse?.checked_at;
+  if (!device.active || !at) return '';
+  const age = (now - Date.parse(at)) / 1000;
+  return Number.isFinite(age) && age <= 90 ? device.pulse?.state || '' : '';
+}

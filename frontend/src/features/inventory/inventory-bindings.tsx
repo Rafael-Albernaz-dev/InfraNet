@@ -11,6 +11,7 @@ export type InventoryFilters = {
 export type InventoryBulk = {
   items: { id: string; revision: number }[];
   block?: string;
+  group_id?: string;
   credential_id?: string;
 };
 type FilterInput = InventoryFilters & {

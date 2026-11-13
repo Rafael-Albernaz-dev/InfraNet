@@ -4,7 +4,9 @@ import "infradesktop/internal/modules/access"
 
 // Import is bounded separately because the selected 2 MiB file is base64 on the wire.
 func isImport(op string) bool {
-	return op == "inventory.import-preview" || op == "inventory.import-confirm"
+	return op == "inventory.import-preview" || op == "inventory.import-confirm" ||
+		op == "inventory.import-status" ||
+		op == "inventory.import-cancel"
 }
 
 func equipmentFrameLimit(op string) int {
@@ -22,7 +24,7 @@ func equipmentResponseLimit(op string) int {
 	if op == "inventory.list" {
 		return MaxBrandFrame - 4096
 	}
-	if op == "inventory.import-preview" {
+	if isImport(op) || isGroupOperation(op) {
 		return MaxBrandFrame - 4096
 	}
 	return 48 * 1024
@@ -38,4 +40,13 @@ func ppResponseLimit(op string) int {
 		return MaxBrandFrame - 4096
 	}
 	return 48 * 1024
+}
+
+func isGroupOperation(op string) bool {
+	switch op {
+	case "inventory.groups", "inventory.group-create", "inventory.group-rename", "inventory.group-delete":
+		return true
+	default:
+		return false
+	}
 }

@@ -40,9 +40,7 @@ it('submits a new credential with the device and clears the password during an u
       back={vi.fn()}
     />,
   );
-  fireEvent.change(screen.getByLabelText('Nome'), {
-    target: { value: 'AP fixture' },
-  });
+  expect(screen.queryByLabelText('Nome')).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
     target: { value: '192.0.2.31' },
   });
@@ -104,7 +102,9 @@ it('does not submit a locked form even through a direct submit event', () => {
       back={vi.fn()}
     />,
   );
-  fireEvent.submit(screen.getByLabelText('Nome').closest('form')!);
+  fireEvent.submit(
+    screen.getByLabelText('IP de gerenciamento').closest('form')!,
+  );
   expect(perform).not.toHaveBeenCalled();
 });
 
@@ -146,6 +146,7 @@ it('reconciles a lost direct credential enrollment before retrying the same IDs'
     setCredentialForm: vi.fn(),
     continueEnrollment: vi.fn(),
     reloadCredentials: vi.fn(),
+    reload: vi.fn(),
     perform: async (call: () => Promise<unknown>) => await call(),
   } as unknown as ReturnType<typeof useEquipmentState>;
   render(
@@ -157,9 +158,7 @@ it('reconciles a lost direct credential enrollment before retrying the same IDs'
       back={vi.fn()}
     />,
   );
-  fireEvent.change(screen.getByLabelText('Nome'), {
-    target: { value: 'Router fixture' },
-  });
+  expect(screen.queryByLabelText('Nome')).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
     target: { value: '192.0.2.31' },
   });

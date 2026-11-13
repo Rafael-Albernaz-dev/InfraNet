@@ -39,14 +39,13 @@ function renderImportRow(p: renderImportRowProps) {
         />
       </td>
       <td>{row.line}</td>
-      <td>{row.name}</td>
       <td>{row.address}</td>
       <td>
         {roleGroups
           .flatMap(([, roles]) => roles)
           .find(([id]) => id === row.role)?.[1] || row.role}
       </td>
-      <td>{row.block || '—'}</td>
+      <td>{row.group || '—'}</td>
       <td>{row.credential || 'Sem credencial'}</td>
       <td
         className={
@@ -104,10 +103,9 @@ export function ImportPreviewTable({
         <tr>
           <th className="import-check"></th>
           <th>Linha</th>
-          <th>Nome</th>
           <th>IP</th>
           <th>Papel</th>
-          <th>Bloco</th>
+          <th>Grupo</th>
           <th>Credencial</th>
           <th>Situação</th>
           <th>Motivo</th>
@@ -127,7 +125,7 @@ export function ImportPreviewTable({
         )}
         {!visible.length && (
           <tr>
-            <td colSpan={10}>Nenhuma linha nesta situação</td>
+            <td colSpan={9}>Nenhuma linha nesta situação</td>
           </tr>
         )}
       </tbody>

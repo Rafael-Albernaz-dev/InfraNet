@@ -1309,3 +1309,27 @@ p.import-status-error {
 .session-info-block .bb > p {
   margin: 4px 0;
 }
+
+.import-progress-heading h2 {
+  margin: 0;
+}
+.import-progress-bar {
+  display: block;
+  width: 100%;
+  height: 10px;
+  margin-bottom: 10px;
+  appearance: none;
+  border: 1px solid var(--gbb);
+  border-radius: 3px;
+  background: var(--ge4);
+  overflow: hidden;
+}
+.import-progress-bar::-webkit-progress-bar {
+  background: var(--ge4);
+}
+.import-progress-bar::-webkit-progress-value {
+  background: var(--acento);
+}
+.import-progress-bar::-moz-progress-bar {
+  background: var(--acento);
+}

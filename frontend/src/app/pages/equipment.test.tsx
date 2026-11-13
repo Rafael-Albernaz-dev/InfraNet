@@ -23,7 +23,7 @@ vi.mock('../../platform/wails/presentation', async () =>
 beforeEach(resetEquipmentMocks);
 import { resetEquipmentMocks } from '../../shared/testing/equipment-setup';
 it.each(['cpe', 'ap', 'concentrator'])(
-  'queued pin confirmation routes %s without a foreign collector',
+  'automatic pin updates %s without a foreign collector',
   async (role) => {
     const target = { ...device, role, fingerprint: '' };
     vi.mocked(api.list).mockResolvedValue(data([target]));
@@ -57,7 +57,7 @@ it.each(['cpe', 'ap', 'concentrator'])(
     fireEvent.click(
       screen.getByRole('button', { name: 'Verificar identidade' }),
     );
-    if (role !== 'concentrator') {
+    {
       vi.mocked(api.get).mockResolvedValue({
         ...data([target]),
         data: {
@@ -74,21 +74,6 @@ it.each(['cpe', 'ap', 'concentrator'])(
       expect(api.start).not.toHaveBeenCalled();
       return;
     }
-    await screen.findByRole('dialog', { name: 'Primeira conexão' });
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: 'Confiar neste equipamento e conectar',
-      }),
-    );
-    await waitFor(() => expect(api.confirm).toHaveBeenCalledTimes(1));
-    await waitFor(() =>
-      expect(
-        screen.queryByRole('dialog', { name: 'Primeira conexão' }),
-      ).not.toBeInTheDocument(),
-    );
-    if (role === 'concentrator')
-      await waitFor(() => expect(api.start).toHaveBeenCalledTimes(1));
-    else expect(api.start).not.toHaveBeenCalled();
   },
 );
 

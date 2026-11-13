@@ -41,6 +41,7 @@ it('displays an unknown generated status and blocks confirmation', () => {
   };
   render(
     <ImportPreview
+      groups={[]}
       state={state as never}
       credentials={[]}
       cancel={vi.fn()}
@@ -52,7 +53,7 @@ it('displays an unknown generated status and blocks confirmation', () => {
     screen.getByText('Resolva 1 linha para continuar.'),
   ).toBeInTheDocument();
   expect(
-    screen.getByRole('button', { name: 'Cadastrar 1 equipamentos' }),
+    screen.getByRole('button', { name: 'Cadastrar e conectar 1 equipamentos' }),
   ).toBeDisabled();
   expect(state.confirm).not.toHaveBeenCalled();
 });

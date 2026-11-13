@@ -17,7 +17,8 @@ func TestInventoryTemplatesRoundTripAllFormats(t *testing.T) {
 			t.Fatal(format, err)
 		}
 		rows, err := (importfile.Parser{}).Parse("modelo."+format, data)
-		if err != nil || len(rows) != 1 || rows[0].Name != "AP-LESTE-1" || rows[0].Address != "192.0.2.31" ||
+		if err != nil || len(rows) != 1 || rows[0].Name != "" || rows[0].Group != "Região Leste › Torre Leste" ||
+			rows[0].Address != "192.0.2.31" ||
 			rows[0].Port != "22" || rows[0].Credential != "leitura-radio" {
 			t.Fatalf("%s: %#v %v", format, rows, err)
 		}

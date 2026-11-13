@@ -12,7 +12,8 @@ function detail(block: string) {
     id: 'switch',
     name: 'SW Norte',
     role: 'switch',
-    block,
+    block: '',
+    group_path: block,
     active: true,
     address: '192.0.2.1',
     port: 22,
@@ -41,7 +42,7 @@ function detail(block: string) {
   } as unknown as Props;
 }
 
-it('shows the block and a driverless sheet without any read action', async () => {
+it('shows the group and a driverless sheet without any read action', async () => {
   const p = detail('Torre Norte');
   const view = render(<EquipmentDetailPane {...p} />);
   expect(screen.getByText(/Switch · Torre Norte/)).toBeVisible();

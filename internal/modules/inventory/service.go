@@ -26,22 +26,25 @@ type RunningJob struct {
 }
 
 type Service struct {
-	Live     LiveReader
-	Pulse    PulseReader
-	Parser   ImportParser
-	Digester ImportDigester
-	Auth     Authorizer
-	Store    Store
-	Vault    Vault
-	Remote   Remote
-	IDs      IDs
-	Now      func() time.Time
-	Mu       sync.Mutex
-	Jobs     map[string]*RunningJob
-	Closed   bool
-	WG       sync.WaitGroup
-	Epoch    string
-	Origin   time.Time
+	ContactAttempts map[string]contactAttempt
+	ContactSlots    chan struct{}
+	Imports         map[string]*importQueue
+	Live            LiveReader
+	Pulse           PulseReader
+	Parser          ImportParser
+	Digester        ImportDigester
+	Auth            Authorizer
+	Store           Store
+	Vault           Vault
+	Remote          Remote
+	IDs             IDs
+	Now             func() time.Time
+	Mu              sync.Mutex
+	Jobs            map[string]*RunningJob
+	Closed          bool
+	WG              sync.WaitGroup
+	Epoch           string
+	Origin          time.Time
 	// PersistRetry overrides how long a finished result retries its write (tests only).
 	PersistRetry PersistRetryLimits
 }
@@ -52,15 +55,18 @@ func New(auth Authorizer, store Store, vault Vault, remote Remote, ids IDs, now 
 		epoch = ""
 	}
 	return &Service{
-		Auth:   auth,
-		Store:  store,
-		Vault:  vault,
-		Remote: remote,
-		IDs:    ids,
-		Now:    now,
-		Jobs:   map[string]*RunningJob{},
-		Epoch:  epoch,
-		Origin: time.Now(),
+		ContactSlots:    make(chan struct{}, 2),
+		ContactAttempts: map[string]contactAttempt{},
+		Imports:         map[string]*importQueue{},
+		Auth:            auth,
+		Store:           store,
+		Vault:           vault,
+		Remote:          remote,
+		IDs:             ids,
+		Now:             now,
+		Jobs:            map[string]*RunningJob{},
+		Epoch:           epoch,
+		Origin:          time.Now(),
 	}
 }
 
@@ -86,13 +92,25 @@ func (s *Service) Handle(ctx context.Context, q Command) (View, Code) {
 	v := View{Devices: []Device{}, Credentials: []Credential{}, VaultAvailable: s.Vault.Available()}
 	c := s.Authorized(ctx, q, func(version uint64) Code {
 		q.Authority = version
-		return s.dispatchAuthorized(ctx, q, &v)
+		code := s.dispatchAuthorized(ctx, q, &v)
+		if code == OK && v.Device != nil {
+			return s.presentDevice(ctx, q, &v)
+		}
+		return code
 	})
 	return v, c
 }
 
 func (s *Service) dispatchAuthorized(ctx context.Context, q Command, v *View) Code {
 	switch q.Op {
+	case "inventory.register":
+		return s.startRegistration(ctx, q, v)
+	case "inventory.register-status":
+		return s.registrationStatus(ctx, q, v)
+	case "inventory.register-confirm":
+		return s.confirmRegistration(ctx, q, v)
+	case "inventory.groups", "inventory.group-create", "inventory.group-rename", "inventory.group-delete":
+		return s.handleGroups(ctx, q, v)
 	case "inventory.table-preference-get", "inventory.table-preference-set":
 		return s.tablePreference(ctx, q, v)
 	case "device.query-start", "trust.inspect":
@@ -105,7 +123,11 @@ func (s *Service) dispatchAuthorized(ctx context.Context, q Command, v *View) Co
 		return c
 	case "trust.confirm":
 		return s.confirm(ctx, q, v)
-	case "inventory.import-preview", "inventory.import-confirm":
+	case "inventory.import-confirm":
+		return s.startImportQueue(ctx, q, v)
+	case "inventory.import-status", "inventory.import-cancel":
+		return s.importQueueStatus(ctx, q, v)
+	case "inventory.import-preview":
 		return s.handleImport(ctx, q, v)
 	case "inventory.bulk-update":
 		return s.bulkUpdate(ctx, q, v)
@@ -121,6 +143,8 @@ func (s *Service) handleReadOp(ctx context.Context, q Command, v *View) Code {
 	if c != OK {
 		return c
 	}
+	projectDeviceNames(&st)
+	v.Groups = st.Groups
 	v.CredentialDefaults = st.CredentialDefaults
 	v.VaultAvailable = s.VaultReady(&st)
 	v.Total = len(st.Devices)
@@ -160,6 +184,9 @@ func (s *Service) readEnrollStatus(st *State, q Command, v *View) Code {
 		}
 		break
 	}
+	if v.OperationState == "NOT_FOUND" {
+		s.registrationReceipt(q, v)
+	}
 	return OK
 }
 
@@ -194,14 +221,14 @@ func (s *Service) listDevices(st *State, q Command, v *View) Code {
 	if c := validateInventoryFilters(q); c != OK {
 		return c
 	}
-	v.Blocks, v.Models = inventoryOptions(st.Devices)
+	v.Models = inventoryModels(st.Devices)
 	devices := s.withPulse(st.Devices, q.Scope.Profile, v)
 	devices = s.withLive(devices, st.Credentials, q.Scope.Profile)
 	if q.All {
 		v.Devices = filterDevices(devices, Command{IncludeInactive: true})
 		return OK
 	}
-	filtered := filterDevices(devices, q)
+	filtered := filterDevices(filterGroupDevices(devices, st.Groups, q), q)
 	start := min(q.Cursor, len(filtered))
 	end := min(start+PageSize, len(filtered))
 	v.Devices = filtered[start:end]
@@ -226,6 +253,10 @@ func (s *Service) PruneLocked() {
 func (s *Service) Close() {
 	s.Mu.Lock()
 	s.Closed = true
+	for _, queue := range s.Imports {
+		queue.cancelled = true
+		queue.cancel()
+	}
 	for _, j := range s.Jobs {
 		j.Cancel()
 	}
@@ -242,3 +273,17 @@ func (s *Service) VaultReady(st *State) bool {
 }
 
 func (s *Service) VaultAvailable() bool { return s.Vault.Available() }
+
+func (s *Service) presentDevice(ctx context.Context, q Command, v *View) Code {
+	state, code := s.Store.ReadEquipment(ctx, q.Scope.Profile)
+	if code != OK {
+		return code
+	}
+	projectDeviceNames(&state)
+	projected := DeviceByID(&state, v.Device.ID)
+	if projected == nil {
+		return Changed
+	}
+	v.Device = projected
+	return OK
+}

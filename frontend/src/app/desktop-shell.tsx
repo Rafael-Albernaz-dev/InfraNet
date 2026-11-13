@@ -23,10 +23,9 @@ export function Sidebar({
     title: string;
   }>();
   const expanded =
-    (route === 'equipment' ||
-      route === 'credentials' ||
-      route === 'adicionar' ||
-      route === 'sessao') &&
+    ['equipment', 'credentials', 'grupos', 'adicionar', 'sessao'].includes(
+      route,
+    ) &&
     (!closedAt ||
       closedAt.request !== expandRequest ||
       closedAt.title !== detailTitle);
@@ -83,6 +82,14 @@ export function Sidebar({
             onClick={(e) => navigateTo(e, 'equipment')}
           >
             Lista
+          </a>
+          <a
+            href="#grupos"
+            className={route === 'grupos' ? 'on' : ''}
+            aria-current={route === 'grupos' ? 'page' : undefined}
+            onClick={(e) => navigateTo(e, 'grupos')}
+          >
+            Grupos
           </a>
           <a
             href="#credenciais"

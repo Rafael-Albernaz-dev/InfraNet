@@ -47,7 +47,7 @@ export function EquipmentInventoryPane(p: Props) {
           activation={p.activation}
           selected={selected}
           credentials={p.credentials}
-          blocks={p.blocks}
+          groups={p.groups}
           close={() => setBulk(undefined)}
           applied={() => {
             setBulk(undefined);
@@ -72,7 +72,7 @@ function selectedActions(
         {selected.length} selecionado{selected.length === 1 ? '' : 's'}
       </b>
       <Button disabled={locked} onClick={() => setBulk('block')}>
-        Definir bloco
+        Definir grupo
       </Button>
       <Button disabled={locked} onClick={() => setBulk('credential')}>
         Definir credencial

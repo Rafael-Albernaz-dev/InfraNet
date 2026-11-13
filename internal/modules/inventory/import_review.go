@@ -53,6 +53,10 @@ func credentialForImport(st *State, name string) (string, string) {
 }
 
 func importDevice(row equipment.ImportRow, id, credential string) (Device, string) {
+	// ignored: only the validation outcome is needed here.
+	if _, valid := SplitGroupPath(row.Group); !valid {
+		return Device{}, "Caminho de grupo inválido"
+	}
 	role := importRole(row.Role)
 	if !equipment.ValidInventoryRole(role) {
 		return Device{}, "Papel desconhecido"
@@ -69,7 +73,7 @@ func importDevice(row equipment.ImportRow, id, credential string) (Device, strin
 	if ip, err := netip.ParseAddr(address); err == nil {
 		address = ip.String()
 	}
-	d := Device{ID: id, Name: strings.TrimSpace(row.Name), Address: address, Port: port, Transport: TransportSSH,
+	d := Device{ID: id, Name: address, Address: address, Port: port, Transport: TransportSSH,
 		Role: role, Block: row.Block, CredentialID: credential, Revision: 1, Active: true}
 	if code := ValidateDevice(d); code != OK {
 		return Device{}, importValidationReason(code)

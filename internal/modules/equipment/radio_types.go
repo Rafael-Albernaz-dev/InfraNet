@@ -91,6 +91,7 @@ type RadioFailure struct {
 }
 
 type RadioReading struct {
+	Identity           string            `json:"identity,omitempty"`
 	Failure            *RadioFailure     `json:"failure,omitempty"`
 	Model              string            `json:"model,omitempty"`
 	Manufacturer       string            `json:"manufacturer,omitempty"`

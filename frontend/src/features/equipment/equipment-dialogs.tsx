@@ -154,8 +154,8 @@ export function ResetTrustDialog(p: {
     >
       <p>
         Use somente após confirmar uma troca legítima de chave no destino{' '}
-        {p.selected.address}:{p.selected.port}. A próxima conexão exigirá um
-        novo aceite; isto não verifica a identidade por outro canal.
+        {p.selected.address}:{p.selected.port}. No próximo acesso, o app guarda
+        a chave que o equipamento apresentar.
       </p>
       {p.error && (
         <p role="alert" className="inline-error">
@@ -183,6 +183,7 @@ export function DeviceFormDialog(p: {
   credentials: Credential[];
   credentialDefaults: Record<string, string>;
   blocks: string[];
+  groups: import('./groups').Group[];
   locked: boolean;
   profile: string;
   activation: string;
@@ -199,6 +200,7 @@ export function DeviceFormDialog(p: {
         credentials={p.credentials}
         defaults={p.credentialDefaults}
         blocks={p.blocks}
+        groups={p.groups}
         disabled={p.locked}
         save={(d) =>
           p.perform(

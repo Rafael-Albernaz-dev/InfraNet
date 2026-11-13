@@ -1,0 +1,44 @@
+.equipment-groups-grid {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.equipment-group-tree {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+.equipment-group-tree button {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  gap: 8px;
+  padding: 5px 8px;
+  cursor: pointer;
+  border-radius: 3px;
+  width: 100%;
+  justify-content: space-between;
+  text-align: left;
+}
+.equipment-group-tree button.on {
+  font-weight: 600;
+  color: var(--acento-forte);
+  background: var(--acento-suave);
+}
+.equipment-group-tree .group-depth-1 button {
+  padding-left: 22px;
+}
+.equipment-group-tree .group-depth-2 button {
+  padding-left: 38px;
+}
+.equipment-group-tree .group-depth-3 button {
+  padding-left: 54px;
+}
+
+.equipment-group-tree button:hover {
+  background: var(--gee);
+}
+.equipment-group-tree button:focus-visible {
+  outline: 2px solid var(--acento);
+}

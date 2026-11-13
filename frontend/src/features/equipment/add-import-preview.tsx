@@ -1,3 +1,5 @@
+import { GroupPathSelect } from './group-select';
+import type { Group } from './groups';
 import { useState } from 'react';
 import { AddEquipmentFields } from './add-equipment-fields';
 import { ImportSteps } from './add-import-file';
@@ -15,6 +17,7 @@ type CorrectionProps = {
   item: ImportItem;
   state: State;
   credentials: Credential[];
+  groups: Group[];
   close: () => void;
 };
 function Correction(p: CorrectionProps) {
@@ -42,6 +45,7 @@ function Correction(p: CorrectionProps) {
       <AddEquipmentFields
         row={row}
         correction
+        groups={p.groups}
         credentials={p.credentials}
         change={(patch) => setRow({ ...row, ...patch })}
       />
@@ -61,9 +65,10 @@ function Correction(p: CorrectionProps) {
   );
 }
 type SelectionDialogProps = {
-  mode: 'block' | 'credential';
+  mode: 'group' | 'credential';
   state: State;
   credentials: Credential[];
+  groups: Group[];
   close: () => void;
 };
 function SelectionDialog(p: SelectionDialogProps) {
@@ -71,14 +76,11 @@ function SelectionDialog(p: SelectionDialogProps) {
   return (
     <Dialog
       portal
-      title={p.mode === 'block' ? 'Definir bloco' : 'Definir credencial'}
+      title={p.mode === 'group' ? 'Definir grupo' : 'Definir credencial'}
       close={p.close}
     >
-      {p.mode === 'block' ? (
-        <label className="field">
-          Bloco
-          <input value={value} onChange={(e) => setValue(e.target.value)} />
-        </label>
+      {p.mode === 'group' ? (
+        <GroupPathSelect groups={p.groups} value={value} change={setValue} />
       ) : (
         <label className="field">
           Credencial
@@ -120,13 +122,14 @@ function SelectionDialog(p: SelectionDialogProps) {
 type ImportPreviewProps = {
   state: State;
   credentials: Credential[];
+  groups: Group[];
   cancel: () => void;
   replace: () => void;
 };
 export function ImportPreview(p: ImportPreviewProps) {
   const s = p.state;
   const [editing, setEditing] = useState<ImportItem>();
-  const [bulk, setBulk] = useState<'block' | 'credential'>();
+  const [bulk, setBulk] = useState<'group' | 'credential'>();
   const open = s.items.filter(
     (item) => !['ready', 'ignored'].includes(item.status),
   ).length;
@@ -148,6 +151,7 @@ export function ImportPreview(p: ImportPreviewProps) {
           item={editing}
           state={s}
           credentials={p.credentials}
+          groups={p.groups}
           close={() => setEditing(undefined)}
         />
       )}
@@ -156,6 +160,7 @@ export function ImportPreview(p: ImportPreviewProps) {
           mode={bulk}
           state={s}
           credentials={p.credentials}
+          groups={p.groups}
           close={() => setBulk(undefined)}
         />
       )}
@@ -169,7 +174,8 @@ function PreviewHeader(p: ImportPreviewProps) {
     <>
       <div className="bar">
         <span className="muted">
-          {s.filename} · {s.items.length} linhas
+          {s.filename} · {s.items.length} linhas · prévia: nada foi gravado nem
+          consultado
         </span>
         <span className="grow" />
         <Button disabled={s.busy} onClick={p.replace}>
@@ -184,14 +190,14 @@ function PreviewSelection({
   setBulk,
 }: {
   s: State;
-  setBulk: (m: 'block' | 'credential') => void;
+  setBulk: (m: 'group' | 'credential') => void;
 }) {
   return (
     <>
       {s.selected.length > 0 && (
         <div className="inventory-selection" role="status">
           <b>{s.selected.length} selecionada(s)</b>
-          <Button onClick={() => setBulk('block')}>Definir bloco</Button>
+          <Button onClick={() => setBulk('group')}>Definir grupo</Button>
           <Button onClick={() => setBulk('credential')}>
             Definir credencial
           </Button>
@@ -223,7 +229,7 @@ function PreviewFooter(
       <span className="muted">
         {open
           ? `Resolva ${open} linha${open === 1 ? '' : 's'} para continuar.`
-          : 'Tudo pronto. Cadastrar não consulta os equipamentos.'}
+          : 'Tudo pronto para cadastrar e conectar os equipamentos.'}
       </span>
       <span className="grow" />
       <Button onClick={p.cancel}>Cancelar</Button>
@@ -232,7 +238,7 @@ function PreviewFooter(
         disabled={s.busy || !!open || !ready}
         onClick={() => void s.confirm()}
       >
-        Cadastrar {ready} equipamentos
+        Cadastrar e conectar {ready} equipamentos
       </Button>
     </div>
   );

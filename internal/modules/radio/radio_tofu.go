@@ -2,6 +2,7 @@ package radio
 
 import (
 	"context"
+	"infradesktop/internal/modules/equipment"
 	"strings"
 	"time"
 )
@@ -88,8 +89,9 @@ func (s *Service) recordRadioTOFU(ctx context.Context, q Command, d Device, fing
 			if !sameRadioTarget(current, d) {
 				return Revision
 			}
-			if current.Fingerprint != "" {
-				return TrustChanged
+			// ignored: only the validation outcome is needed here.
+			if _, code := equipment.FirstContactKey(current.Fingerprint, fingerprint); code != OK {
+				return code
 			}
 			if !strings.HasPrefix(fingerprint, "SHA256:") {
 				return Invalid

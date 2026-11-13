@@ -14,12 +14,14 @@ type InventoryFilters struct {
 	Role       string `json:"role"`
 	Block      string `json:"block"`
 	BlockEmpty bool   `json:"block_empty"`
+	GroupID    string `json:"group_id"`
+	GroupEmpty bool   `json:"group_empty"`
 	Model      string `json:"model"`
 }
 
 func (a *App) ListEquipmentFiltered(profile, activation string, f InventoryFilters) EquipmentResult {
 	return a.equipmentCall("inventory.list", profile, activation, ipc.EquipmentInput{
 		All: f.All, Search: f.Search, Cursor: f.Cursor, IncludeInactive: f.Inactive, Role: equipment.Role(f.Role),
-		State: f.State, Block: f.Block, BlockEmpty: f.BlockEmpty, Model: f.Model,
+		State: f.State, Block: f.Block, BlockEmpty: f.BlockEmpty, Model: f.Model, GroupID: f.GroupID, GroupEmpty: f.GroupEmpty,
 	})
 }

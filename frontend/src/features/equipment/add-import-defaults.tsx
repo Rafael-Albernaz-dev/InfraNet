@@ -1,23 +1,19 @@
 import type { useImportState } from './add-import-state';
 import type { Credential } from './equipment-api';
-import { Field } from '../../shared/ui/Field';
+import { GroupPathSelect } from './group-select';
+import type { Group } from './groups';
 import { Select } from '../../shared/ui/Select';
 type ImportFileProps = {
   state: ReturnType<typeof useImportState>;
   credentials: Credential[];
+  groups: Group[];
 };
 export function ImportDefaults(p: ImportFileProps) {
   const s = p.state;
   return (
     <section className="import-card">
       <h2>Aplicar às linhas sem valor</h2>
-      <Field
-        layout="form"
-        label="Bloco"
-        placeholder="Região, torre ou outro nome"
-        value={s.block}
-        onChange={(e) => s.setBlock(e.target.value)}
-      />
+      <GroupPathSelect groups={p.groups} value={s.block} change={s.setBlock} />
       <label className="field">
         Credencial
         <Select

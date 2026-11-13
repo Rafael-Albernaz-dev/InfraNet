@@ -59,13 +59,15 @@ func keyName(s string) string {
 	s = strings.ToLower(strings.TrimSpace(strings.TrimPrefix(s, "\ufeff")))
 	switch s {
 	case "nome", "name":
-		return "name"
+		return ""
 	case "ip", "address":
 		return "address"
 	case "porta", "port":
 		return "port"
 	case "papel", "role":
 		return "role"
+	case "grupo", "group":
+		return "group"
 	case "bloco", "block":
 		return "block"
 	case "credencial", "credential":
@@ -98,8 +100,8 @@ func rowsFromTable(records [][]string) ([]inventory.ImportRow, error) {
 }
 
 func rowFromMap(line int, m map[string]string) inventory.ImportRow {
-	return inventory.ImportRow{Line: line, Name: m["name"], Address: m["address"], Port: m["port"],
-		Role: m["role"], Block: m["block"], Credential: m["credential"]}
+	return inventory.ImportRow{Line: line, Name: "", Address: m["address"], Port: m["port"],
+		Role: m["role"], Group: m["group"], Block: m["block"], Credential: m["credential"]}
 }
 
 func parseCSV(data []byte) ([]inventory.ImportRow, error) {

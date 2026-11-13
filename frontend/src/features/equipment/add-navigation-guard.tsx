@@ -13,6 +13,7 @@ export function useAddNavigationGuard(
   dirty: boolean,
   blocked: boolean,
   enabled = true,
+  running = false,
 ) {
   const register = useContext(NavigationGuard);
   const current = useRef({ dirty, blocked });
@@ -38,13 +39,19 @@ export function useAddNavigationGuard(
   const dialog = confirm && (
     <Dialog
       portal
-      title="Descartar alterações?"
+      title={running ? 'Sair da importação?' : 'Descartar alterações?'}
       close={() => setConfirm(false)}
       dismissOnBackdrop={false}
     >
-      <p>As alterações deste formulário serão perdidas.</p>
+      <p>
+        {running
+          ? 'A fila continua no serviço. Os equipamentos cadastrados aparecem na lista.'
+          : 'As alterações deste formulário serão perdidas.'}
+      </p>
       <div className="dialog-actions">
-        <Button onClick={() => setConfirm(false)}>Continuar editando</Button>
+        <Button onClick={() => setConfirm(false)}>
+          {running ? 'Ficar na importação' : 'Continuar editando'}
+        </Button>
         <Button
           kind="primary"
           onClick={() => {
@@ -52,7 +59,7 @@ export function useAddNavigationGuard(
             pending.current();
           }}
         >
-          Descartar alterações
+          {running ? 'Sair da tela' : 'Descartar alterações'}
         </Button>
       </div>
     </Dialog>

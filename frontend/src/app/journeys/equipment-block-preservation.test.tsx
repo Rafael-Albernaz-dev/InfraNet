@@ -3,8 +3,12 @@ import { equipmentAPI } from '../../features/equipment/equipment-api';
 import { createRecoverySave } from '../../features/radio/radio-credential-state';
 import { device } from '../../shared/testing/radio-test-fixtures';
 
-it('preserves the block when changing the saved radio credential', async () => {
-  const target = { ...device, block: 'Torre Norte', credential_id: 'old' };
+it('preserves the group when changing the saved radio credential', async () => {
+  const target = {
+    ...device,
+    group_id: '11111111-1111-4111-8111-111111111111',
+    credential_id: 'old',
+  };
   const generation = {};
   const save = vi.spyOn(equipmentAPI, 'save').mockResolvedValue({
     code: 'OK',
@@ -30,7 +34,7 @@ it('preserves the block when changing the saved radio credential', async () => {
     'company',
     'active',
     expect.objectContaining({
-      block: 'Torre Norte',
+      group_id: '11111111-1111-4111-8111-111111111111',
       credential_id: 'new',
     }),
   );

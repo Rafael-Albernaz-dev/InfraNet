@@ -3,14 +3,13 @@ package routerssh_test
 import (
 	"context"
 	"fmt"
-	"strings"
-	"testing"
-	"time"
-
 	"infradesktop/internal/adapters/routerssh"
 	"infradesktop/internal/modules/equipment"
 	"infradesktop/internal/modules/pulse"
 	"infradesktop/internal/testsupport/sshfixture"
+	"strings"
+	"testing"
+	"time"
 )
 
 func livePeer(t *testing.T, cfg sshfixture.Config) (*sshfixture.Server, equipment.Device) {
@@ -26,15 +25,15 @@ func TestLiveReusesConnectionAndCountsBothRoles(t *testing.T) {
 	for _, role := range []equipment.Role{equipment.RoleConcentrator, equipment.RoleAP} {
 		t.Run(string(role), func(t *testing.T) {
 			prefix := `:put ("L\t1\t".[/system resource get uptime]."\t".[/system resource get cpu-load]."\t".`
-			command := prefix + `[:len [/ppp active find where service=pppoe]])`
+			command := prefix + `[:len [/ppp active find where service=pppoe]]."\t".[/system identity get name])`
 			if role == equipment.RoleAP {
-				command = prefix + `[:len [/interface wireless registration-table find]])`
+				command = prefix + `[:len [/interface wireless registration-table find]]."\t".[/system identity get name])`
 			}
 			peer, d := livePeer(t, sshfixture.Config{Command: func(cmd string) (string, bool) {
 				if cmd != command {
 					return "invalid command", true
 				}
-				return "L\t1\t1d2h3m4s\t99\t1234\r\n", true
+				return "L\t1\t1d2h3m4s\t99\t1234\tCCR-RENAMED\r\n", true
 			}})
 			session, fault := routerssh.OpenLive(context.Background(), d, "reader", sshfixture.Password)
 			if fault != pulse.ReadOK {
@@ -43,7 +42,11 @@ func TestLiveReusesConnectionAndCountsBothRoles(t *testing.T) {
 			defer session.Close()
 			for range 3 {
 				reading, fault := session.Read(context.Background(), pulse.ReadTarget{Role: role})
-				if fault != pulse.ReadOK || reading.CPU != 99 || reading.Clients != 1234 || reading.Uptime != 26*time.Hour+3*time.Minute+4*time.Second {
+				if fault != pulse.ReadOK ||
+					reading.Identity != "CCR-RENAMED" ||
+					reading.CPU != 99 ||
+					reading.Clients != 1234 ||
+					reading.Uptime != 26*time.Hour+3*time.Minute+4*time.Second {
 					t.Fatal(reading, fault)
 				}
 			}
@@ -85,7 +88,6 @@ func TestLiveInvalidOutputLosesConnection(t *testing.T) {
 		})
 	}
 }
-
 func TestLiveAndManualReadsUseIndependentConnections(t *testing.T) {
 	started, release := make(chan struct{}), make(chan struct{})
 	_, d := livePeer(t, sshfixture.Config{Family: "v6", Command: func(command string) (string, bool) {
@@ -118,7 +120,6 @@ func TestLiveAndManualReadsUseIndependentConnections(t *testing.T) {
 		t.Fatal("collector interrupted by manual read", fault)
 	}
 }
-
 func TestLiveReadsRouterOSUptimeWithAnyLineEnding(t *testing.T) {
 	for _, ending := range []string{"", "\n", "\r", "\r\n", "\r\n\r\n"} {
 		t.Run(fmt.Sprintf("ending_%q", ending), func(t *testing.T) {

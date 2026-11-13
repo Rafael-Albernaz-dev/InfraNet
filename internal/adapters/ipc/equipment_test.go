@@ -76,44 +76,7 @@ func TestEquipmentStrictSchema(t *testing.T) {
 	}
 }
 func TestIntegrationEquipmentSQLiteVaultSSH(t *testing.T) {
-	root := t.TempDir()
-	if e := os.Chmod(root, 0700); e != nil {
-		t.Fatal(e)
-	}
-	dirs := map[string]string{}
-	for _, name := range []string{"runtime", "state", "client"} {
-		dirs[name] = filepath.Join(root, name)
-		if e := os.Mkdir(dirs[name], 0700); e != nil {
-			t.Fatal(e)
-		}
-	}
-	store, e := storage.Open(dirs["state"])
-	if e != nil {
-		t.Fatal(e)
-	}
-	uid := uint32(os.Getuid())
-	account := access.New(store, security.Crypto{}, time.Now, uid, "activation", store)
-	service := equipment.New(account, store, vault.New(func() ([]byte, error) { return bytes.Repeat([]byte{7}, 32), nil }), routerssh.Adapter{}, testEquipmentIDs{}, time.Now)
-	server, e := ListenAccess(dirs["runtime"], uid, account, foundation.Status{Instance: "part1"}, store.Close)
-	if e != nil {
-		t.Fatal(e)
-	}
-	AttachEquipment(server, service)
-	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan error, 1)
-	go func() { done <- server.Serve(ctx) }()
-	defer func() {
-		cancel()
-		if e := <-done; e != nil {
-			t.Error(e)
-		}
-	}()
-	peer, e := sshfixture.Start(sshfixture.Config{Family: "v6"})
-	if e != nil {
-		t.Fatal(e)
-	}
-	defer peer.Close()
-	client := NewAccountClient(dirs["runtime"], dirs["client"], uid)
+	client, peer := newEquipmentIPCFixture(t)
 	call := func(q Request, want foundation.Code) Response {
 		t.Helper()
 		r := client.Call(context.Background(), q)
@@ -139,41 +102,22 @@ func TestIntegrationEquipmentSQLiteVaultSSH(t *testing.T) {
 	}
 	call(request("inventory.enroll-status", &EquipmentInput{ID: uuid.NewString(), Operation: device.Operation}), foundation.Code(equipment.Revision))
 	call(request("inventory.enroll-status", &EquipmentInput{ID: device.ID, Operation: uuid.NewString()}), foundation.OK)
-	for _, op := range []string{"inventory.list", "credential.list"} {
-		r = call(request(op, &EquipmentInput{ID: device.ID}), foundation.Invalid)
-		_ = r
-	}
-	r = call(request("credential.list", &EquipmentInput{}), foundation.OK)
-	b, _ := json.Marshal(r)
-	if bytes.Contains(b, []byte(sshfixture.Password)) || bytes.Contains(b, []byte("envelope")) || bytes.Contains(b, []byte("ciphertext")) {
-		t.Fatal("credential response leaked vault")
-	}
+	assertIPCCredentialBoundary(t, call, request, device.ID)
 	inspect := &EquipmentInput{ID: device.ID, Revision: 1, Operation: uuid.NewString()}
 	r = call(request("trust.inspect", inspect), foundation.OK)
-	poll := func(id string) equipment.Job {
-		t.Helper()
-		until := time.Now().Add(3 * time.Second)
-		for time.Now().Before(until) {
-			r := call(request("device.query-status", &EquipmentInput{JobID: id}), foundation.OK)
-			if r.Data.Equipment.Job.State != "RUNNING" {
-				return *r.Data.Equipment.Job
-			}
-			time.Sleep(10 * time.Millisecond)
-		}
-		t.Fatal("job deadline")
-		return equipment.Job{}
-	}
+
 	status := call(request("inventory.enroll-status", &EquipmentInput{ID: device.ID, Operation: inspect.Operation}), foundation.OK)
 	if status.Data.Equipment.OperationState != "NOT_FOUND" {
 		t.Fatal("read ID acquired durable enrollment receipt")
 	}
-	job := poll(r.Data.Equipment.Job.ID)
+	job := pollEquipmentFixture(t, call, request, r.Data.Equipment.Job.ID)
 	if job.Code != equipment.OK || peer.Auth.Load() != 0 {
 		t.Fatal("inspect sent authentication")
 	}
-	call(request("trust.confirm", &EquipmentInput{ID: device.ID, Operation: uuid.NewString(), Revision: 1, JobID: job.ID, Fingerprint: job.Fingerprint}), foundation.OK)
+	accepted := call(request("inventory.get", &EquipmentInput{ID: device.ID}), foundation.OK).Data.Equipment.Device
+	assertAutomaticallyPinned(t, accepted, job.Fingerprint)
 	r = call(request("device.query-start", &EquipmentInput{ID: device.ID, Operation: uuid.NewString(), Revision: 2}), foundation.OK)
-	job = poll(r.Data.Equipment.Job.ID)
+	job = pollEquipmentFixture(t, call, request, r.Data.Equipment.Job.ID)
 	if job.Code != equipment.OK || job.Result.Family != "v6" {
 		t.Fatal("IPC query did not return observed fixture data", job.Code)
 	}
@@ -181,26 +125,7 @@ func TestIntegrationEquipmentSQLiteVaultSSH(t *testing.T) {
 	if len(r.Data.Equipment.Device.Result.Interfaces) != 1 {
 		t.Fatal("observation not persisted")
 	}
-	// Saving metadata through the real client preserves the completed reading,
-	// including for inactive devices, without another SSH authentication.
-	current := r.Data.Equipment.Device
-	auths, commands := peer.Auth.Load(), peer.Commands.Load()
-	for _, active := range []bool{true, false} {
-		if !active {
-			current = call(request("inventory.set-active", &EquipmentInput{ID: current.ID, Revision: current.Revision, Operation: uuid.NewString(), Active: false}), foundation.OK).Data.Equipment.Device
-		}
-		before := *current
-		edit := &EquipmentInput{ID: before.ID, Revision: before.Revision, Operation: uuid.NewString(), Name: "Edited metadata", Address: before.Address, Port: before.Port, Transport: before.Transport, CredentialID: before.CredentialID}
-		current = call(request("inventory.update", edit), foundation.OK).Data.Equipment.Device
-		if current.Revision != before.Revision+1 || current.Active != active || current.Name != edit.Name || !reflect.DeepEqual(current.Result, before.Result) || !reflect.DeepEqual(current.LastAttempt, before.LastAttempt) || !reflect.DeepEqual(current.TrustAcceptance, before.TrustAcceptance) {
-			t.Fatal("metadata edit lost reading, attempt, trust or active state through IPC")
-		}
-		replay := call(request("inventory.update", edit), foundation.OK).Data.Equipment.Device
-		stored := call(request("inventory.get", &EquipmentInput{ID: current.ID}), foundation.OK).Data.Equipment.Device
-		if !reflect.DeepEqual(replay, current) || !reflect.DeepEqual(stored, current) || peer.Auth.Load() != auths || peer.Commands.Load() != commands {
-			t.Fatal("metadata edit/replay changed persisted data or performed SSH")
-		}
-	}
+	verifyIPCMetadata(t, call, request, peer, r.Data.Equipment.Device)
 	old := request("inventory.list", &EquipmentInput{})
 	call(Request{Op: "company.create", Name: "Y"}, foundation.OK)
 	r = call(Request{Op: "access.bootstrap"}, foundation.OK)
@@ -238,5 +163,117 @@ func TestEquipmentSchemaSnapshotAndBounds(t *testing.T) {
 				t.Fatal("schema allowlist drift", op)
 			}
 		}
+	}
+}
+
+func pollEquipmentFixture(t *testing.T, call func(Request, foundation.Code) Response, request func(string,
+	*EquipmentInput) Request, id string) equipment.Job {
+	t.Helper()
+	until := time.Now().Add(3 * time.Second)
+	for time.Now().Before(until) {
+		r := call(request("device.query-status", &EquipmentInput{JobID: id}), foundation.OK)
+		if r.Data.Equipment.Job.State != "RUNNING" {
+			return *r.Data.Equipment.Job
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatal("job deadline")
+	return equipment.Job{}
+}
+
+func newEquipmentIPCFixture(t *testing.T) (*AccountClient, *sshfixture.Server) {
+	t.Helper()
+	root := t.TempDir()
+	if e := os.Chmod(root, 0700); e != nil {
+		t.Fatal(e)
+	}
+	dirs := map[string]string{}
+	for _, name := range []string{"runtime", "state", "client"} {
+		dirs[name] = filepath.Join(root, name)
+		if e := os.Mkdir(dirs[name], 0700); e != nil {
+			t.Fatal(e)
+		}
+	}
+	store, e := storage.Open(dirs["state"])
+	if e != nil {
+		t.Fatal(e)
+	}
+	uid := uint32(os.Getuid())
+	account := access.New(store, security.Crypto{}, time.Now, uid, "activation", store)
+	service := equipment.New(account, store, vault.New(func() ([]byte, error) { return bytes.Repeat([]byte{7}, 32), nil }),
+		routerssh.Adapter{}, testEquipmentIDs{}, time.Now)
+	server, e := ListenAccess(dirs["runtime"], uid, account, foundation.Status{Instance: "part1"}, store.Close)
+	if e != nil {
+		t.Fatal(e)
+	}
+	AttachEquipment(server, service)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- server.Serve(ctx) }()
+	t.Cleanup(func() {
+		cancel()
+		if e := <-done; e != nil {
+			t.Error(e)
+		}
+	})
+	peer, e := sshfixture.Start(sshfixture.Config{Family: "v6"})
+	if e != nil {
+		t.Fatal(e)
+	}
+	t.Cleanup(peer.Close)
+	client := NewAccountClient(dirs["runtime"], dirs["client"], uid)
+	return client, peer
+}
+
+func verifyIPCMetadata(t *testing.T, call func(Request, foundation.Code) Response, request func(string,
+	*EquipmentInput) Request, peer *sshfixture.Server, current *equipment.Device) {
+	t.Helper()
+	// Saving metadata through the real client preserves the completed reading,
+	// including for inactive devices, without another SSH authentication.
+
+	auths, commands := peer.Auth.Load(), peer.Commands.Load()
+	for _, active := range []bool{true, false} {
+		if !active {
+			current = call(request("inventory.set-active", &EquipmentInput{ID: current.ID, Revision: current.Revision,
+				Operation: uuid.NewString(), Active: false}), foundation.OK).Data.Equipment.Device
+		}
+		before := *current
+		edit := &EquipmentInput{ID: before.ID, Revision: before.Revision, Operation: uuid.NewString(), Name: "Edited metadata",
+			Address: before.Address, Port: before.Port, Transport: before.Transport, CredentialID: before.CredentialID}
+		current = call(request("inventory.update", edit), foundation.OK).Data.Equipment.Device
+		if current.Revision != before.Revision+1 || current.Active != active || current.Name != before.Name ||
+			!reflect.DeepEqual(current.Result, before.Result) || !reflect.DeepEqual(current.LastAttempt, before.LastAttempt) ||
+			!reflect.DeepEqual(current.TrustAcceptance, before.TrustAcceptance) {
+			t.Fatal("metadata edit lost reading, attempt, trust or active state through IPC")
+		}
+		replay := call(request("inventory.update", edit), foundation.OK).Data.Equipment.Device
+		stored := call(request("inventory.get", &EquipmentInput{ID: current.ID}), foundation.OK).Data.Equipment.Device
+		if !reflect.DeepEqual(replay, current) || !reflect.DeepEqual(stored, current) || peer.Auth.Load() != auths ||
+			peer.Commands.Load() != commands {
+			t.Fatal("metadata edit/replay changed persisted data or performed SSH")
+		}
+	}
+}
+
+func assertIPCCredentialBoundary(t *testing.T, call func(Request, foundation.Code) Response, request func(string,
+	*EquipmentInput) Request, id string) {
+	t.Helper()
+	var r Response
+	for _, op := range []string{"inventory.list", "credential.list"} {
+		r = call(request(op, &EquipmentInput{ID: id}), foundation.Invalid)
+		_ = r
+	}
+	r = call(request("credential.list", &EquipmentInput{}), foundation.OK)
+	b, _ := json.Marshal(r)
+	if bytes.Contains(b, []byte(sshfixture.Password)) || bytes.Contains(b, []byte("envelope")) || bytes.Contains(b, []byte("ciphertext")) {
+		t.Fatal("credential response leaked vault")
+	}
+
+}
+
+func assertAutomaticallyPinned(t *testing.T, accepted *equipment.Device, fingerprint string) {
+	t.Helper()
+	if accepted.TrustAcceptance == nil || accepted.TrustAcceptance.Mode != "automatic-tofu" || accepted.Fingerprint != fingerprint {
+		t.Fatal("inspection did not automatically pin key")
 	}
 }

@@ -31,6 +31,9 @@ func (s *Store) loadEquipment(ctx context.Context, q queryer, id string) (equipm
 	if err := loadEquipmentCredentials(ctx, q, &st); err != nil {
 		return st, err
 	}
+	if err := loadEquipmentGroups(ctx, q, &st); err != nil {
+		return st, err
+	}
 	if err := loadEquipmentDevices(ctx, q, &st); err != nil {
 		return st, err
 	}

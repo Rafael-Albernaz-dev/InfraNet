@@ -1,3 +1,4 @@
+import type { Group } from './groups';
 import { NetworkPulse } from './network-pulse-context';
 import { useContext, useEffect } from 'react';
 import type { Device } from './equipment-api';
@@ -16,6 +17,7 @@ type UseDeviceListEffectProps = {
   stateFilter: string;
   setPulseNetwork: (v: string) => void;
   setBlocks: (v: string[]) => void;
+  setGroups: (v: Group[]) => void;
   setModels: (v: string[]) => void;
   connected: boolean;
   refresh: number;
@@ -23,6 +25,7 @@ type UseDeviceListEffectProps = {
   generationRef: React.MutableRefObject<number>;
   setListError: (v: string) => void;
   setDevices: (v: Device[]) => void;
+  setSelected: React.Dispatch<React.SetStateAction<Device | undefined>>;
   setTotal: (v: number) => void;
   setNext: (v: number) => void;
   setVault: (v: boolean) => void;
@@ -48,9 +51,11 @@ async function readList(
     p.setListError('');
     const list = r.data.devices || [];
     p.setDevices(list);
+    p.setSelected((previous) => selectedInventoryLabels(previous, list));
     p.setPulseNetwork(r.data.pulse_network || '');
     publish(r.data.pulse_network || '');
     p.setBlocks(r.data.blocks || []);
+    p.setGroups(r.data.groups || []);
     p.setModels(r.data.models || []);
     const total = r.data.total_devices ?? list.length;
     p.setTotal(total);
@@ -110,4 +115,30 @@ export function useDeviceListEffect(p: UseDeviceListEffectProps) {
     p.refresh,
     p.onTotal,
   ]);
+}
+
+function selectedInventoryLabels(
+  previous: Device | undefined,
+  devices: Device[],
+) {
+  if (!previous) return previous;
+  const latest = devices.find(
+    (device) =>
+      device.id === previous.id && device.revision === previous.revision,
+  );
+  if (!latest) return previous;
+  if (
+    previous.name === latest.name &&
+    previous.identity === latest.identity &&
+    previous.group_id === latest.group_id &&
+    previous.group_path === latest.group_path
+  )
+    return previous;
+  return {
+    ...previous,
+    name: latest.name,
+    identity: latest.identity,
+    group_id: latest.group_id,
+    group_path: latest.group_path,
+  };
 }

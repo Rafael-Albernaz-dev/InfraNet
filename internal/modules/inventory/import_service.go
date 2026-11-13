@@ -23,6 +23,10 @@ func (s *Service) importPreview(ctx context.Context, q Command, v *View) Code {
 		return code
 	}
 	for i := range rows {
+		rows[i].Name = ""
+		if rows[i].Group == "" {
+			rows[i].Group = q.Import.DefaultGroup
+		}
 		if rows[i].Block == "" {
 			rows[i].Block = q.Import.DefaultBlock
 		}

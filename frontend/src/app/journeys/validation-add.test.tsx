@@ -48,7 +48,6 @@ function fill(address = '10.0.0.1') {
     target: { value: '__inline__' },
   });
   for (const [label, value] of [
-    ['Nome', 'Router teste'],
     ['IP de gerenciamento', address],
     ['Usuário', 'reader'],
     ['Senha', '  synthetic secret  '],
@@ -82,7 +81,7 @@ it('associates safe daemon validation with the field and clears only the submitt
     ),
   );
   expect(screen.getByLabelText('IP de gerenciamento')).toHaveFocus();
-  expect(screen.getByLabelText('Nome')).toHaveValue('Router teste');
+  expect(screen.queryByLabelText('Nome')).not.toBeInTheDocument();
   expect(screen.getByLabelText('Usuário')).toHaveValue('reader');
   expect(screen.getByLabelText('Senha')).toHaveValue('');
   expect(screen.getByText(/Digite a senha novamente/)).toBeInTheDocument();
@@ -111,6 +110,9 @@ it.each([
     expect(sent.address).toBe(address.trim());
     expect(api.start).not.toHaveBeenCalled();
     expect(api.inspect).not.toHaveBeenCalled();
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Ver na lista' }),
+    );
     await waitFor(() => expect(back).toHaveBeenCalled());
   },
 );
@@ -146,7 +148,6 @@ it.each([
   },
 );
 it.each([
-  ['Nome', 'bad\u0001name'],
   ['Usuário', 'bad\u0001user'],
   ['Porta SSH', '0'],
   ['Porta SSH', '22.5'],
@@ -182,7 +183,7 @@ it.each(['Voltar', 'Cancelar'])(
     fireEvent.click(
       within(confirm).getByRole('button', { name: 'Continuar editando' }),
     );
-    expect(screen.getByLabelText('Nome')).toHaveValue('Router teste');
+    expect(screen.queryByLabelText('Nome')).not.toBeInTheDocument();
     expect(screen.getByLabelText('IP de gerenciamento')).toHaveValue(
       '10.0.0.1',
     );
@@ -317,6 +318,7 @@ it('saving a device with a returned record never starts a remote inspection', as
   fill('192.0.2.1');
   save();
   await waitFor(() => expect(api.save).toHaveBeenCalledOnce());
+  fireEvent.click(await screen.findByRole('button', { name: 'Ver na lista' }));
   await waitFor(() => expect(back).toHaveBeenCalledOnce());
   expect(api.inspect).not.toHaveBeenCalled();
   expect(api.start).not.toHaveBeenCalled();
@@ -334,4 +336,11 @@ it('returns focus to the Add trigger after cancelling a pristine page', async ()
   expect(
     await screen.findByRole('button', { name: 'Adicionar equipamento' }),
   ).toHaveFocus();
+});
+
+it('offers endpoint and credential fields while equipment name remains read from the device', async () => {
+  await open('identity-name');
+  expect(screen.queryByLabelText('Nome')).not.toBeInTheDocument();
+  expect(screen.getByLabelText('IP de gerenciamento')).toBeVisible();
+  expect(screen.getByLabelText('Credencial de consulta')).toBeVisible();
 });

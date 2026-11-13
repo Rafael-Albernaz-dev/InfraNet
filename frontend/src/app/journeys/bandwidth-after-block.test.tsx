@@ -14,13 +14,15 @@ import type {
   DeviceInput,
 } from '../../features/equipment/equipment-api';
 import { RadioTransports } from '../../features/equipment/radio-contract';
-function fixture() {
+function testDevice() {
   const stamp = new Date().toISOString();
-  let device = {
+  return {
     id: 'synthetic-concentrator',
     name: 'Concentrador de teste',
     role: 'concentrator',
-    block: 'Torre Norte',
+    block: '',
+    group_id: '11111111-1111-4111-8111-111111111111',
+    group_path: 'Torre Norte',
     address: '192.0.2.44',
     port: 22,
     transport: RadioTransports.ssh,
@@ -44,6 +46,10 @@ function fixture() {
       version: '6.49',
     },
   } as Device;
+}
+function fixture() {
+  const stamp = new Date().toISOString();
+  let device = testDevice();
   const row = {
     row_id: 'saved-row',
     login: 'cliente-sintetico',
@@ -67,6 +73,18 @@ function fixture() {
       total_devices: 1,
       devices: [device],
       credentials: [credential],
+      groups: [
+        {
+          id: '11111111-1111-4111-8111-111111111111',
+          parent_id: '',
+          name: 'Torre Norte',
+        },
+        {
+          id: '22222222-2222-4222-8222-222222222222',
+          parent_id: '',
+          name: 'Torre Sul',
+        },
+      ],
       next_cursor: 0,
       vault_available: true,
       ...data,
@@ -78,7 +96,14 @@ function fixture() {
     ListCredentials: vi.fn(async () => result()),
     GetEquipment: vi.fn(async () => result({ device })),
     SaveEquipment: vi.fn(async (_p: string, _a: string, input: DeviceInput) => {
-      device = { ...device, block: input.block };
+      device = {
+        ...device,
+        group_id: input.group_id,
+        group_path:
+          input.group_id === '22222222-2222-4222-8222-222222222222'
+            ? 'Torre Sul'
+            : 'Torre Norte',
+      };
       return result({ device });
     }),
     StartQuery: vi.fn(async () => result()),
@@ -136,7 +161,7 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
-it('edits only the concentrator block, reopens saved sessions and measures bandwidth on the page', async () => {
+it('edits only the concentrator group, reopens saved sessions and measures bandwidth on the page', async () => {
   const { inventory, sessions, reads } = fixture();
   render(<Equipment profile="company" activation="active" connected />);
   await openDeviceSheet('Concentrador de teste');
@@ -144,9 +169,9 @@ it('edits only the concentrator block, reopens saved sessions and measures bandw
   fireEvent.change(
     within(
       screen.getByRole('dialog', { name: 'Editar equipamento' }),
-    ).getByLabelText('Bloco'),
+    ).getByLabelText('Grupo'),
     {
-      target: { value: 'Torre Sul' },
+      target: { value: '22222222-2222-4222-8222-222222222222' },
     },
   );
   fireEvent.click(screen.getByRole('button', { name: 'Salvar equipamento' }));
@@ -157,7 +182,7 @@ it('edits only the concentrator block, reopens saved sessions and measures bandw
     'company',
     'active',
     expect.objectContaining({
-      block: 'Torre Sul',
+      group_id: '22222222-2222-4222-8222-222222222222',
       revision: 1,
       id: 'synthetic-concentrator',
     }),

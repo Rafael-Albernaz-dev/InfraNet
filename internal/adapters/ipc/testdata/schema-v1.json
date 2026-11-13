@@ -239,6 +239,78 @@
     ]
   },
   "equipment_operations": {
+    "inventory.register": [
+      "operation_id",
+      "id",
+      "name",
+      "role",
+      "address",
+      "port",
+      "transport",
+      "credential_id",
+      "group_id",
+      "user",
+      "secret"
+    ],
+    "inventory.register-status": [
+      "job_id"
+    ],
+    "inventory.register-confirm": [
+      "job_id"
+    ],
+    "inventory.groups": [],
+    "inventory.group-create": [
+      "id",
+      "operation_id",
+      "name",
+      "parent_id"
+    ],
+    "inventory.group-rename": [
+      "id",
+      "operation_id",
+      "name"
+    ],
+    "inventory.group-delete": [
+      "id",
+      "operation_id"
+    ],
+    "inventory.import-status": [],
+    "inventory.import-cancel": [],
+    "inventory.table-preference-get": [
+      "table"
+    ],
+    "inventory.table-preference-set": [
+      "table",
+      "table_preference"
+    ],
+    "credential.default-set": [
+      "id",
+      "operation_id",
+      "role",
+      "credential_id"
+    ],
+    "trust.reset": [
+      "operation_id",
+      "id",
+      "revision"
+    ],
+    "inventory.enroll": [
+      "operation_id",
+      "id",
+      "name",
+      "role",
+      "address",
+      "port",
+      "transport",
+      "user",
+      "secret",
+      "block",
+      "group_id"
+    ],
+    "inventory.enroll-status": [
+      "operation_id",
+      "id"
+    ],
     "inventory.list": [
       "all",
       "search",
@@ -248,8 +320,13 @@
       "role",
       "block",
       "block_empty",
+      "group_id",
+      "group_empty",
       "model",
       "state"
+    ],
+    "inventory.get": [
+      "id"
     ],
     "inventory.import-preview": [
       "import"
@@ -262,9 +339,6 @@
       "operation_id",
       "bulk"
     ],
-    "inventory.get": [
-      "id"
-    ],
     "inventory.create": [
       "operation_id",
       "id",
@@ -274,7 +348,8 @@
       "port",
       "transport",
       "credential_id",
-      "block"
+      "block",
+      "group_id"
     ],
     "inventory.update": [
       "operation_id",
@@ -286,7 +361,8 @@
       "port",
       "transport",
       "credential_id",
-      "block"
+      "block",
+      "group_id"
     ],
     "inventory.set-active": [
       "operation_id",
@@ -296,6 +372,11 @@
     ],
     "credential.list": [
       "cursor"
+    ],
+    "credential.delete": [
+      "operation_id",
+      "id",
+      "revision"
     ],
     "credential.put": [
       "operation_id",
@@ -328,45 +409,6 @@
     ],
     "device.query-cancel": [
       "job_id"
-    ],
-    "inventory.enroll": [
-      "operation_id",
-      "id",
-      "name",
-      "role",
-      "address",
-      "port",
-      "transport",
-      "user",
-      "secret",
-      "block"
-    ],
-    "inventory.enroll-status": [
-      "operation_id",
-      "id"
-    ],
-    "trust.reset": [
-      "operation_id",
-      "id",
-      "revision"
-    ],
-    "credential.default-set": [
-      "id",
-      "operation_id",
-      "role",
-      "credential_id"
-    ],
-    "credential.delete": [
-      "operation_id",
-      "id",
-      "revision"
-    ],
-    "inventory.table-preference-get": [
-      "table"
-    ],
-    "inventory.table-preference-set": [
-      "table",
-      "table_preference"
     ]
   },
   "equipment": {

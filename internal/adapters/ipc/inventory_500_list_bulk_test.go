@@ -13,8 +13,9 @@ import (
 	"infradesktop/internal/testsupport/jobprobe"
 )
 
-func importFiveHundredForList(t *testing.T, client *AccountClient) {
+func importFiveHundredForList(t *testing.T, j *ppJourney) {
 	t.Helper()
+	client := j.client
 	var body strings.Builder
 	body.WriteString("Nome,IP,Porta,Papel\n")
 	for i := 0; i < 500; i++ {
@@ -40,6 +41,10 @@ func importFiveHundredForList(t *testing.T, client *AccountClient) {
 	q.Op = "inventory.import-confirm"
 	q.Equipment = &EquipmentInput{Operation: uuid.NewString(), Import: &equipment.ImportInput{Rows: rows}}
 	r = client.Call(context.Background(), q)
+	if r.Code != foundation.OK {
+		t.Fatal("start", r.Code)
+	}
+	r = awaitImportIPC(t, j)
 	if r.Code != foundation.OK || r.Data.Equipment.ImportReceipt.Created != 500 {
 		t.Fatal("confirm", r.Code)
 	}
@@ -47,13 +52,17 @@ func importFiveHundredForList(t *testing.T, client *AccountClient) {
 
 func TestIPCListsAndBulkUpdatesFiveHundredDevices(t *testing.T) {
 	j := newPPJourney(t)
+	probe := prepareImportProbe(t, j)
 	if !jobprobe.SetParser(j.svc, importfile.Parser{}) {
 		t.Fatal("fixture parser unavailable")
 	}
 	client := j.client
 	selectEmptyImportCompany(t, client)
 	before := j.peer.Auth.Load()
-	importFiveHundredForList(t, client)
+	importFiveHundredForList(t, j)
+	if probe.Calls.Load() != 500 {
+		t.Fatal("contact count", probe.Calls.Load())
+	}
 	items := listFiveHundredForBulk(t, client)
 	block := "Torre sintetica"
 	q := Request{Op: "inventory.bulk-update", ExpectedProfile: client.profile, ExpectedActivation: client.activation,
@@ -99,11 +108,12 @@ func listFiveHundredForBulk(t *testing.T, client *AccountClient) []equipment.Bul
 
 func TestAllInventoryProjectionKeepsDetailOutsideTheRefreshFrame(t *testing.T) {
 	j := newPPJourney(t)
+	prepareImportProbe(t, j)
 	if !jobprobe.SetParser(j.svc, importfile.Parser{}) {
 		t.Fatal("fixture parser unavailable")
 	}
 	selectEmptyImportCompany(t, j.client)
-	importFiveHundredForList(t, j.client)
+	importFiveHundredForList(t, j)
 	ctx := context.Background()
 	var first string
 	c := j.store.UpdateEquipment(ctx, j.client.profile, func(st *equipment.State) equipment.Code {

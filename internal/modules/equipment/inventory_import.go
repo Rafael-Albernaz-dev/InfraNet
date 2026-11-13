@@ -4,6 +4,7 @@ const ImportSecret Code = "IMPORT_PASSWORD_REJECTED"
 
 // ImportRow contains only user-editable fields; it never carries a secret.
 type ImportRow struct {
+	Group      string `json:"group"`
 	Line       int    `json:"line"`
 	Name       string `json:"name"`
 	Address    string `json:"address"`
@@ -15,6 +16,7 @@ type ImportRow struct {
 }
 
 type ImportInput struct {
+	DefaultGroup      string      `json:"default_group,omitempty"`
 	Filename          string      `json:"filename,omitempty"`
 	Data              []byte      `json:"data,omitempty"`
 	Rows              []ImportRow `json:"rows,omitempty"`
@@ -23,6 +25,7 @@ type ImportInput struct {
 }
 
 type ImportItem struct {
+	Identity     string    `json:"identity,omitempty"`
 	Row          ImportRow `json:"row"`
 	Status       string    `json:"status"`
 	Reason       string    `json:"reason,omitempty"`

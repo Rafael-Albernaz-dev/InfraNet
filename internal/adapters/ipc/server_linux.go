@@ -194,10 +194,7 @@ func (s *Server) handle(ctx context.Context, c *net.UnixConn) {
 	if ctx.Err() != nil {
 		r = Response{Version: 1, RequestID: r.RequestID, Code: foundation.Deadline}
 	}
-	limit := MaxFrame
-	if isTablePage(q.Op) || q.Op == "company.brand-get" || q.Op == "company.brand-set" || isImport(q.Op) {
-		limit = MaxBrandFrame
-	}
+	limit := clientFrameLimit(q.Op, true)
 	_ = writeFrameLimit(c, r, limit)
 }
 func (s *Server) dispatch(ctx context.Context, uid uint32, q Request) Response {

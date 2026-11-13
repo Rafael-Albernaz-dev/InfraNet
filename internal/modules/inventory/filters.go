@@ -12,7 +12,7 @@ func validateInventoryFilters(q Command) Code {
 		return Invalid
 	}
 	if q.Role != "" && !equipment.ValidInventoryRole(q.Role) ||
-		!equipment.ValidBlock(q.Block) || q.BlockEmpty && q.Block != "" || len(q.Model) > 160 {
+		q.GroupID != "" && !ValidID(q.GroupID) || q.GroupEmpty && q.GroupID != "" || len(q.Model) > 160 {
 		return Invalid
 	}
 	return OK
@@ -28,17 +28,14 @@ func inventoryModel(d Device) string {
 	return ""
 }
 
-func inventoryOptions(devices []Device) ([]string, []string) {
-	blocks, models := map[string]bool{}, map[string]bool{}
+func inventoryModels(devices []Device) []string {
+	models := map[string]bool{}
 	for _, d := range devices {
-		if d.Block != "" {
-			blocks[d.Block] = true
-		}
-		if m := inventoryModel(d); m != "" {
-			models[m] = true
+		if model := inventoryModel(d); model != "" {
+			models[model] = true
 		}
 	}
-	return sortedOptions(blocks), sortedOptions(models)
+	return sortedOptions(models)
 }
 
 func sortedOptions(values map[string]bool) []string {
@@ -71,9 +68,21 @@ func inventoryMatches(d Device, q Command, needle string) bool {
 	if q.Inactive && d.Active || !q.Inactive && !q.IncludeInactive && !d.Active {
 		return false
 	}
-	if q.Role != "" && q.Role != d.Role || q.BlockEmpty && d.Block != "" ||
-		q.Block != "" && q.Block != d.Block || q.Model != "" && q.Model != inventoryModel(d) {
+	if q.Role != "" && q.Role != d.Role || q.Model != "" && q.Model != inventoryModel(d) {
 		return false
 	}
 	return strings.Contains(strings.ToLower(d.Name+" "+d.Address), needle)
+}
+
+func filterGroupDevices(devices []Device, groups []Group, q Command) []Device {
+	if q.GroupID == "" && !q.GroupEmpty {
+		return devices
+	}
+	filtered := []Device{}
+	for _, d := range devices {
+		if q.GroupEmpty && d.GroupID == "" || q.GroupID != "" && GroupIncludes(groups, q.GroupID, d.GroupID) {
+			filtered = append(filtered, d)
+		}
+	}
+	return filtered
 }

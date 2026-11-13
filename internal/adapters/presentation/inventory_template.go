@@ -12,8 +12,8 @@ import (
 )
 
 func inventoryTemplate(format string) ([]byte, error) {
-	fields := []string{"Nome", "IP", "Porta", "Papel", "Bloco", "Credencial"}
-	values := []string{"AP-LESTE-1", "192.0.2.31", "22", "AP", "Torre Leste", "leitura-radio"}
+	fields := []string{"IP", "Porta", "Papel", "Grupo", "Credencial"}
+	values := []string{"192.0.2.31", "22", "AP", "Região Leste › Torre Leste", "leitura-radio"}
 	switch format {
 	case "csv":
 		var b bytes.Buffer
@@ -27,8 +27,8 @@ func inventoryTemplate(format string) ([]byte, error) {
 		w.Flush()
 		return b.Bytes(), w.Error()
 	case "json":
-		return json.MarshalIndent([]map[string]string{{"name": values[0], "address": values[1], "port": values[2],
-			"role": values[3], "block": values[4], "credential": values[5]}}, "", "  ")
+		return json.MarshalIndent([]map[string]string{{"address": values[0], "port": values[1],
+			"role": values[2], "group": values[3], "credential": values[4]}}, "", "  ")
 	case "xlsx":
 		return inventoryXLSXTemplate(fields, values)
 	default:

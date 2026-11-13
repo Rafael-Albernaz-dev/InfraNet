@@ -11,7 +11,9 @@ func (s *Service) bulkUpdate(ctx context.Context, q Command, v *View) Code {
 		return c
 	}
 	mode, value := "block", ""
-	if q.Bulk.Block != nil {
+	if q.Bulk.GroupID != nil {
+		mode, value = "group", *q.Bulk.GroupID
+	} else if q.Bulk.Block != nil {
 		value = *q.Bulk.Block
 	} else {
 		mode, value = "credential", *q.Bulk.CredentialID
@@ -21,7 +23,7 @@ func (s *Service) bulkUpdate(ctx context.Context, q Command, v *View) Code {
 	c := s.Store.UpdateEquipment(ctx, q.Scope.Profile, func(st *State) Code {
 		return applyBulk(st, q, stamp, v, &mutated)
 	})
-	if c == OK && mutated && q.Bulk.Block == nil {
+	if c == OK && mutated && q.Bulk.CredentialID != nil {
 		for _, item := range q.Bulk.Items {
 			s.Invalidate(q.Scope.Profile, item.ID, false)
 		}
@@ -33,13 +35,7 @@ func validateBulk(q Command) Code {
 	if !ValidID(q.Operation) || q.Bulk == nil || len(q.Bulk.Items) == 0 || len(q.Bulk.Items) > MaxDevices {
 		return Invalid
 	}
-	if (q.Bulk.Block == nil) == (q.Bulk.CredentialID == nil) {
-		return Invalid
-	}
-	if q.Bulk.Block != nil && !equipment.ValidBlock(*q.Bulk.Block) {
-		return Invalid
-	}
-	if q.Bulk.CredentialID != nil && !ValidID(*q.Bulk.CredentialID) {
+	if !validBulkField(q.Bulk) {
 		return Invalid
 	}
 	seen := map[string]bool{}
@@ -58,6 +54,9 @@ func applyBulk(st *State, q Command, stamp string, v *View, mutated *bool) Code 
 	}
 	if len(st.Operations) >= MaxOperations {
 		return Limit
+	}
+	if q.Bulk.GroupID != nil && !groupExists(st.Groups, *q.Bulk.GroupID) {
+		return Invalid
 	}
 	if q.Bulk.CredentialID != nil && CredentialByID(st, *q.Bulk.CredentialID) == nil {
 		return MissingCredential
@@ -92,6 +91,9 @@ func commitBulk(st *State, q Command, stamp string, v *View, mutated *bool) Code
 	receipt := equipment.BulkReceipt{Items: make([]equipment.BulkItem, 0, len(q.Bulk.Items))}
 	for _, item := range q.Bulk.Items {
 		d := DeviceByID(st, item.ID)
+		if q.Bulk.GroupID != nil {
+			d.GroupID = *q.Bulk.GroupID
+		}
 		if q.Bulk.Block != nil {
 			d.Block = *q.Bulk.Block
 		}
@@ -99,7 +101,7 @@ func commitBulk(st *State, q Command, stamp string, v *View, mutated *bool) Code
 			d.CredentialID = *q.Bulk.CredentialID
 			d.Result, d.LastAttempt = nil, nil
 		}
-		if q.Bulk.Block == nil {
+		if q.Bulk.CredentialID != nil {
 			d.Revision++
 		}
 		receipt.Items = append(receipt.Items, equipment.BulkItem{ID: d.ID, Revision: d.Revision})
@@ -107,4 +109,27 @@ func commitBulk(st *State, q Command, stamp string, v *View, mutated *bool) Code
 	st.Operations = append(st.Operations, Operation{ID: q.Operation, Stamp: stamp, BulkReceipt: &receipt})
 	v.BulkReceipt, *mutated = &receipt, true
 	return OK
+}
+
+func validBulkField(bulk *equipment.BulkUpdate) bool {
+	count := 0
+	if bulk.GroupID != nil {
+		count++
+	}
+	if bulk.Block != nil {
+		count++
+	}
+	if bulk.CredentialID != nil {
+		count++
+	}
+	if count != 1 {
+		return false
+	}
+	if bulk.Block != nil && !equipment.ValidBlock(*bulk.Block) {
+		return false
+	}
+	if bulk.CredentialID != nil && !ValidID(*bulk.CredentialID) {
+		return false
+	}
+	return true
 }

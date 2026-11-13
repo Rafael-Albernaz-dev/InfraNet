@@ -67,12 +67,12 @@ func trustEquipment(t *testing.T, s *equipment.Service, q equipment.Command, d e
 	if job.Code != equipment.OK {
 		t.Fatal(job.Code)
 	}
-	q.Op = "trust.confirm"
-	q.Operation = uuid.NewString()
-	q.JobID = job.ID
-	q.Fingerprint = job.Fingerprint
-	equipmentCall(t, s, q, equipment.OK)
-	equipmentCall(t, s, q, equipment.OK)
+	q.Op = "inventory.get"
+	view := equipmentCall(t, s, q, equipment.OK)
+	if view.Device == nil || view.Device.Fingerprint != job.Fingerprint || view.Device.TrustAcceptance == nil ||
+		view.Device.TrustAcceptance.Mode != "automatic-tofu" {
+		t.Fatal("automatic first acceptance missing")
+	}
 	q.Op = "device.query-start"
 	q.Revision = 2
 	q.Operation = uuid.NewString()

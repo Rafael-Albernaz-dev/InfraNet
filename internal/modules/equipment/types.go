@@ -80,10 +80,12 @@ type TrustAcceptance struct {
 }
 
 type Attempt struct {
-	JobID string `json:"job_id"`
-	State string `json:"state"`
-	Code  Code   `json:"code"`
-	At    string `json:"at"`
+	DeviceRevision     uint64 `json:"device_revision,omitempty"`
+	CredentialRevision uint64 `json:"credential_revision,omitempty"`
+	JobID              string `json:"job_id"`
+	State              string `json:"state"`
+	Code               Code   `json:"code"`
+	At                 string `json:"at"`
 }
 
 type Observation struct {
@@ -118,6 +120,9 @@ type LiveReading struct {
 }
 
 type Device struct {
+	GroupPath       string           `json:"group_path"`
+	Identity        string           `json:"identity"`
+	GroupID         string           `json:"group_id"`
 	Live            *LiveReading     `json:"live,omitempty"`
 	Pulse           *PulseStatus     `json:"pulse,omitempty"`
 	RadioSummary    *RadioSummary    `json:"radio_summary,omitempty"`
@@ -147,6 +152,7 @@ type SealedCredential struct {
 }
 
 type State struct {
+	Groups                []Group
 	CredentialDefaults    map[string]string
 	Installation, Company string
 	WrappedKey            []byte
@@ -192,6 +198,8 @@ type Job struct {
 }
 
 type View struct {
+	ContactCode        Code              `json:"contact_code,omitempty"`
+	Groups             []Group           `json:"groups,omitempty"`
 	TablePreference    *TablePreference  `json:"table_preference,omitempty"`
 	PulseNetwork       string            `json:"pulse_network,omitempty"`
 	ImportItems        []ImportItem      `json:"import_items,omitempty"`

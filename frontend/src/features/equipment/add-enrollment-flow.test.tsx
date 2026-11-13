@@ -40,9 +40,7 @@ it('keeps an uncertain create receipt across reopening and reconciles without re
     back: vi.fn(),
   };
   const view = render(<AddEquipment {...props} />);
-  fireEvent.change(screen.getByLabelText('Nome'), {
-    target: { value: 'AP fixture' },
-  });
+  expect(screen.queryByLabelText('Nome')).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
     target: { value: '192.0.2.31' },
   });

@@ -29,6 +29,8 @@ type operationalRig struct {
 	peer                *sshfixture.Server
 	profile, activation string
 	device              DeviceInput
+	root                string
+	provider            *vault.Vault
 }
 
 func TestOperationalBindingInventoryTrustAndRead(t *testing.T) {
@@ -40,7 +42,7 @@ func TestOperationalBindingInventoryTrustAndRead(t *testing.T) {
 	r.assertChangedPinFailsBeforePassword()
 }
 
-func newOperationalRig(t *testing.T) *operationalRig {
+func newOperationalRig(t *testing.T, remotes ...equipment.Remote) *operationalRig {
 	t.Helper()
 	root := t.TempDir()
 	t.Logf("synthetic root: %s; cleanup: t.TempDir after server cancellation", root)
@@ -64,7 +66,11 @@ func newOperationalRig(t *testing.T) *operationalRig {
 		t.Fatal(e)
 	}
 	provider := vault.New(func() ([]byte, error) { return vault.ReadKey(key) })
-	svc := equipment.New(auth, st, provider, routerssh.Adapter{}, modalIDs{}, time.Now)
+	remote := equipment.Remote(routerssh.Adapter{})
+	if len(remotes) > 0 {
+		remote = remotes[0]
+	}
+	svc := equipment.New(auth, st, provider, remote, modalIDs{}, time.Now)
 	t.Cleanup(svc.Close)
 	server, e := ipc.ListenAccess(filepath.Join(root, "runtime"), uid, auth, foundation.Status{Instance: "modal"}, nil)
 	if e != nil {
@@ -81,7 +87,7 @@ func newOperationalRig(t *testing.T) *operationalRig {
 		}
 	})
 	app := New(ipc.NewAccountClient(filepath.Join(root, "runtime"), filepath.Join(root, "client"), uid))
-	return &operationalRig{t: t, ctx: ctx, st: st, app: app}
+	return &operationalRig{t: t, ctx: ctx, st: st, app: app, root: root, provider: provider}
 }
 
 func (r *operationalRig) enrollDevice() {
@@ -109,11 +115,11 @@ func (r *operationalRig) enrollDevice() {
 		ID: uuid.NewString(), Operation: uuid.NewString(), Name: "Saved router", Address: "127.0.0.1",
 		Port: peer.Port(), Transport: string(equipment.TransportSSH), User: "reader", Secret: sshfixture.Password,
 	}
-	saved := app.SaveEquipment(r.profile, r.activation, r.device)
+	saved := app.equipmentCall("inventory.enroll", r.profile, r.activation, makeDeviceInput(r.device))
 	if saved.Code != "OK" || saved.Data.Device == nil {
 		t.Fatal("enroll", saved.Code)
 	}
-	again := app.SaveEquipment(r.profile, r.activation, r.device)
+	again := app.equipmentCall("inventory.enroll", r.profile, r.activation, makeDeviceInput(r.device))
 	if again.Code != "OK" || again.Data.Device.ID != saved.Data.Device.ID {
 		t.Fatal("enroll replay")
 	}
@@ -149,17 +155,16 @@ func (r *operationalRig) acceptTrustWithoutPassword() {
 	if r.peer.Auth.Load() != 0 {
 		t.Fatal("inspection authenticated")
 	}
-	acceptID := uuid.NewString()
-	accepted := app.ConfirmTrust(r.profile, r.activation, d.ID, acceptID, candidate.ID, candidate.Fingerprint, 1)
-	if accepted.Code != "OK" || accepted.Data.Device.TrustAcceptance == nil {
-		t.Fatal("acceptance", accepted.Code)
-	}
-	if app.ConfirmTrust(r.profile, r.activation, d.ID, acceptID, candidate.ID, candidate.Fingerprint, 1).Code != "OK" {
-		t.Fatal("acceptance replay")
+
+	accepted := app.GetEquipment(r.profile, r.activation, d.ID)
+	if accepted.Code != "OK" || accepted.Data.Device.TrustAcceptance == nil ||
+		accepted.Data.Device.TrustAcceptance.Mode != "automatic-tofu" || accepted.Data.Device.Fingerprint != candidate.Fingerprint {
+		t.Fatal("automatic acceptance missing", accepted.Code)
 	}
 	if r.peer.Auth.Load() != 0 {
-		t.Fatal("acceptance sent password")
+		t.Fatal("inspection sent password")
 	}
+
 }
 
 // queryAndRerun reads the device, then repeats the same operation. Replay is

@@ -1,3 +1,4 @@
+import { RadioCodes } from '../features/equipment/radio-contract';
 import { operationalAccount } from '../shared/testing/operational-account-fixture';
 import { findDevicePrimary, openDeviceSheet } from './test-navigation';
 import {
@@ -192,7 +193,7 @@ it('successful query automatically opens full result without a second action', a
   ).not.toBeInTheDocument();
 });
 
-it('save guides explicit acceptance and query, then cancel/failure preserve the saved device', async () => {
+it('registration returns the read identity and later failed refresh preserves saved data', async () => {
   let current: Device = { ...device, fingerprint: '', result: undefined };
   let saved = false;
   let sentSecret = '';
@@ -205,57 +206,53 @@ it('save guides explicit acceptance and query, then cancel/failure preserve the 
     },
   }));
   vi.mocked(api.get).mockImplementation(async () => result(current));
+  const job = {
+    id: 'registration',
+    device_id: device.id,
+    kind: 'inventory.register',
+    state: 'RUNNING',
+    code: 'OK',
+  };
   vi.mocked(api.save).mockImplementation(async (_p, _a, input) => {
     sentSecret = input.secret;
-    saved = true;
-    return result(current);
+    return { ...result(current), data: { ...result(current).data!, job } };
   });
-  vi.mocked(api.inspect).mockResolvedValue({
+  vi.mocked(api.registrationStatus).mockImplementation(async () => {
+    saved = true;
+    current = {
+      ...device,
+      fingerprint: 'SHA256:observed',
+      trust_origin: 'automatic-tofu',
+      result: { ...device.result!, observed_at: new Date().toISOString() },
+    };
+    return {
+      ...result(current),
+      data: { ...result(current).data!, job: { ...job, state: 'SUCCEEDED' } },
+    };
+  });
+  vi.mocked(api.start).mockImplementation(async () => ({
     ...result(current),
     data: {
       ...result(current).data!,
       job: {
-        id: 'inspect',
-        device_id: 'router',
-        kind: 'trust.inspect',
+        id: 'read',
+        device_id: device.id,
+        kind: 'device.query-start',
         state: 'SUCCEEDED',
         code: 'OK',
-        fingerprint: 'SHA256:observed',
       },
     },
-  });
-  vi.mocked(api.confirm).mockImplementation(async () => {
-    current = { ...current, fingerprint: 'SHA256:observed', revision: 2 };
-    return result(current);
-  });
-  vi.mocked(api.start).mockImplementation(async () => {
-    current = { ...current, result: device.result };
-    return {
-      ...result(current),
-      data: {
-        ...result(current).data!,
-        job: {
-          id: 'read',
-          device_id: 'router',
-          kind: 'device.query-start',
-          state: 'SUCCEEDED',
-          code: 'OK',
-        },
-      },
-    };
-  });
+  }));
   const view = render(
     <Equipment profile="enroll" activation="a" connected addPage />,
   );
   await screen.findByRole('heading', { name: 'Adicionar equipamento' });
+  expect(screen.queryByLabelText('Nome')).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('Papel do equipamento'), {
     target: { value: 'other' },
   });
   fireEvent.change(screen.getByLabelText('Credencial de consulta'), {
     target: { value: '__inline__' },
-  });
-  fireEvent.change(screen.getByLabelText('Nome'), {
-    target: { value: 'Saved router' },
   });
   fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
     target: { value: '127.0.0.1' },
@@ -266,26 +263,14 @@ it('save guides explicit acceptance and query, then cancel/failure preserve the 
   fireEvent.change(screen.getByLabelText('Senha', { exact: true }), {
     target: { value: '  exact synthetic secret  ' },
   });
-  fireEvent.click(screen.getByRole('button', { name: /^Salvar$/ }));
-  await waitFor(() => expect(api.save).toHaveBeenCalledOnce());
-  expect(api.inspect).not.toHaveBeenCalled();
-  expect(api.start).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+  expect(await screen.findByText('Conectando em 127.0.0.1…')).toBeVisible();
+  fireEvent.click(await screen.findByRole('button', { name: 'Ver na lista' }));
   await openDeviceSheet('Saved router');
-  fireEvent.click(
-    await screen.findByRole('button', { name: 'Verificar identidade' }),
-  );
-  const trust = await screen.findByRole('dialog', { name: 'Primeira conexão' });
-  expect(api.save).toHaveBeenCalledTimes(1);
+  expect(api.inspect).not.toHaveBeenCalled();
+  expect(api.confirm).not.toHaveBeenCalled();
   expect(api.start).not.toHaveBeenCalled();
-  expect(
-    screen.queryByLabelText('Origem da conferência'),
-  ).not.toBeInTheDocument();
-  expect(trust.querySelectorAll('button.primary')).toHaveLength(1);
-  fireEvent.click(
-    within(trust).getByRole('button', {
-      name: 'Confiar neste equipamento e conectar',
-    }),
-  );
+  fireEvent.click(await findDevicePrimary(view.container, device.name));
   fireEvent.click(
     await screen.findByRole('tab', { name: 'Interfaces e saúde' }),
   );
@@ -305,62 +290,43 @@ it('save guides explicit acceptance and query, then cancel/failure preserve the 
   expect(screen.getByText('ether1')).toBeVisible();
   expect(api.save).toHaveBeenCalledTimes(1);
 });
-it('cancel first acceptance never authenticates and leaves a resumable saved device', async () => {
-  const fresh = { ...device, fingerprint: '', result: undefined };
-  vi.mocked(api.list).mockResolvedValue(result(fresh));
-  vi.mocked(api.get).mockResolvedValue(result(fresh));
-  vi.mocked(api.inspect).mockResolvedValue({
-    ...result(fresh),
+it('declining a failed registration keeps the draft without confirmation or a second attempt', async () => {
+  vi.mocked(api.list).mockResolvedValue({
+    ...result(),
+    data: { ...result().data!, devices: [] },
+  });
+  vi.mocked(api.save).mockResolvedValue({
+    ...result(),
     data: {
-      ...result(fresh).data!,
+      ...result().data!,
       job: {
-        id: 'candidate-cancel',
-        device_id: 'router',
-        kind: 'trust.inspect',
-        state: 'SUCCEEDED',
-        code: 'OK',
-        fingerprint: 'SHA256:candidate',
+        id: 'failed-register',
+        device_id: device.id,
+        kind: 'inventory.register',
+        state: 'FAILED',
+        code: RadioCodes.REMOTE_AUTH_FAILED,
       },
     },
   });
-  vi.mocked(api.cancel).mockResolvedValue({
-    ...result(fresh),
-    data: {
-      ...result(fresh).data!,
-      job: {
-        id: 'candidate-cancel',
-        device_id: 'router',
-        kind: 'trust.inspect',
-        state: 'CANCELLED',
-        code: 'CANCELLED',
-      },
-    },
+  render(
+    <Equipment profile="decline-first" activation="a" connected addPage />,
+  );
+  await screen.findByRole('heading', { name: 'Adicionar equipamento' });
+  fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
+    target: { value: '127.0.0.1' },
   });
-  render(<Equipment profile="cancel-first" activation="a" connected />);
-  await openDeviceSheet('Saved router');
-  fireEvent.click(
-    screen.getByRole('button', { name: /^(Conectar|Atualizar)$/ }),
-  );
-  fireEvent.click(
-    within(
-      await screen.findByRole('dialog', { name: 'Primeira conexão' }),
-    ).getByRole('button', { name: 'Cancelar' }),
-  );
-  await waitFor(() =>
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-  );
-  expect(api.cancel).toHaveBeenCalledWith(
-    'cancel-first',
-    'a',
-    'candidate-cancel',
-  );
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+  const dialog = await screen.findByRole('dialog', {
+    name: 'Não foi possível entrar em 127.0.0.1',
+  });
+  expect(within(dialog).getByText('Cadastrar mesmo assim?')).toBeVisible();
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Não' }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(screen.getByLabelText('IP de gerenciamento')).toHaveValue('127.0.0.1');
+  expect(api.save).toHaveBeenCalledTimes(1);
+  expect(api.confirmRegistration).not.toHaveBeenCalled();
   expect(api.start).not.toHaveBeenCalled();
-  expect(api.confirm).not.toHaveBeenCalled();
-  fireEvent.click(
-    screen.getByRole('button', { name: /^(Conectar|Atualizar)$/ }),
-  );
-  await screen.findByRole('dialog', { name: 'Primeira conexão' });
-  expect(api.save).not.toHaveBeenCalled();
+  expect(api.inspect).not.toHaveBeenCalled();
 });
 it('overview and list navigation retain saved data while Back exposes the list', async () => {
   vi.mocked(access.status).mockResolvedValue(operationalAccount());

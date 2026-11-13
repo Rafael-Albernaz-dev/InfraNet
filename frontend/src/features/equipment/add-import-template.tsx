@@ -3,7 +3,10 @@ export function ImportTemplateFields() {
   return (
     <section className="import-card">
       <h2>Campos do modelo</h2>
-      <p className="muted">No JSON, uma lista de objetos com estes campos.</p>
+      <p className="muted">
+        Não há campo Nome: o nome vem da identidade lida de cada equipamento. No
+        JSON, uma lista de objetos com estes campos.
+      </p>
       <DataTable plain>
         <thead>
           <tr>
@@ -14,11 +17,10 @@ export function ImportTemplateFields() {
         </thead>
         <tbody>
           {[
-            ['Nome', 'Sim', 'AP-LESTE-1'],
             ['IP', 'Sim', '192.0.2.31'],
             ['Porta', 'Não, padrão 22', '22'],
             ['Papel', 'Sim', 'AP'],
-            ['Bloco', 'Não', 'Torre Leste'],
+            ['Grupo', 'Não', 'Região Norte › Torre Norte'],
             ['Credencial', 'Não', 'leitura-radio'],
           ].map(([name, required, example]) => (
             <tr key={name}>

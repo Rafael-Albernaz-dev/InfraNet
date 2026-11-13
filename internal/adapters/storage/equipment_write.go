@@ -31,6 +31,9 @@ ON CONFLICT(singleton) DO UPDATE SET envelope=excluded.envelope`, current.Wrappe
 	if c := persistEquipmentDefaults(ctx, tx, old, current); c != equipment.OK {
 		return c
 	}
+	if c := persistEquipmentGroups(ctx, tx, old.Groups, current.Groups); c != equipment.OK {
+		return c
+	}
 	if c := persistEquipmentDevices(ctx, tx, old.Devices, current.Devices); c != equipment.OK {
 		return c
 	}
@@ -181,13 +184,14 @@ func persistEquipmentDevice(ctx context.Context, tx *sql.Tx, d equipment.Device)
 		databaseRole = equipment.RoleOther
 	}
 	_, err := tx.ExecContext(ctx, `INSERT INTO devices(id,name,address,port,transport,credential_id,revision,active,
- fingerprint,trust_origin,observation,trust_acceptance,last_attempt,role,block) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
- ON CONFLICT(id) DO UPDATE SET name=excluded.name,address=excluded.address,port=excluded.port,
+ fingerprint,trust_origin,observation,trust_acceptance,last_attempt,role,block,group_id,identity) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+ ON CONFLICT(id) DO UPDATE SET address=excluded.address,port=excluded.port,
  transport=excluded.transport,credential_id=excluded.credential_id,revision=excluded.revision,active=excluded.active,
  fingerprint=excluded.fingerprint,trust_origin=excluded.trust_origin,observation=excluded.observation,
- trust_acceptance=excluded.trust_acceptance,last_attempt=excluded.last_attempt,role=excluded.role,block=excluded.block`,
+ trust_acceptance=excluded.trust_acceptance,last_attempt=excluded.last_attempt,role=excluded.role,
+ group_id=excluded.group_id,identity=excluded.identity`,
 		d.ID, d.Name, d.Address, d.Port, d.Transport, v.credential, d.Revision, d.Active, d.Fingerprint, d.TrustOrigin,
-		v.observation, v.acceptance, v.attempt, databaseRole, d.Block)
+		v.observation, v.acceptance, v.attempt, databaseRole, d.Block, d.GroupID, d.Identity)
 	if err != nil {
 		return equipment.Unavailable
 	}

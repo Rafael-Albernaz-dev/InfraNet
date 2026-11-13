@@ -37,7 +37,7 @@ func (a *App) ChooseInventoryImport(profile, activation, block, credential strin
 	if err != nil {
 		return InventoryImportResult{EquipmentResult: EquipmentResult{Code: "IMPORT_FILE_INVALID"}}
 	}
-	input := &equipment.ImportInput{Filename: filepath.Base(name), Data: data, DefaultBlock: block, DefaultCredential: credential}
+	input := &equipment.ImportInput{Filename: filepath.Base(name), Data: data, DefaultGroup: block, DefaultCredential: credential}
 	result := a.equipmentCall("inventory.import-preview", profile, activation, ipc.EquipmentInput{Import: input})
 	return InventoryImportResult{EquipmentResult: result, Filename: filepath.Base(name)}
 }
@@ -73,4 +73,17 @@ func (a *App) ReviewInventoryImport(profile, activation string, rows []equipment
 func (a *App) ConfirmInventoryImport(profile, activation, operation string, rows []equipment.ImportRow) EquipmentResult {
 	return a.equipmentCall("inventory.import-confirm", profile, activation,
 		ipc.EquipmentInput{Operation: operation, Import: &equipment.ImportInput{Rows: rows}})
+}
+
+func (a *App) InventoryImportStatus(profile, activation string) EquipmentResult {
+	return a.equipmentCall("inventory.import-status", profile, activation, ipc.EquipmentInput{})
+}
+func (a *App) CancelInventoryImport(profile, activation string) EquipmentResult {
+	return a.equipmentCall("inventory.import-cancel", profile, activation, ipc.EquipmentInput{})
+}
+func (a *App) RegistrationStatus(profile, activation, job string) EquipmentResult {
+	return a.equipmentCall("inventory.register-status", profile, activation, ipc.EquipmentInput{JobID: job})
+}
+func (a *App) ConfirmRegistration(profile, activation, job string) EquipmentResult {
+	return a.equipmentCall("inventory.register-confirm", profile, activation, ipc.EquipmentInput{JobID: job})
 }

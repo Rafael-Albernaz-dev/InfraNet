@@ -29,6 +29,7 @@ function setup() {
   const state = {
     busy: false,
     surfaceRef: { current: 0 },
+    groups: [{ id: 'tower', parent_id: '', name: 'Torre fixture' }],
     credentials: [
       { id: 'cred', alias: 'leitura', user: 'fixture', revision: 1, links: 0 },
     ],
@@ -59,8 +60,9 @@ describe('Adicionar equipamentos', () => {
   it('uses the role default and guards unsaved navigation', () => {
     const s = setup();
     expect(screen.getByLabelText('Credencial de consulta')).toHaveValue('cred');
-    fireEvent.change(screen.getByLabelText('Nome'), {
-      target: { value: 'Novo AP' },
+    expect(screen.queryByLabelText('Nome')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('IP de gerenciamento'), {
+      target: { value: '192.0.2.42' },
     });
     const navigate = vi.fn();
     act(() => s.navigate(navigate));
@@ -113,7 +115,9 @@ describe('Adicionar equipamentos', () => {
       name: 'Prévia da importação',
     });
     expect(
-      screen.getByRole('button', { name: /Cadastrar 0 equipamentos/ }),
+      screen.getByRole('button', {
+        name: /Cadastrar e conectar 0 equipamentos/,
+      }),
     ).toBeDisabled();
     fireEvent.click(within(table).getByRole('button', { name: 'Ignorar' }));
     await waitFor(() =>
@@ -176,13 +180,15 @@ it('sends corrected and selected rows back for service review', async () => {
   fireEvent.click(within(dialog).getByRole('button', { name: 'Salvar linha' }));
   await waitFor(() =>
     expect(
-      screen.getByRole('button', { name: 'Cadastrar 2 equipamentos' }),
+      screen.getByRole('button', {
+        name: 'Cadastrar e conectar 2 equipamentos',
+      }),
     ).toBeEnabled(),
   );
   fireEvent.click(within(table).getByLabelText('Selecionar linha 2'));
-  fireEvent.click(screen.getByRole('button', { name: 'Definir bloco' }));
-  const bulk = screen.getByRole('dialog', { name: 'Definir bloco' });
-  fireEvent.change(within(bulk).getByLabelText('Bloco'), {
+  fireEvent.click(screen.getByRole('button', { name: 'Definir grupo' }));
+  const bulk = screen.getByRole('dialog', { name: 'Definir grupo' });
+  fireEvent.change(within(bulk).getByLabelText('Grupo'), {
     target: { value: 'Torre fixture' },
   });
   fireEvent.click(within(bulk).getByRole('button', { name: 'Aplicar' }));
@@ -191,7 +197,7 @@ it('sends corrected and selected rows back for service review', async () => {
       'company',
       'activation',
       expect.arrayContaining([
-        expect.objectContaining({ line: 2, block: 'Torre fixture' }),
+        expect.objectContaining({ line: 2, group: 'Torre fixture' }),
       ]),
     ),
   );

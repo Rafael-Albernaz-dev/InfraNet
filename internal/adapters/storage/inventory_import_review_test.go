@@ -2,11 +2,10 @@ package storage
 
 import (
 	"context"
-	"testing"
-
 	"github.com/google/uuid"
 	"infradesktop/internal/modules/access"
 	"infradesktop/internal/modules/equipment"
+	"testing"
 )
 
 func addImportCredential(t *testing.T, j *journey, alias string) string {
@@ -18,7 +17,6 @@ func addImportCredential(t *testing.T, j *journey, alias string) string {
 	equipmentCall(t, s, q, equipment.OK)
 	return q.ID
 }
-
 func TestImportReviewCredentialAmbiguityAndStatuses(t *testing.T) {
 	j, s := importFixture(t)
 	addImportCredential(t, j, "repetida")
@@ -48,7 +46,6 @@ func TestImportReviewCredentialAmbiguityAndStatuses(t *testing.T) {
 		t.Fatal("credential review differs", got[0].Reason, got[1].Reason)
 	}
 }
-
 func TestImportDoesNotCrossCompanyActivation(t *testing.T) {
 	j, s := importFixture(t)
 	j.create(companyY, "Y", access.OK)
@@ -60,6 +57,7 @@ func TestImportDoesNotCrossCompanyActivation(t *testing.T) {
 	if code != equipment.Changed {
 		t.Fatal("old scope accepted", code)
 	}
+	seedImportCredential(t, j, s)
 	current := equipmentScope(j)
 	current.Op, current.Operation, current.Import = old.Op, uuid.NewString(), old.Import
 	importCall(t, s, current, equipment.OK)
@@ -73,11 +71,10 @@ func TestImportDoesNotCrossCompanyActivation(t *testing.T) {
 		t.Fatal("foreign write", code)
 	}
 }
-
-func TestImportDatabaseFailureRollsBackWholeBatch(t *testing.T) {
+func TestImportDatabaseFailureDiscardsOnlyFailedLine(t *testing.T) {
 	j, s := importFixture(t)
 	_, err := j.st.unit.Exec(`CREATE TRIGGER fail_import_fixture BEFORE INSERT ON devices
-		WHEN NEW.name='Falha sintetica' BEGIN SELECT RAISE(ABORT, 'fixture'); END`)
+		WHEN NEW.address='192.0.2.2' BEGIN SELECT RAISE(ABORT, 'fixture'); END`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,13 +84,17 @@ func TestImportDatabaseFailureRollsBackWholeBatch(t *testing.T) {
 		{Line: 1, Name: "Bom", Address: "192.0.2.1", Port: "22", Role: "AP"},
 		{Line: 2, Name: "Falha sintetica", Address: "192.0.2.2", Port: "22", Role: "AP"},
 	}}
-	importCall(t, s, q, equipment.Unavailable)
+	finished := importCall(t, s, q, equipment.OK)
+	if finished.ImportReceipt == nil ||
+		finished.ImportReceipt.Created != 1 ||
+		finished.ImportItems[1].Reason != string(equipment.Unavailable) {
+		t.Fatal(finished)
+	}
 	st, code := j.st.ReadEquipment(context.Background(), companyX)
-	if code != equipment.OK || len(st.Devices) != 0 || len(st.Operations) != 0 {
+	if code != equipment.OK || len(st.Devices) != 1 || st.Devices[0].Address != "192.0.2.1" || len(st.Operations) != 2 {
 		t.Fatal("partial write", code)
 	}
 }
-
 func TestImportDefaultPortAndCorrectedRowsRevalidated(t *testing.T) {
 	j, s := importFixture(t)
 	q := equipmentScope(j)
@@ -115,7 +116,6 @@ func TestImportDefaultPortAndCorrectedRowsRevalidated(t *testing.T) {
 		t.Fatal("default port", code, st.Devices)
 	}
 }
-
 func TestImportUsesRoleDefaultCredentialWhenBlank(t *testing.T) {
 	j, s := importFixture(t)
 	credential := addImportCredential(t, j, "unica")

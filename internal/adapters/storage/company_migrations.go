@@ -23,6 +23,7 @@ var (
 	companyRadioJourneySchema      = companyMigration("013_radio_journey.sql")
 	companyInventoryBlockSchema    = companyMigration("014_inventory_block.sql")
 	companyTablePreferencesSchema  = companyMigration("015_table_preferences.sql")
+	companyGroupsIdentitySchema    = companyMigration("016_groups_identity.sql")
 )
 
 // companyMigration reads one company migration from the single migrations embed.
@@ -38,7 +39,7 @@ func companySchemas() []string {
 	return []string{companySchema, companyBrandSchema, companyEquipmentSchema, companyOperationalSchema,
 		companyPPPoESchema, companyPPDiagnosticSchema, companySessionsOfflineSchema, companySessionContextSchema,
 		companyDeviceMonitoringSchema, companyEquipmentInsightsSchema, companyContextPeaksSchema,
-		companyRadioSchema, companyRadioJourneySchema, companyInventoryBlockSchema, companyTablePreferencesSchema}
+		companyRadioSchema, companyRadioJourneySchema, companyInventoryBlockSchema, companyTablePreferencesSchema, companyGroupsIdentitySchema}
 }
 
 func applyCompanyMigrations(db *sql.DB, current int, schemas []string) error {
@@ -58,6 +59,9 @@ func applyCompanyMigration(db *sql.DB, version int, source string) error {
 	defer tx.Rollback()
 	if _, err = tx.Exec(source); err == nil && version == 7 {
 		err = migrateReadReceipts(tx)
+	}
+	if err == nil && version == 16 {
+		err = migrateLegacyGroups(tx)
 	}
 	if err == nil {
 		_, err = tx.Exec("INSERT INTO schema_migrations VALUES(?,?)", version, checksum([]byte(source)))

@@ -6,6 +6,18 @@ import { equipmentReadBlocked } from './equipment-query-policy';
 import { DataBlock } from '../../shared/ui/DataBlock';
 
 export function SummaryTab({ p }: { p: Props }) {
+  if (!p.selected.fingerprint && !p.selected.result)
+    return (
+      <DataBlock
+        title="Identidade e sistema"
+        source="SSH"
+        data={{
+          state: 'empty',
+          message:
+            'O app tenta sozinho quando o equipamento responder. Ainda sem leitura.',
+        }}
+      />
+    );
   return p.selected.result ? (
     <EquipmentReading
       device={p.selected}

@@ -23,6 +23,7 @@ type ReadTarget struct {
 	Stamp string
 }
 type Reading struct {
+	Identity     string
 	CPU, Clients int
 	Uptime       time.Duration
 }

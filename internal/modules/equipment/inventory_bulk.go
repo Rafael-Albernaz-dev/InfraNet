@@ -5,6 +5,7 @@ type BulkItem struct {
 	Revision uint64 `json:"revision"`
 }
 type BulkUpdate struct {
+	GroupID      *string    `json:"group_id,omitempty"`
 	Items        []BulkItem `json:"items"`
 	Block        *string    `json:"block,omitempty"`
 	CredentialID *string    `json:"credential_id,omitempty"`

@@ -52,7 +52,7 @@ func (r runningBlockRemote) Query(
 	return &equipment.Observation{Source: "synthetic"}, equipment.OK
 }
 
-func TestBlockOnlyLeavesRunningQueryAbleToFinish(t *testing.T) {
+func TestGroupOnlyLeavesRunningQueryAbleToFinish(t *testing.T) {
 	for _, mode := range []string{"edit", "bulk"} {
 		t.Run(mode, func(t *testing.T) {
 			id, credential := fixtureUUID(), fixtureUUID()
@@ -60,6 +60,7 @@ func TestBlockOnlyLeavesRunningQueryAbleToFinish(t *testing.T) {
 				Transport: equipment.TransportSSH, Role: equipment.RoleOther, Revision: 1, Active: true,
 				Fingerprint: "synthetic", CredentialID: credential}
 			store := &runningBlockStore{state: equipment.State{Company: "company", WrappedKey: []byte{1},
+				Groups:  []equipment.Group{{ID: "00000000-0000-4000-8000-000000000009", Name: "Torre sintetica"}},
 				Devices: []equipment.Device{device}, Credentials: []equipment.SealedCredential{
 					{Metadata: equipment.Credential{ID: credential, Revision: 1}},
 				}}}
@@ -82,11 +83,11 @@ func TestBlockOnlyLeavesRunningQueryAbleToFinish(t *testing.T) {
 				update.Transport = device.Transport
 				update.Role = device.Role
 				update.CredentialID = credential
-				update.Block = "Torre sintetica"
+				update.GroupID = "00000000-0000-4000-8000-000000000009"
 			} else {
-				block := "Torre sintetica"
+				group := "00000000-0000-4000-8000-000000000009"
 				update.Op = "inventory.bulk-update"
-				update.Bulk = &equipment.BulkUpdate{Block: &block, Items: []equipment.BulkItem{{ID: id, Revision: 1}}}
+				update.Bulk = &equipment.BulkUpdate{GroupID: &group, Items: []equipment.BulkItem{{ID: id, Revision: 1}}}
 			}
 			_, code = service.Handle(context.Background(), update)
 			close(remote.release)
@@ -102,7 +103,8 @@ func TestBlockOnlyLeavesRunningQueryAbleToFinish(t *testing.T) {
 				t.Fatalf("query cancelled or failed: %s %s", state, result)
 			}
 			saved, _ := store.ReadEquipment(context.Background(), "company")
-			if saved.Devices[0].Revision != 1 || saved.Devices[0].Block != "Torre sintetica" || saved.Devices[0].Result == nil {
+			if saved.Devices[0].Revision != 1 || saved.Devices[0].GroupID != "00000000-0000-4000-8000-000000000009" ||
+				saved.Devices[0].Result == nil {
 				t.Fatal("block or result lost", saved.Devices[0])
 			}
 		})

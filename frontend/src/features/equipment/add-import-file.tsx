@@ -1,3 +1,4 @@
+import type { Group } from './groups';
 import { ImportDefaults } from './add-import-defaults';
 import type { useImportState } from './add-import-state';
 import { ImportTemplateFields } from './add-import-template';
@@ -8,18 +9,21 @@ import { Button } from '../../shared/ui/Button';
 export function ImportSteps({ step }: { step: number }) {
   return (
     <div className="import-steps">
-      {['1. Arquivo', '2. Prévia', '3. Concluído'].map((label, i) => (
-        <span key={label}>
-          {i > 0 && <span aria-hidden="true">› </span>}
-          {step === i + 1 ? <b>{label}</b> : label}
-        </span>
-      ))}
+      {['1. Arquivo', '2. Prévia', '3. Conectando', '4. Concluído'].map(
+        (label, i) => (
+          <span key={label}>
+            {i > 0 && <span aria-hidden="true">› </span>}
+            {step === i + 1 ? <b>{label}</b> : label}
+          </span>
+        ),
+      )}
     </div>
   );
 }
 type ImportFileProps = {
   state: ReturnType<typeof useImportState>;
   credentials: Credential[];
+  groups: Group[];
 };
 function ImportFilePicker(p: ImportFileProps) {
   const s = p.state;
@@ -28,7 +32,7 @@ function ImportFilePicker(p: ImportFileProps) {
       <h2>Arquivo</h2>
       <p>
         Envie um arquivo <b>.xlsx</b>, <b>.csv</b> ou <b>.json</b>, com até 500
-        equipamentos. Nada é gravado antes da sua confirmação.
+        equipamentos. Nada é gravado nem consultado antes da sua confirmação.
       </p>
       <div className="actions">
         <Button
