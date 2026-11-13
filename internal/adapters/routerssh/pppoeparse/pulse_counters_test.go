@@ -38,7 +38,8 @@ func TestPageCountersAreBoundedAndGoldenPreservesExactBytes(t *testing.T) {
 		strings.Contains(PulseCountersCommand,
 			"monitor") ||
 		strings.Contains(PulseCountersCommand,
-			"find where name") {
+			"find where name") ||
+		!strings.Contains(PulseCountersCommand, "on-error={}}") {
 		t.Fatal("quadratic or per-row monitor in background")
 	}
 }

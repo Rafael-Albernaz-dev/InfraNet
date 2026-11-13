@@ -102,25 +102,33 @@ func (s *liveSession) Read(ctx context.Context, t pulse.ReadTarget) (pulse.Readi
 	}
 	reading.Started, reading.At = started, time.Now()
 	if t.Role == equipment.RoleConcentrator {
-		output, fault = s.runLive(ctx, pppoeparse.PPPoECommand, equipment.PPWireBytes)
-		if fault != pulse.ReadOK {
-			return pulse.Reading{}, fault
-		}
-		observation, code := pppoeparse.ParsePPPoE(output)
-		if code != equipment.OK || observation.Quality.Status != "complete" {
-			return pulse.Reading{}, pulse.ReadLost
-		}
-		output, fault = s.runLive(ctx, pppoeparse.PulseCountersCommand, equipment.PPWireBytes)
-		if fault != pulse.ReadOK {
-			return pulse.Reading{}, fault
-		}
-		tunnels, code := pppoeparse.ParsePulseCounters(output)
-		if code != equipment.OK {
-			return pulse.Reading{}, pulse.ReadLost
-		}
-		reading.Observation, reading.Tunnels, reading.At = observation, tunnels, time.Now()
+		reading.Observation, reading.Tunnels = s.readSessions(ctx)
+		reading.At = time.Now()
 	}
 	return reading, pulse.ReadOK
+}
+
+// readSessions never discards the device reading of the same cycle: a failed list
+// returns no observation (the caller records a collection gap) and failed counters
+// return no tunnels (averages wait for the next cycle).
+func (s *liveSession) readSessions(ctx context.Context) (*equipment.PPObservation, []equipment.PPTunnel) {
+	output, fault := s.runLive(ctx, pppoeparse.PPPoECommand, equipment.PPWireBytes)
+	if fault != pulse.ReadOK {
+		return nil, nil
+	}
+	observation, code := pppoeparse.ParsePPPoE(output)
+	if code != equipment.OK || observation.Quality.Status != "complete" {
+		return nil, nil
+	}
+	output, fault = s.runLive(ctx, pppoeparse.PulseCountersCommand, equipment.PPWireBytes)
+	if fault != pulse.ReadOK {
+		return observation, nil
+	}
+	tunnels, code := pppoeparse.ParsePulseCounters(output)
+	if code != equipment.OK {
+		return observation, nil
+	}
+	return observation, tunnels
 }
 func (s *liveSession) runLive(ctx context.Context, command string, limit int) (string, pulse.ReadFault) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)

@@ -1,5 +1,6 @@
 import { readingAge } from '../equipment/equipment-reading-format';
 import { CSVNotice } from './pppoe-csv-notice';
+import { ContextCounts } from './pppoe-context';
 import { PPPoEHeader, PPPoEStatusBanners } from './pppoe-header';
 import { observationReadingStatus } from './pppoe-observation-state';
 import { PPPoETabContent } from './pppoe-observation-view';
@@ -81,6 +82,20 @@ export function PPPoEWorkspace(p: WorkspaceProps) {
       <PPPoEStatusBanners s={s} />
       <ObservationBlock {...p} />
       {s.tab === 'sessions' && !s.current && <CSVNotice />}
+      {/* Stays here until L-PPP moves it to Servidores PPPoE (TELAS §4.2). */}
+      {s.tab === 'sessions' && s.current && !s.current.context_omitted && (
+        <>
+          <div className="sp10" />
+          <ContextCounts
+            key={s.current.observation_id}
+            profile={s.profile}
+            activation={s.activation}
+            device={s.device.id}
+            observation={s.current.observation_id}
+            at={s.current.provenance.ended_at}
+          />
+        </>
+      )}
     </section>
   );
 }

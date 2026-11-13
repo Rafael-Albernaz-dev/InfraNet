@@ -60,7 +60,7 @@ export function PPPoEObsActions(p: {
     <>
       <div className="bar">
         <span className="muted">
-          <span>{online} ONLINE</span> · <span>{offline} OFFLINE</span> ·
+          <span>{online} ONLINE</span> · <span>{offline} OFFLINE</span> ·{' '}
           <span className="st-on">Ao vivo</span> · leitura de{' '}
           {formatDate(current.provenance.ended_at)}
         </span>

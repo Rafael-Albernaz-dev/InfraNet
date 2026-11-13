@@ -169,3 +169,35 @@ func TestLiveReadsRouterOSUptimeWithAnyLineEnding(t *testing.T) {
 func validLiveFixtureReading(reading pulse.Reading, fault pulse.ReadFault) bool {
 	return fault == pulse.ReadOK && reading.Identity == "CCR-RENAMED"
 }
+
+func TestLiveConcentratorKeepsDeviceReadingWhenSessionsFail(t *testing.T) {
+	for name, fail := range map[string]string{"lista": pppoeparse.PPPoECommand, "contadores": pppoeparse.PulseCountersCommand} {
+		t.Run(name, func(t *testing.T) {
+			_, d := livePeer(t, sshfixture.Config{Command: func(cmd string) (string, bool) {
+				switch {
+				case cmd == fail:
+					return "garbage\n", true
+				case cmd == pppoeparse.PPPoECommand:
+					return "H\t1\t0\t7.14.3\t1h\nZ\t0\tcomplete\t1h\n", true
+				case cmd == pppoeparse.PulseCountersCommand:
+					return "Z\t0\n", true
+				case strings.HasPrefix(cmd, `:put ("L\t1\t"`):
+					return "L\t1\t1h\t42\t7\tCCR\r\n", true
+				}
+				return "", false
+			}})
+			session, fault := routerssh.OpenLive(context.Background(), d, "reader", sshfixture.Password)
+			if fault != pulse.ReadOK {
+				t.Fatal(fault)
+			}
+			defer session.Close()
+			reading, fault := session.Read(context.Background(), pulse.ReadTarget{Role: equipment.RoleConcentrator})
+			if fault != pulse.ReadOK || reading.CPU != 42 || reading.Clients != 7 || reading.Tunnels != nil {
+				t.Fatal("device reading must survive a failed session read", fault, reading)
+			}
+			if (fail == pppoeparse.PPPoECommand) != (reading.Observation == nil) {
+				t.Fatal("only a failed list drops the observation", reading.Observation)
+			}
+		})
+	}
+}

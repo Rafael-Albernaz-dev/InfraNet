@@ -32,12 +32,14 @@ func PresenceDue(previous, current DeviceStatus, saved, now time.Time) bool {
 	return current.State != Unknown && (PresenceChanged(previous, current) || now.Sub(saved) >= time.Minute)
 }
 
+// CollectionGap opens a gap only after more than 2 min without a session list:
+// one lost 60 s cycle is not a blind interval.
 func CollectionGap(last, failed, now time.Time) time.Time {
+	if last.IsZero() || now.Sub(last) <= 2*time.Minute {
+		return time.Time{}
+	}
 	if !failed.IsZero() {
 		return failed
 	}
-	if !last.IsZero() && now.Sub(last) > 2*time.Minute {
-		return last
-	}
-	return time.Time{}
+	return last
 }

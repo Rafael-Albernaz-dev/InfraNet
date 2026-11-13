@@ -6,11 +6,14 @@ import (
 	"strings"
 )
 
-// One linear scan; no monitor and no name lookup inside the loop.
+// One linear scan; no monitor and no name lookup inside the loop. A session that
+// disconnects during the scan removes its interface: that item is skipped, never
+// the whole scan, and its average waits for the next cycle.
 const PulseCountersCommand = routeros.EscapeScript + `; :local ids [/interface find where type="pppoe-in"]; ` +
-	`:local n 0; :if ([:len $ids]>2048) do={:error "rows"}; :foreach i in=$ids do={` +
-	`:put ("C\t".[$esc [/interface get $i name]]."\t".[/interface get $i rx-byte]."\t".[/interface get $i tx-byte]); ` +
-	`:set n ($n+1)}; :put ("Z\t".$n)`
+	`:local n 0; :if ([:len $ids]>2048) do={:error "rows"}; :foreach i in=$ids do={:do {` +
+	`:local line ("C\t".[$esc [/interface get $i name]]."\t".[/interface get $i rx-byte]."\t".` +
+	`[/interface get $i tx-byte]); ` +
+	`:put $line; :set n ($n+1)} on-error={}}; :put ("Z\t".$n)`
 
 func ParsePulseCounters(text string) ([]equipment.PPTunnel, equipment.Code) {
 	lines := strings.Split(strings.TrimRight(text, "\r\n"), "\n")

@@ -1,4 +1,3 @@
-import { ContextCounts } from '../../features/pppoe/pppoe-context';
 import { waitForSessionReady } from '../../shared/testing/session-ready';
 import {
   fireEvent,
@@ -111,8 +110,13 @@ it('stable context shows negotiated IPv6 and unavailable fields without invented
       .find((element) => element.closest('.kv')),
   ).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
-  expect(api.groups).not.toHaveBeenCalled();
-  expect(screen.queryByLabelText('Queda local')).not.toBeInTheDocument();
+  expect(
+    within(
+      (await screen.findByRole('cell', { name: 'service' })).closest('tr')!,
+    )
+      .getAllByRole('cell')
+      .map((cell) => cell.textContent),
+  ).toEqual(['100', 'service', '2', 'Não informado nesta leitura']);
 });
 it.each([
   ['ambiguous', 'Vários secrets locais ativos: perfil ambíguo'],
@@ -292,15 +296,6 @@ it('VLAN peak uses raw counts, a configurable drop threshold and optional plan c
     }),
   );
   showPP();
-  render(
-    <ContextCounts
-      profile="company"
-      activation="active"
-      device={device.id}
-      observation={obs.observation_id}
-      at={obs.provenance.ended_at}
-    />,
-  );
   const group = (
     await screen.findByRole('cell', { name: 'X-service' })
   ).closest('tr')!;

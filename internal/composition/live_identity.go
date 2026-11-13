@@ -22,13 +22,12 @@ type identityReadSession struct {
 func (s *identityReadSession) Read(ctx context.Context, target pulse.ReadTarget) (pulse.Reading, pulse.ReadFault) {
 	reading, fault := s.ReadSession.Read(ctx, target)
 	if fault != pulse.ReadOK {
-		if store, ok := s.inventory.store.(pulseReadingStore); ok {
-			if code := store.MarkPulseGap(ctx, s.profile, s.target, time.Now()); code != equipment.OK {
-				return pulse.Reading{}, fault
-			}
+		if s.markGap(ctx) != equipment.OK {
+			return pulse.Reading{}, fault
 		}
 		return reading, fault
 	}
+	s.markMissingSessions(ctx, reading)
 	if reading.Identity == "" {
 		return reading, fault
 	}
@@ -69,6 +68,23 @@ func (s *identityReadSession) Read(ctx context.Context, target pulse.ReadTarget)
 		return pulse.Reading{}, pulse.ReadLost
 	}
 	return reading, fault
+}
+
+// markGap records that the session list was not read in this cycle.
+func (s *identityReadSession) markGap(ctx context.Context) equipment.Code {
+	if store, ok := s.inventory.store.(pulseReadingStore); ok {
+		return store.MarkPulseGap(ctx, s.profile, s.target, time.Now())
+	}
+	return equipment.OK
+}
+
+// markMissingSessions keeps the device reading of a concentrator whose session
+// list failed in this cycle and only records the collection gap.
+func (s *identityReadSession) markMissingSessions(ctx context.Context, reading pulse.Reading) {
+	if s.target.Device.Role == equipment.RoleConcentrator && reading.Observation == nil {
+		// ignored: a failed gap mark is retried by the next failed cycle; the device reading still counts.
+		_ = s.markGap(ctx)
+	}
 }
 
 func liveIdentityDevice(state *equipment.State, target equipment.PPTarget) (*equipment.Device, equipment.Code) {
