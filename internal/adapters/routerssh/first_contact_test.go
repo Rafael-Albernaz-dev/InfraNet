@@ -26,3 +26,17 @@ func TestFirstContactReadsRouterOSAndRejectsChangedKeyBeforePassword(t *testing.
 		t.Fatal("changed key received password", code)
 	}
 }
+
+func TestFirstContactAcceptsLoginWithoutIdentityDriver(t *testing.T) {
+	peer, d := livePeer(t, sshfixture.Config{ServerVersion: "SSH-2.0-dropbear",
+		Command: func(string) (string, bool) { return "L07-DRIVER-ABSENT\n", true }})
+	d.Fingerprint = ""
+	result, code := (routerssh.Adapter{}).FirstContact(context.Background(), d, "reader", sshfixture.Password,
+		func() equipment.Code { return equipment.OK })
+	if code != equipment.OK || result == nil || result.Observation == nil {
+		t.Fatal("login accepted without identity driver must register", code)
+	}
+	if result.Fingerprint != peer.Fingerprint() || result.Observation.Identity != "" || result.Observation.Board != "" {
+		t.Fatal("key must be pinned and name left to the address", result.Fingerprint, result.Observation)
+	}
+}

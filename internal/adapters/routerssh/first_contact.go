@@ -54,10 +54,13 @@ func contactRadioSummary(run func(string) (string, equipment.Code)) (*equipment.
 	if code != equipment.OK {
 		return nil, code
 	}
+	at := time.Now().UTC().Format(time.RFC3339Nano)
 	reading, valid := radioparse.IdentifyAirOS(text)
 	if !valid {
-		return nil, equipment.RadioCodeUnsupported
+		// Key pinned and password accepted: the device is reachable even when no
+		// driver reads its name (Intelbras WOM, Mimosa, switch); the name stays the IP.
+		return &equipment.Observation{At: at, Quality: "partial", Source: "SSH"}, equipment.OK
 	}
 	return &equipment.Observation{Identity: reading.Identity, Board: reading.Model, Version: reading.Version,
-		Family: string(reading.Family), At: time.Now().UTC().Format(time.RFC3339Nano), Quality: "complete", Source: "SSH"}, equipment.OK
+		Family: string(reading.Family), At: at, Quality: "complete", Source: "SSH"}, equipment.OK
 }

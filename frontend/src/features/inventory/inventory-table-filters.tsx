@@ -1,4 +1,4 @@
-import { groupOptions, groupContains } from '../equipment/groups';
+import { groupTreeOptions, groupContains } from '../equipment/groups';
 import type { InventoryState } from './inventory-selection-state';
 import type { TableFilter } from '../../shared/ui/table-model';
 import { rowCells, cellValue } from '../../shared/ui/table-model';
@@ -31,7 +31,7 @@ export function inventoryFilters(p: InventoryState): TableFilter[] {
       label: 'Grupo',
       options: [
         { value: 'none', label: 'Sem grupo' },
-        ...groupOptions(p.groups || []),
+        ...groupTreeOptions(p.groups || []),
       ],
       matches: (r, v) =>
         v === 'none'

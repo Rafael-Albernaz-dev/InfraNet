@@ -29,3 +29,12 @@ export function groupOptions(groups: Group[]) {
     .map((g) => ({ value: g.id, label: groupPath(groups, g.id) }))
     .sort((a, b) => a.label.localeCompare(b.label));
 }
+// Filter dropdown: tree order with indented names, so a long path does not widen the toolbar.
+export function groupTreeOptions(groups: Group[]) {
+  return groupOptions(groups).map((o) => ({
+    value: o.value,
+    label:
+      '\u00a0\u00a0'.repeat(o.label.split(' › ').length - 1) +
+      (groups.find((g) => g.id === o.value)?.name ?? o.label),
+  }));
+}
