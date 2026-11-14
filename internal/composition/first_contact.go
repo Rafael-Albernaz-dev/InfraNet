@@ -47,7 +47,8 @@ func firstContactRound(ctx context.Context, auth *access.Service, inv *inventory
 	slots := make(chan struct{}, 2)
 	for _, d := range state.Devices {
 		revision := revisions[d.CredentialID]
-		if revision == 0 || snapshot.Devices[d.ID].State != pulse.Online || !inv.AutomaticContactDue(profile, d, revision, now) {
+		if d.CPELogin != nil || revision == 0 || snapshot.Devices[d.ID].State != pulse.Online ||
+			!inv.AutomaticContactDue(profile, d, revision, now) {
 			continue
 		}
 		select {

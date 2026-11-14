@@ -3,6 +3,7 @@ package radio
 import (
 	"context"
 	"infradesktop/internal/modules/equipment"
+	"strings"
 )
 
 func (s *Service) enrichRadioDeviceView(ctx context.Context, q Command, in RadioInput, v *RadioView) Code {
@@ -27,6 +28,7 @@ func (s *Service) enrichRadioDeviceView(ctx context.Context, q Command, in Radio
 		return c
 	}
 	v.Reading = readingWithRadioLinks(v.Reading, links, state.Devices)
+	s.markMountingCPEs(v.Reading, q.Scope.Profile)
 	if v.Link == nil {
 		v.Link = uniqueCPELink(device, links, state.Devices)
 	}
@@ -51,6 +53,16 @@ func readingWithRadioLinks(reading *RadioReading, links []RadioLink, devices []D
 		if len(matches) == 1 {
 			for id := range matches {
 				client.CPE = id
+				for _, link := range links {
+					if link.CPE == id {
+						client.Login = link.Login
+					}
+				}
+				for _, d := range devices {
+					if d.ID == id && d.CPELogin != nil {
+						client.Origin = d.CPELogin.Origin
+					}
+				}
 			}
 		}
 	}
@@ -64,7 +76,7 @@ func confirmedRadioClientLink(ap string, client RadioClient, link RadioLink, dev
 		link.Interface == client.Interface && confirmedLocalLink(link) && hasRadioCPE(devices, link.CPE)
 }
 func confirmedLocalLink(link RadioLink) bool {
-	return link.At != "" && (link.Origin == "manual" || link.Origin == "sugerido-confirmado")
+	return link.At != "" && (link.Origin == "manual" || link.Origin == "sugerido-confirmado" || link.Origin == "enlace")
 }
 func hasRadioCPE(devices []Device, id string) bool {
 	for _, device := range devices {
@@ -87,4 +99,40 @@ func uniqueCPELink(device string, links []RadioLink, devices []Device) *RadioLin
 		found = &copy
 	}
 	return found
+}
+
+func (s *Service) markMountingCPEs(reading *RadioReading, profile string) {
+	if reading == nil {
+		return
+	}
+	s.enlaceMu.Lock()
+	defer s.enlaceMu.Unlock()
+	for key, v := range s.enlaceViews {
+		if !strings.HasPrefix(key, profile+"|") {
+			continue
+		}
+		if v.State != "mounting" {
+			continue
+		}
+		linked := false
+		for _, ap := range v.APs {
+			if ap == reading.DeviceID {
+				linked = true
+			}
+		}
+		if !linked {
+			continue
+		}
+		mac, valid := RadioMAC(v.MAC)
+		if !valid {
+			continue
+		}
+		for i := range reading.Clients {
+			client := &reading.Clients[i]
+			observed, valid := RadioMAC(client.MAC)
+			if valid && observed == mac {
+				client.Creating, client.Login = true, v.Login
+			}
+		}
+	}
 }

@@ -26,6 +26,7 @@ var (
 	companyPPPCatalogSchema        = companyMigration("018_ppp_catalog.sql")
 	companyPulseHistorySchema      = companyMigration("017_pulse_history.sql")
 	companyGroupsIdentitySchema    = companyMigration("016_groups_identity.sql")
+	companyEnlaceSchema            = companyMigration("019_enlace.sql")
 )
 
 // companyMigration reads one company migration from the single migrations embed.
@@ -46,7 +47,7 @@ func companySchemas() []string {
 		companyInventoryBlockSchema,
 		companyTablePreferencesSchema,
 		companyGroupsIdentitySchema,
-		companyPulseHistorySchema, companyPPPCatalogSchema}
+		companyPulseHistorySchema, companyPPPCatalogSchema, companyEnlaceSchema}
 }
 func applyCompanyMigrations(db *sql.DB, current int, schemas []string) error {
 	for version := current + 1; version <= len(schemas); version++ {

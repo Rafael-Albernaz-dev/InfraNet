@@ -55,7 +55,7 @@ func New(auth Authorizer, store Store, vault Vault, remote Remote, ids IDs, now 
 		epoch = ""
 	}
 	return &Service{
-		ContactSlots:    make(chan struct{}, 2),
+		ContactSlots:    make(chan struct{}, 4),
 		ContactAttempts: map[string]contactAttempt{},
 		Imports:         map[string]*importQueue{},
 		Auth:            auth,
@@ -225,7 +225,13 @@ func (s *Service) listDevices(st *State, q Command, v *View) Code {
 	devices := s.withPulse(st.Devices, q.Scope.Profile, v)
 	devices = s.withLive(devices, st.Credentials, q.Scope.Profile)
 	if q.All {
-		v.Devices = filterDevices(devices, Command{IncludeInactive: true})
+		all := filterDevices(devices, Command{IncludeInactive: true})
+		start := min(q.Cursor, len(all))
+		end := min(start+500, len(all))
+		v.Devices = all[start:end]
+		if end < len(all) {
+			v.Next = end
+		}
 		return OK
 	}
 	filtered := filterDevices(filterGroupDevices(devices, st.Groups, q), q)
@@ -283,6 +289,10 @@ func (s *Service) presentDevice(ctx context.Context, q Command, v *View) Code {
 	projected := DeviceByID(&state, v.Device.ID)
 	if projected == nil {
 		return Changed
+	}
+	if projected.CPELogin != nil {
+		devices := s.withPulse([]Device{*projected}, q.Scope.Profile, v)
+		projected = &devices[0]
 	}
 	v.Device = projected
 	return OK

@@ -773,6 +773,23 @@
       "observation_id",
       "row_id",
       "offset"
+    ],
+    "radio.interface-aps": [],
+    "radio.set-interface-aps": [
+      "device_id",
+      "interface",
+      "ap_ids"
+    ],
+    "radio.enlace": [
+      "device_id",
+      "observation_id",
+      "row_id"
+    ],
+    "radio.enlace-confirm": [
+      "device_id",
+      "observation_id",
+      "row_id",
+      "confirm_ap"
     ]
   },
   "radio_limits": {

@@ -41,7 +41,7 @@ func TestTablePreferenceAcceptsWhatTheScreensSave(t *testing.T) {
 }
 
 func TestTablePreferenceRejectsWhatCouldBreakOrBloatTheCompanyDatabase(t *testing.T) {
-	manual := make([]string, 501)
+	manual := make([]string, inventory.MaxDevices+1)
 	for i := range manual {
 		manual[i] = fmt.Sprintf("%08d-0000-4000-8000-000000000000", i)
 	}

@@ -94,8 +94,14 @@ func (s *Store) persistPPCollection(
 		return code
 	}
 	s.observe("pp-phase-inserts-start")
+	if err := checkpointEnlaceOnline(ctx, tx, o.DeviceID); err != nil {
+		return equipment.Unavailable
+	}
 	if code = s.insertPPObservationAndRows(ctx, tx, o); code != equipment.OK {
 		return code
+	}
+	if err := checkpointEnlaceOnline(ctx, tx, o.DeviceID); err != nil {
+		return equipment.Unavailable
 	}
 	s.observe("pp-phase-cascade-start")
 	if code = finalizePPObservationCascade(ctx, tx, previous, o); code != equipment.OK {

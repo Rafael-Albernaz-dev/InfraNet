@@ -5,6 +5,7 @@ import (
 	"context"
 	"infradesktop/internal/modules/equipment"
 	"infradesktop/internal/modules/inventory"
+	"sync"
 	"time"
 )
 
@@ -135,8 +136,13 @@ const (
 // Service executes authorized radio inspection, link association, cost measurement, and live sessions.
 type Service struct {
 	*inventory.Service
-	radioIndexes map[string]RadioIndex
-	radioCosts   map[string]RadioCost
+	radioIndexes   map[string]RadioIndex
+	radioCosts     map[string]RadioCost
+	enlaceMu       sync.Mutex
+	enlaceViews    map[string]equipment.EnlaceView
+	enlaceChoice   map[string]string
+	enlacePriority string
+	enlaceCache    map[string]enlaceAPCache
 }
 
 func New(inv *inventory.Service) *Service {
@@ -144,6 +150,9 @@ func New(inv *inventory.Service) *Service {
 		Service:      inv,
 		radioIndexes: map[string]RadioIndex{},
 		radioCosts:   map[string]RadioCost{},
+		enlaceViews:  map[string]equipment.EnlaceView{},
+		enlaceChoice: map[string]string{},
+		enlaceCache:  map[string]enlaceAPCache{},
 	}
 }
 

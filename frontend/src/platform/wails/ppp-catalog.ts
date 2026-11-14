@@ -16,6 +16,7 @@ export type PPPQuery = {
   page_size: number;
 };
 export type PPPEntry = {
+  ap_devices?: Record<string, string>;
   at?: string;
   aps?: string[];
   peak?: number;

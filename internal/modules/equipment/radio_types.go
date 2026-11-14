@@ -75,6 +75,9 @@ type RadioInterface struct {
 }
 
 type RadioClient struct {
+	Login        string            `json:"login,omitempty"`
+	Origin       string            `json:"origin,omitempty"`
+	Creating     bool              `json:"creating,omitempty"`
 	CPE          string            `json:"cpe_id,omitempty"`
 	Counters     map[string]string `json:"counters,omitempty"`
 	MAC          string            `json:"mac"`
@@ -140,6 +143,7 @@ type RadioProfile struct {
 }
 
 type RadioLink struct {
+	PPPInterface string  `json:"ppp_interface,omitempty"`
 	NewCPE       *Device `json:"-"`
 	Concentrator string  `json:"concentrator_id"`
 	Scope        string  `json:"scope"`
@@ -156,6 +160,9 @@ type RadioLink struct {
 }
 
 type RadioInput struct {
+	Interface     string           `json:"interface,omitempty"`
+	APs           []string         `json:"ap_ids,omitempty"`
+	ConfirmAP     string           `json:"confirm_ap,omitempty"`
 	DeviceID      string           `json:"device_id,omitempty"`
 	Revision      uint64           `json:"revision,omitempty"`
 	Operation     string           `json:"operation_id,omitempty"`
@@ -266,22 +273,24 @@ type RadioProposal struct {
 }
 
 type RadioView struct {
-	Index       *RadioIndex    `json:"index,omitempty"`
-	Proposal    *RadioProposal `json:"proposal,omitempty"`
-	MatchReason string         `json:"match_reason,omitempty"`
-	CPENote     string         `json:"cpe_note,omitempty"`
-	Reading     *RadioReading  `json:"reading,omitempty"`
-	CPEReading  *RadioReading  `json:"cpe_reading,omitempty"`
-	Profile     *RadioProfile  `json:"profile,omitempty"`
-	Link        *RadioLink     `json:"link,omitempty"`
-	Suggestions []RadioLink    `json:"suggestions,omitempty"`
-	Job         *Job           `json:"job,omitempty"`
-	APCode      Code           `json:"ap_code,omitempty"`
-	CPECode     Code           `json:"cpe_code,omitempty"`
-	Cost        *RadioCost     `json:"cost,omitempty"`
-	Total       int            `json:"total"`
-	More        bool           `json:"more"`
-	NextOffset  int            `json:"next_offset"`
+	Enlace       *EnlaceView    `json:"enlace,omitempty"`
+	InterfaceAPs []InterfaceAPs `json:"interface_aps,omitempty"`
+	Index        *RadioIndex    `json:"index,omitempty"`
+	Proposal     *RadioProposal `json:"proposal,omitempty"`
+	MatchReason  string         `json:"match_reason,omitempty"`
+	CPENote      string         `json:"cpe_note,omitempty"`
+	Reading      *RadioReading  `json:"reading,omitempty"`
+	CPEReading   *RadioReading  `json:"cpe_reading,omitempty"`
+	Profile      *RadioProfile  `json:"profile,omitempty"`
+	Link         *RadioLink     `json:"link,omitempty"`
+	Suggestions  []RadioLink    `json:"suggestions,omitempty"`
+	Job          *Job           `json:"job,omitempty"`
+	APCode       Code           `json:"ap_code,omitempty"`
+	CPECode      Code           `json:"cpe_code,omitempty"`
+	Cost         *RadioCost     `json:"cost,omitempty"`
+	Total        int            `json:"total"`
+	More         bool           `json:"more"`
+	NextOffset   int            `json:"next_offset"`
 }
 
 type RadioStore interface {

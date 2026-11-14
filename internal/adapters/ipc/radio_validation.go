@@ -44,7 +44,7 @@ func validateRadio(b []byte, q Request, fields map[string]json.RawMessage) (Requ
 	if !validRadioLinkObject(fields["radio"]) {
 		return q, foundation.Invalid
 	}
-	if in.Offset < 0 || in.Offset > equipment.RadioMaxClients {
+	if in.Offset < 0 || in.Offset > max(equipment.RadioMaxClients, equipment.MaxDevices) {
 		return q, foundation.Invalid
 	}
 	q.Radio = &in

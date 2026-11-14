@@ -20,6 +20,7 @@ type liveStore interface {
 type liveInventory struct {
 	access *access.Service
 	store  liveStore
+	follow func(context.Context, string, []equipment.EnlaceSession) equipment.Code
 }
 
 func (i liveInventory) ReadTargets(ctx context.Context) (string, []pulse.ReadTarget, bool) {

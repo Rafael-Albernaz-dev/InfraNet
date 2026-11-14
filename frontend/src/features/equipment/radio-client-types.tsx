@@ -13,6 +13,9 @@ export type RadioMetric = {
   worst?: number;
 };
 export type RadioClient = {
+  login?: string;
+  origin?: string;
+  creating?: boolean;
   cpe_id?: string;
   mac: string;
   name: string;

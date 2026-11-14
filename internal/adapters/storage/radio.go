@@ -169,11 +169,21 @@ func (s *Store) SaveRadioLink(ctx context.Context, company string,
 		if code != equipment.OK {
 			return code
 		}
+		if link.Origin == "enlace" {
+			if code = validateEnlaceSource(ctx, tx, link, row); code != equipment.OK {
+				return code
+			}
+		}
 		if code = enrollRadioLinkCPE(ctx, tx, link, row); code != equipment.OK {
 			return code
 		}
 		if code = validateStoredRadioLinkEndpoints(ctx, tx, link, row); code != equipment.OK {
 			return code
+		}
+		if link.Origin == "enlace" {
+			if code := writeCPELogin(ctx, tx, link); code != equipment.OK {
+				return code
+			}
 		}
 		return writeRadioLinkEffect(ctx, tx, link, operation, stamp, body)
 	})

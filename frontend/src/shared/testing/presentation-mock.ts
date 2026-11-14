@@ -99,6 +99,10 @@ const deviceMonitoringAPIMock = (fallback: Record<string, unknown> = {}) => ({
   current: mockMethod(fallback.current),
 });
 const radioAPIMock = (fallback: Record<string, unknown> = {}) => ({
+  interfaceAPs: mockMethod(fallback.interfaceAPs),
+  setInterfaceAPs: mockMethod(fallback.setInterfaceAPs),
+  enlace: mockMethod(fallback.enlace),
+  confirmEnlace: mockMethod(fallback.confirmEnlace),
   indexPage: mockMethod(fallback.indexPage),
   current: mockMethod(fallback.current),
   start: mockMethod(fallback.start),

@@ -29,7 +29,7 @@ const (
 	Limit                   Code = "LIMIT_EXCEEDED"
 	Cancelled               Code = "CANCELLED"
 	Partial                 Code = "PARTIAL"
-	MaxDevices                   = 500
+	MaxDevices                   = 5000
 	MaxCredentials               = 128
 	PageSize                     = 16
 	MaxJobs                      = 32
@@ -119,6 +119,7 @@ type LiveReading struct {
 	Fault         string `json:"fault"`
 }
 type Device struct {
+	CPELogin        *CPELogin        `json:"cpe_login,omitempty"`
 	LastReboot      string           `json:"last_reboot,omitempty"`
 	GroupPath       string           `json:"group_path"`
 	Identity        string           `json:"identity"`

@@ -28,6 +28,10 @@ func (s *Service) withPulse(devices []Device, profile string, v *View) []Device 
 	}
 	for i := range out {
 		d := &out[i]
+		if d.CPELogin != nil {
+			d.Pulse = loginSessionPulse(*d, s.Now())
+			continue
+		}
 		last := ""
 		if d.Pulse != nil {
 			last = d.Pulse.LastReply
@@ -47,6 +51,27 @@ func (s *Service) withPulse(devices []Device, profile string, v *View) []Device 
 		}
 	}
 	return out
+}
+
+func loginSessionPulse(d Device, now time.Time) *equipment.PulseStatus {
+	result := &equipment.PulseStatus{}
+	session := d.CPELogin.Session
+	if session == nil {
+		return result
+	}
+	result.LastReply = session.LastOnline
+	at, err := time.Parse(time.RFC3339Nano, session.ReadAt)
+	if !d.Active || err != nil || now.Before(at) || now.Sub(at) >= 24*time.Hour {
+		return result
+	}
+	if session.State != string(pulse.Online) && session.State != string(pulse.Offline) {
+		return result
+	}
+	result.State, result.Since, result.CheckedAt = session.State, session.Since, session.ReadAt
+	if session.State == string(pulse.Online) {
+		result.LastReply = session.ReadAt
+	}
+	return result
 }
 func pulseMatches(d Device, state string) bool {
 	if state == "" {

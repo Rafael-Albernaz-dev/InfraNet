@@ -49,10 +49,8 @@ func (s *identityReadSession) Read(ctx context.Context, target pulse.ReadTarget)
 		reading.At = time.Now()
 	}
 	s.prepareSessions(&reading)
-	if store, ok := s.inventory.store.(pulseReadingStore); ok {
-		if code := store.SavePulseReading(ctx, profile, s.target, reading); code != equipment.OK {
-			return pulse.Reading{}, pulse.ReadLost
-		}
+	if code := s.publishReading(ctx, profile, reading); code != equipment.OK {
+		return pulse.Reading{}, pulse.ReadLost
 	}
 	s.previous = reading.Tunnels
 	if reading.Observation != nil {
@@ -151,4 +149,23 @@ func (s *identityReadSession) prepareSessions(reading *pulse.Reading) {
 	}
 	pppoe.CarryObservationContext(s.previousObservation, o)
 	pppoe.AverageSessions(o.Rows, s.previous, reading.Tunnels)
+}
+
+func (s *identityReadSession) publishReading(ctx context.Context, profile string, reading pulse.Reading) equipment.Code {
+	if store, ok := s.inventory.store.(pulseReadingStore); ok {
+		if code := store.SavePulseReading(ctx, profile, s.target, reading); code != equipment.OK {
+			return code
+		}
+	}
+	if reading.Observation != nil && s.inventory.follow != nil {
+		sessions := []equipment.EnlaceSession{}
+		for _, row := range reading.Observation.Rows {
+			sessions = append(sessions, equipment.EnlaceSession{
+				Concentrator: s.target.Device.ID, Observation: reading.Observation.ID, Row: row})
+		}
+		if code := s.inventory.follow(ctx, profile, sessions); code != equipment.OK {
+			return code
+		}
+	}
+	return equipment.OK
 }

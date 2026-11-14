@@ -136,12 +136,12 @@ func TestImportPersistsFiveHundredWithinBudget(t *testing.T) {
 	}
 }
 
-func TestImportConfirmRejectsMoreThanFiveHundred(t *testing.T) {
+func TestImportConfirmRejectsMoreThanTheInventoryLimit(t *testing.T) {
 	j, s := importFixture(t)
 	q := equipmentScope(j)
 	q.Op, q.Operation = "inventory.import-confirm", uuid.NewString()
 	row := equipment.ImportRow{Line: 1, Name: "A", Address: "192.0.2.1", Port: "22", Role: "AP"}
-	q.Import = &equipment.ImportInput{Rows: make([]equipment.ImportRow, 501)}
+	q.Import = &equipment.ImportInput{Rows: make([]equipment.ImportRow, equipment.MaxDevices+1)}
 	for i := range q.Import.Rows {
 		q.Import.Rows[i] = row
 	}

@@ -45,6 +45,14 @@ func enrollRadioLinkCPE(ctx context.Context, tx *sql.Tx, link equipment.RadioLin
 		device.Role != equipment.RoleCPE || device.Address != row.Address || device.Fingerprint != "" {
 		return equipment.Invalid
 	}
+	var duplicate int
+	if tx.QueryRowContext(ctx, "SELECT count(*) FROM devices WHERE active=1 AND role='cpe' AND address=?",
+		row.Address).Scan(&duplicate) != nil {
+		return equipment.Unavailable
+	}
+	if duplicate > 0 {
+		return equipment.ObservationIncompatible
+	}
 	var count int
 	if tx.QueryRowContext(ctx, "SELECT count(*) FROM devices").Scan(&count) != nil || count >= equipment.MaxDevices {
 		return equipment.Limit
@@ -67,7 +75,15 @@ func validateStoredRadioLinkEndpoints(ctx context.Context, tx *sql.Tx,
 	link equipment.RadioLink, row equipment.PPRow) equipment.Code {
 	var address string
 	const query = "SELECT address FROM devices WHERE id=? AND role='cpe'"
-	if tx.QueryRowContext(ctx, query, link.CPE).Scan(&address) != nil || address != row.Address {
+	if tx.QueryRowContext(ctx, query, link.CPE).Scan(&address) != nil {
+		return equipment.ObservationIncompatible
+	}
+	var follows int
+	if err := tx.QueryRowContext(ctx, "SELECT count(*) FROM cpe_logins WHERE device_id=? AND login=?",
+		link.CPE, link.Login).Scan(&follows); err != nil {
+		return equipment.Unavailable
+	}
+	if address != row.Address && follows != 1 {
 		return equipment.ObservationIncompatible
 	}
 	for _, id := range []string{link.Concentrator, link.CPE, link.AP} {

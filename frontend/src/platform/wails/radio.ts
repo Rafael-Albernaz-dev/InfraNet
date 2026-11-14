@@ -1,5 +1,9 @@
 import { completeRadioIndex, completeRadioTable } from './stored-table-pages';
 import {
+  GetInterfaceAPs,
+  SetInterfaceAPs,
+  GetEnlace,
+  ConfirmEnlaceAP,
   CancelRadio,
   CancelRadioOperation,
   ConfirmRadioFamily,
@@ -27,6 +31,25 @@ type LinkChoiceArgs = [
   choice: RadioLinkChoice,
 ];
 export const radioAPI = {
+  interfaceAPs: (p: string, a: string): Promise<RadioResult> =>
+    GetInterfaceAPs(p, a),
+  setInterfaceAPs: (
+    p: string,
+    a: string,
+    input: Partial<RadioInput>,
+  ): Promise<RadioResult> =>
+    SetInterfaceAPs(p, a, input as equipment.RadioInput),
+  enlace: (
+    p: string,
+    a: string,
+    input: Partial<RadioInput>,
+  ): Promise<RadioResult> => GetEnlace(p, a, input as equipment.RadioInput),
+  confirmEnlace: (
+    p: string,
+    a: string,
+    input: Partial<RadioInput>,
+  ): Promise<RadioResult> =>
+    ConfirmEnlaceAP(p, a, input as equipment.RadioInput),
   indexPage: async (
     ...args: Parameters<typeof GetRadioIndexPage>
   ): Promise<RadioResult> =>

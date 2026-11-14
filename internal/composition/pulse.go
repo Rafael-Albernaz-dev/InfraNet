@@ -28,7 +28,7 @@ func (i pulseInventory) Targets(ctx context.Context) (string, []pulse.Target, bo
 	targets := []pulse.Target{}
 	for _, d := range state.Devices {
 		// ignored: Only validation is needed; parsed address is not retained.
-		if _, err := netip.ParseAddr(d.Address); d.Active && err == nil {
+		if _, err := netip.ParseAddr(d.Address); d.Active && err == nil && d.CPELogin == nil {
 			targets = append(targets, pulse.Target{ID: d.ID, Address: d.Address})
 		}
 	}

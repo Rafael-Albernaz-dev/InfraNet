@@ -4,6 +4,8 @@ import "context"
 
 func (s *Service) dispatchRadioView(ctx context.Context, q Command, in RadioInput, store RadioStore, v *RadioView) Code {
 	switch q.Op {
+	case "radio.interface-aps", "radio.set-interface-aps", "radio.enlace", "radio.enlace-confirm":
+		return s.handleEnlace(ctx, q, in, v)
 	case "radio.status", "radio.cancel":
 		return s.handleRadioJob(ctx, q, in, store, v)
 	case "radio.current", "radio.confirm-family":

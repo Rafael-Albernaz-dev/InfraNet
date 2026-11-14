@@ -34,6 +34,14 @@ func (s *Service) enrichPPPServers(
 			in.Offset = page.NextOffset
 		}
 	}
+	bindings := []equipment.InterfaceAPs{}
+	if store, ok := s.inv.Store.(equipment.EnlaceStore); ok {
+		var code Code
+		bindings, code = store.InterfaceAPs(ctx, company)
+		if code != OK {
+			return code
+		}
+	}
 	radio, hasRadio := s.inv.Store.(equipment.PPPCatalogStore)
 	for i := range catalog {
 		e := &catalog[i]
@@ -49,6 +57,7 @@ func (s *Service) enrichPPPServers(
 			enrichSessionLinks(sessions, links, names)
 			aps = serverAPs(*e, links, sessions, names)
 		}
+		aps = configuredServerAPs(e, bindings, names, aps)
 		for ap := range aps {
 			e.APs = append(e.APs, ap)
 		}
@@ -94,4 +103,22 @@ func enrichSessionLinks(sessions []equipment.PPPEntry, links []equipment.RadioLi
 			e.Session.LinkedDeviceName = names[link.CPE]
 		}
 	}
+}
+
+func configuredServerAPs(e *equipment.PPPEntry, bindings []equipment.InterfaceAPs,
+	names map[string]string, aps map[string]bool,
+) map[string]bool {
+	for _, binding := range bindings {
+		if binding.Concentrator == e.DeviceID && binding.Interface == e.Interface {
+			aps = map[string]bool{}
+			e.APDevices = map[string]string{}
+			for _, id := range binding.APs {
+				if names[id] != "" {
+					aps[names[id]] = true
+					e.APDevices[id] = names[id]
+				}
+			}
+		}
+	}
+	return aps
 }

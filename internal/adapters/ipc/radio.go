@@ -9,14 +9,18 @@ import (
 )
 
 var radioFields = map[string][]string{
-	"radio.index-current":  {"device_id", "observation_id", "row_id", "offset"},
-	"radio.current":        {"device_id", "reading_id", "offset"},
-	"radio.start":          {"device_id", "revision", "operation_id", "observation_id", "row_id", "family", "mode"},
-	"radio.status":         {"job_id", "reading_id", "offset"},
-	"radio.cancel":         {"job_id", "device_id", "operation_id"},
-	"radio.confirm-family": {"device_id", "revision", "family", "warning", "critical"},
-	"radio.link-current":   {"device_id", "observation_id", "row_id"},
-	"radio.link-confirm":   {"device_id", "observation_id", "row_id", "operation_id", "link"},
+	"radio.interface-aps":     {},
+	"radio.set-interface-aps": {"device_id", "interface", "ap_ids"},
+	"radio.enlace":            {"device_id", "observation_id", "row_id"},
+	"radio.enlace-confirm":    {"device_id", "observation_id", "row_id", "confirm_ap"},
+	"radio.index-current":     {"device_id", "observation_id", "row_id", "offset"},
+	"radio.current":           {"device_id", "reading_id", "offset"},
+	"radio.start":             {"device_id", "revision", "operation_id", "observation_id", "row_id", "family", "mode"},
+	"radio.status":            {"job_id", "reading_id", "offset"},
+	"radio.cancel":            {"job_id", "device_id", "operation_id"},
+	"radio.confirm-family":    {"device_id", "revision", "family", "warning", "critical"},
+	"radio.link-current":      {"device_id", "observation_id", "row_id"},
+	"radio.link-confirm":      {"device_id", "observation_id", "row_id", "operation_id", "link"},
 }
 
 func isRadio(op string) bool { _, ok := radioFields[op]; return ok }

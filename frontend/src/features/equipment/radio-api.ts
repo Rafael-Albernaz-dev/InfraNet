@@ -66,6 +66,7 @@ export type RadioLinkChoice = {
   origin: string;
 };
 export type RadioLink = RadioLinkChoice & {
+  ppp_interface?: string;
   concentrator_id: string;
   scope: string;
   login: string;
@@ -93,7 +94,28 @@ export type RadioCost = {
   enabled: boolean;
   reason: string;
 };
+export type InterfaceAPs = {
+  concentrator_name?: string;
+  service?: string;
+  concentrator_id: string;
+  interface: string;
+  ap_ids: string[];
+};
+export type EnlaceView = {
+  state: string;
+  stage: number;
+  interface: string;
+  login: string;
+  address: string;
+  ap_ids: string[];
+  choices?: { ap_id: string; name: string; signal: string }[];
+  failed?: string[];
+  reason?: string;
+  link?: RadioLink;
+};
 export type RadioView = {
+  enlace?: EnlaceView;
+  interface_aps?: InterfaceAPs[];
   index?: {
     total?: number;
     offset?: number;
@@ -135,6 +157,9 @@ export type RadioResult = {
   data?: RadioView;
 };
 export type RadioInput = {
+  interface?: string;
+  ap_ids?: string[];
+  confirm_ap?: string;
   device_id: string;
   revision: number;
   operation_id: string;
