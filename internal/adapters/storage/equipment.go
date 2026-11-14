@@ -40,6 +40,9 @@ func (s *Store) loadEquipment(ctx context.Context, q queryer, id string) (equipm
 	if err := loadCPELogins(ctx, q, &st); err != nil {
 		return st, err
 	}
+	if err := loadConfigSummaries(ctx, q, &st); err != nil {
+		return st, err
+	}
 	if err := loadEquipmentOperations(ctx, q, &st); err != nil {
 		return st, err
 	}

@@ -10,3 +10,5 @@ export * from './radio';
 export * from './table-preferences';
 
 export * from './ppp-catalog';
+
+export * from './config-backup';

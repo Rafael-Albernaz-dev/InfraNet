@@ -14,4 +14,5 @@ func mountCapabilities(server *ipc.Server, service *access.Service, store *stora
 		provider = func() ([]byte, error) { return vault.ReadKey(path) }
 	}
 	ipc.AttachEquipment(server, composeLiveEquipment(server, service, store, provider))
+	composeConfig(server, service, store, provider)
 }

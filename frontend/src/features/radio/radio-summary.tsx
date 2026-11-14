@@ -1,3 +1,4 @@
+import { ConfigSummary } from '../equipment/config-backup';
 import { collectorMetricText } from '../equipment/collector-metrics';
 import { EquipmentStateLabel } from '../equipment/equipment-state-label';
 import { RadioAPPPP } from './radio-ap-ppp';
@@ -82,7 +83,7 @@ export function RadioSummary({ state }: { state: Ready }) {
         activation={state.activation}
         device={d}
       />
-      <SummaryPending title="Configuração" slice="L-CFG" />
+      <ConfigSummary />
       <SummaryAccess device={d} edit={state.onAccess} />
     </div>
   );

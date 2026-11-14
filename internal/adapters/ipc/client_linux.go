@@ -2,6 +2,7 @@ package ipc
 
 import (
 	"context"
+	"infradesktop/internal/modules/cfgbackup"
 	"infradesktop/internal/modules/equipment"
 	"infradesktop/internal/modules/foundation"
 	"sync"
@@ -97,6 +98,10 @@ func (c *Client) exchange(parent context.Context, q Request) Response {
 		return r
 	}
 
+	if isConfig(q.Op) && cfgbackup.ResultCode(equipment.Code(r.Code)) {
+		r.Data = nil
+		return r
+	}
 	switch r.Code {
 	case foundation.Code("CREDENTIAL_IN_USE"):
 		r.Data = nil

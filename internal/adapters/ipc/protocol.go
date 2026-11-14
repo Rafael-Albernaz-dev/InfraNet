@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"infradesktop/internal/modules/cfgbackup"
 	"infradesktop/internal/modules/equipment"
 	"infradesktop/internal/modules/foundation"
 	"io"
@@ -27,6 +28,7 @@ const Budget = 3 * time.Second * foundation.RaceScale
 var errProtocol = errors.New("invalid frame")
 
 type Request struct {
+	Config             *cfgbackup.Input      `json:"config,omitempty"`
 	Columns            []string              `json:"columns,omitempty"`
 	Radio              *equipment.RadioInput `json:"radio,omitempty"`
 	PPPoE              *equipment.PPInput    `json:"pppoe,omitempty"`
@@ -64,6 +66,7 @@ type Company struct {
 	Name string `json:"name"`
 }
 type Data struct {
+	Config           *cfgbackup.View      `json:"config,omitempty"`
 	Columns          []string             `json:"columns,omitempty"`
 	Radio            *equipment.RadioView `json:"radio,omitempty"`
 	VaultAvailable   bool                 `json:"vault_available"`
@@ -252,16 +255,23 @@ func validate(b []byte) (Request, foundation.Code) {
 			return q, code
 		}
 	default:
-		if isRadio(q.Op) {
-			return validateRadio(b, q, fields)
-		}
-		if isPPPoE(q.Op) {
-			return validatePPPoE(b, q, fields)
-		}
-		if isEquipment(q.Op) {
-			return validateEquipment(b, q, fields)
-		}
-		return q, foundation.Invalid
+		return validateCapability(b, q, fields)
 	}
 	return validateEnvelope(q, b, fields, allowed)
+}
+
+func validateCapability(b []byte, q Request, fields map[string]json.RawMessage) (Request, foundation.Code) {
+	if isConfig(q.Op) {
+		return validateConfig(b, q, fields)
+	}
+	if isRadio(q.Op) {
+		return validateRadio(b, q, fields)
+	}
+	if isPPPoE(q.Op) {
+		return validatePPPoE(b, q, fields)
+	}
+	if isEquipment(q.Op) {
+		return validateEquipment(b, q, fields)
+	}
+	return q, foundation.Invalid
 }

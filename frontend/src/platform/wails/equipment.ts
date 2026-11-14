@@ -29,6 +29,7 @@ import type { EquipmentResult } from '../../features/inventory/inventory-import-
 import type { DeviceHealth } from './pppoe-types';
 export type Observation = Omit<equipment.Observation, 'convertValues'>;
 type DeviceProjection = {
+  config?: { at: string; unchanged: boolean };
   identity?: string;
   group_id?: string;
   group_path?: string;

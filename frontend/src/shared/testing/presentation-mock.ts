@@ -129,6 +129,13 @@ export function presentationMock(
         if (typeof method === 'function') return method(...args);
       }),
     },
+    configAPI: {
+      list: mockMethod(fallback.configAPI?.list),
+      save: mockMethod(fallback.configAPI?.save),
+      compare: mockMethod(fallback.configAPI?.compare),
+      download: mockMethod(fallback.configAPI?.download),
+      ...overrides.configAPI,
+    },
     access: { ...accessMock(fallback.access), ...overrides.access },
     equipmentAPI: {
       ...equipmentAPIMock(fallback.equipmentAPI),

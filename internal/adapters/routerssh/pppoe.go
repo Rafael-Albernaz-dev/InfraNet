@@ -14,6 +14,7 @@ import (
 
 type ppConnection struct {
 	stream        func(string, func(string) equipment.Code) equipment.Code
+	configBudget  func()
 	catalogBudget func()
 	legacy        []string
 	run           func(string) (string, equipment.Code)
@@ -67,7 +68,10 @@ func openPPConnection(ctx context.Context,
 	budget := &outputBudget{conn: conn}
 	commands := 0
 	runner := &ppCommandRunner{ctx: ctx, client: client, budget: budget, check: check, commands: &commands}
-	return &ppConnection{catalogBudget: func() {
+	return &ppConnection{configBudget: func() {
+		budget.maximum = 4 * 1024 * 1024
+		budget.limit = 4 * 1024 * 1024
+	}, catalogBudget: func() {
 		budget.maximum = equipment.PPPCatalogBytes
 		budget.limit = equipment.PPPCatalogBytes
 	}, legacy: legacyNegotiated(cc),

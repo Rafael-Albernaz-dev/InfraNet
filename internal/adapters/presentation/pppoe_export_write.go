@@ -45,10 +45,11 @@ func (a *App) checkPPExportLocked(p, act, device, target, base string) string {
 }
 
 type ppFileOps struct {
-	sync   func(int) error
-	rename func(int, string, int, string, uint) error
-	unlink func(int, string, int) error
-	close  func(*os.File) error
+	sync    func(int) error
+	rename  func(int, string, int, string, uint) error
+	unlink  func(int, string, int) error
+	close   func(*os.File) error
+	maximum int
 }
 
 func (o ppFileOps) fsync(fd int) error {
@@ -71,12 +72,17 @@ func (o ppFileOps) remove(fd int, p string) error {
 }
 
 type ppLimitWriter struct {
-	w io.Writer
-	n int
+	w       io.Writer
+	n       int
+	maximum int
 }
 
 func (w *ppLimitWriter) Write(b []byte) (int, error) {
-	if len(b) > ppExportBytes-w.n {
+	maximum := w.maximum
+	if maximum == 0 {
+		maximum = ppExportBytes
+	}
+	if len(b) > maximum-w.n {
 		return 0, errors.New("export limit")
 	}
 	n, e := w.w.Write(b)
@@ -163,7 +169,7 @@ func writeStagedExportFile(
 	if f.Chmod(0600) != nil {
 		return "EXPORT_UNAVAILABLE"
 	}
-	if c := produce(&ppLimitWriter{w: f}); c != "OK" {
+	if c := produce(&ppLimitWriter{w: f, maximum: ops.maximum}); c != "OK" {
 		return c
 	}
 	if ops.fsync(fd) != nil {

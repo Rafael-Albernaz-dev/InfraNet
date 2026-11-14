@@ -20,3 +20,6 @@ export const RadioCodes = {
   REMOTE_AUTH_FAILED: 'REMOTE_AUTH_FAILED',
   UNSUPPORTED: 'UNSUPPORTED',
 } as const;
+
+// Configuration origin is a separate enum at the shared equipment wire boundary.
+export const ConfigOrigins = { automatic: 'auto', manual: 'manual' } as const;

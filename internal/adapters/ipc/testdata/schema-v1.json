@@ -838,5 +838,36 @@
     ],
     "credential_confirmation": "The proposal pins its displayed credential_id; a concurrent default change is REVISION_CONFLICT; durable replay returns the original association.",
     "family_order": "User decision 2026-10-30: associate first, detect new CPE family in the next explicit query; compatible prior identity may be proposed."
-  }
+  },
+  "config_operations": {
+    "config.list": [
+      "device_id"
+    ],
+    "config.save": [
+      "device_id"
+    ],
+    "config.compare": [
+      "device_id",
+      "version_id"
+    ],
+    "config.download": [
+      "device_id",
+      "version_id",
+      "path",
+      "confirmed"
+    ]
+  },
+  "config_envelope": [
+    "version",
+    "request_id",
+    "op",
+    "capability",
+    "contract_revision",
+    "session",
+    "profile_id",
+    "activation_id",
+    "expected_profile",
+    "expected_activation",
+    "config"
+  ]
 }

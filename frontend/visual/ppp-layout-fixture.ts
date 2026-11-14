@@ -1,3 +1,4 @@
+import { configFixtureOperations } from './config-layout-fixture';
 import { radioFixtureOperations } from './layout-radio-operations';
 export function pppFixtureOperations(result: (data: object) => unknown) {
   return {
@@ -29,6 +30,7 @@ export function radioAndPPPFixtureOperations(
   reading: (id: string) => unknown,
 ) {
   return {
+    ...configFixtureOperations,
     ...radioFixtureOperations(result, reading),
     ...pppFixtureOperations(result),
   };

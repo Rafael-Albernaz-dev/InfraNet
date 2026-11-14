@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"errors"
 	"infradesktop/internal/modules/access"
+	"infradesktop/internal/modules/cfgbackup"
 	"infradesktop/internal/modules/equipment"
 	"infradesktop/internal/modules/foundation"
 	"net"
@@ -16,6 +17,7 @@ import (
 )
 
 type Server struct {
+	config                *cfgbackup.Service
 	backgroundStops       []context.CancelFunc
 	backgroundWG          sync.WaitGroup
 	ppOnce                sync.Once

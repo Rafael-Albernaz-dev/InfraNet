@@ -1378,3 +1378,20 @@ p.import-status-error {
   border-radius: 3px;
   margin: 0;
 }
+
+.diff {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  background: var(--gfa);
+  border: 1px solid var(--gbb);
+  padding: 8px 10px;
+  white-space: pre;
+  overflow: auto;
+  line-height: 1.6;
+}
+.diff .add {
+  color: var(--ok);
+}
+.diff .rem {
+  color: var(--erro);
+}

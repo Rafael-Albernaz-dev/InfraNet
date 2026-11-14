@@ -120,7 +120,12 @@ type LiveReading struct {
 	At            string `json:"at,omitempty"`
 	Fault         string `json:"fault"`
 }
+type ConfigSummary struct {
+	At        string `json:"at"`
+	Unchanged bool   `json:"unchanged"`
+}
 type Device struct {
+	Config          *ConfigSummary   `json:"config,omitempty"`
 	CPELogin        *CPELogin        `json:"cpe_login,omitempty"`
 	LastReboot      string           `json:"last_reboot,omitempty"`
 	GroupPath       string           `json:"group_path"`

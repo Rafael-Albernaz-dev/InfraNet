@@ -2,7 +2,6 @@
 package vault
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/hmac"
@@ -58,42 +57,6 @@ func aad(purpose, installation, company, id string, revision uint64) []byte {
 	b, _ := json.Marshal([]string{"infradesktop-vault", "1", purpose, installation, company, id, fmt.Sprint(revision)})
 	return b
 }
-func decode(b []byte) (envelope, error) {
-	var e envelope
-	if len(b) < 1 || len(b) > 4096 {
-		return e, errors.New("envelope unavailable")
-	}
-	tokens := json.NewDecoder(bytes.NewReader(b))
-	first, err := tokens.Token()
-	if err != nil || first != json.Delim('{') {
-		return e, errors.New("envelope unavailable")
-	}
-	seen := map[string]bool{}
-	for tokens.More() {
-		name, err := tokens.Token()
-		if err != nil {
-			return e, err
-		}
-		k, ok := name.(string)
-		if !ok || seen[k] {
-			return e, errors.New("envelope unavailable")
-		}
-		seen[k] = true
-		var raw json.RawMessage
-		if tokens.Decode(&raw) != nil || bytes.Equal(raw, []byte("null")) {
-			return e, errors.New("envelope unavailable")
-		}
-	}
-	if len(seen) != 5 {
-		return e, errors.New("envelope unavailable")
-	}
-	d := json.NewDecoder(bytes.NewReader(b))
-	d.DisallowUnknownFields()
-	if d.Decode(&e) != nil || d.Decode(new(any)) != io.EOF || e.Version != 1 || e.Algorithm != "AES-256-GCM" || len(e.KeyID) != 32 || len(e.Nonce) != 12 || len(e.Ciphertext) < 16 || len(e.Ciphertext) > 1040 {
-		return e, errors.New("envelope unavailable")
-	}
-	return e, nil
-}
 func (v *Vault) seal(key, plain, aad []byte, id string) ([]byte, error) {
 	block, e := aes.NewCipher(key)
 	if e != nil {
@@ -133,61 +96,10 @@ func (v *Vault) dataKey(installation, company string, wrapped, master []byte) ([
 	return b, e.KeyID, nil
 }
 func (v *Vault) Seal(installation, company, id string, revision uint64, secret string, wrapped []byte) ([]byte, []byte, equipment.Code) {
-	master, err := v.master()
-	if err != nil {
-		return nil, nil, equipment.VaultUnavailable
-	}
-	defer clear(master)
-	var key []byte
-	var keyID string
-	if len(wrapped) == 0 {
-		key = make([]byte, 32)
-		if _, err = io.ReadFull(v.Random, key); err != nil {
-			return nil, nil, equipment.VaultUnavailable
-		}
-		defer clear(key)
-		idBytes := make([]byte, 16)
-		if _, err = io.ReadFull(v.Random, idBytes); err != nil {
-			return nil, nil, equipment.VaultUnavailable
-		}
-		keyID = hex.EncodeToString(idBytes)
-		wrapped, err = v.seal(master, key, aad("company-key", installation, company, keyID, 1), keyID)
-	} else {
-		key, keyID, err = v.dataKey(installation, company, wrapped, master)
-		defer clear(key)
-	}
-	if err != nil {
-		return nil, nil, equipment.VaultUnavailable
-	}
-	plain := []byte(secret)
-	defer clear(plain)
-	b, err := v.seal(key, plain, aad("read-credential", installation, company, id, revision), keyID)
-	if err != nil {
-		return nil, nil, equipment.VaultUnavailable
-	}
-	return b, wrapped, equipment.OK
+	return v.sealPurpose(binding{installation, company, id, "read-credential", revision, 1024}, secret, wrapped)
 }
 func (v *Vault) Open(installation, company, id string, revision uint64, b, wrapped []byte) (string, equipment.Code) {
-	master, err := v.master()
-	if err != nil {
-		return "", equipment.VaultUnavailable
-	}
-	defer clear(master)
-	key, keyID, err := v.dataKey(installation, company, wrapped, master)
-	if err != nil {
-		return "", equipment.VaultUnavailable
-	}
-	defer clear(key)
-	e, err := decode(b)
-	if err != nil || e.KeyID != keyID {
-		return "", equipment.VaultUnavailable
-	}
-	plain, err := open(key, e, aad("read-credential", installation, company, id, revision))
-	if err != nil {
-		return "", equipment.VaultUnavailable
-	}
-	defer clear(plain)
-	return string(plain), equipment.OK
+	return v.openPurpose(binding{installation, company, id, "read-credential", revision, 1024}, b, wrapped)
 }
 func (v *Vault) Stamp(input string) (string, equipment.Code) {
 	key, e := v.master()

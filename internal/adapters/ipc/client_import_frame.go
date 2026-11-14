@@ -9,7 +9,7 @@ import (
 )
 
 func clientFrameLimit(op string, response bool) int {
-	if response && (isTablePage(op) || isGroupOperation(op)) {
+	if response && (isTablePage(op) || isGroupOperation(op) || op == "config.compare") {
 		return MaxBrandFrame
 	}
 	if isImport(op) || op == "company.brand-set" || response && op == "company.brand-get" {

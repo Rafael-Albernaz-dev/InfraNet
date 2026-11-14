@@ -46,6 +46,14 @@ function memory(d: Device) {
 }
 export const columns: Column[] = [
   {
+    id: 'config',
+    label: 'Configuração',
+    cell: ({ device }) =>
+      device.config
+        ? `${device.config.unchanged ? 'Igual desde' : 'Alterada em'} ${formatDate(device.config.at)}`
+        : 'Ainda sem cópia',
+  },
+  {
     id: 'client_login',
     label: 'Login do cliente',
     cell: ({ device }) => device.cpe_login?.login || '—',

@@ -22,6 +22,8 @@ import (
 
 // operationalRig is the real binding -> IPC -> service -> SQLite -> SSH fixture path.
 type operationalRig struct {
+	server              *ipc.Server
+	auth                *access.Service
 	t                   *testing.T
 	ctx                 context.Context
 	st                  *storage.Store
@@ -87,7 +89,7 @@ func newOperationalRig(t *testing.T, remotes ...equipment.Remote) *operationalRi
 		}
 	})
 	app := New(ipc.NewAccountClient(filepath.Join(root, "runtime"), filepath.Join(root, "client"), uid))
-	return &operationalRig{t: t, ctx: ctx, st: st, app: app, root: root, provider: provider}
+	return &operationalRig{t: t, ctx: ctx, st: st, app: app, root: root, provider: provider, server: server, auth: auth}
 }
 
 func (r *operationalRig) enrollDevice() {

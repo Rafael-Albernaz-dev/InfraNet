@@ -1,5 +1,6 @@
 import {
   useContext,
+  type ReactNode,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -22,6 +23,8 @@ import {
   equipmentQueryRunning,
   equipmentReadBlocked,
 } from './equipment-query-policy';
+import { ConfigProvider } from '../../features/equipment/config-provider';
+import { ConfigTab } from '../../features/equipment/config-backup';
 import { SummaryTab } from './equipment-summary-tab';
 import { PPPoE } from './pppoe-with-link';
 import { DeviceMonitoring } from '../../features/pppoe/device-monitoring';
@@ -43,10 +46,31 @@ export type Props = ReturnType<typeof useEquipmentState> & {
   onBackReady?: (back?: () => void) => void;
 };
 const TABS: Record<string, string[]> = {
-  concentrator: ['Resumo', 'PPP', 'Interfaces e saúde', 'Serviços', 'Acesso'],
-  [RadioRoles.ap]: ['Resumo', 'Clientes', 'Rádio', 'Interfaces', 'Acesso'],
-  [RadioRoles.cpe]: ['Resumo', 'Enlace', 'Cliente', 'Roteador', 'Acesso'],
-  [RadioRoles.ptp]: ['Resumo', 'Enlace', 'Acesso'],
+  concentrator: [
+    'Resumo',
+    'PPP',
+    'Interfaces e saúde',
+    'Serviços',
+    'Configuração',
+    'Acesso',
+  ],
+  [RadioRoles.ap]: [
+    'Resumo',
+    'Clientes',
+    'Rádio',
+    'Interfaces',
+    'Configuração',
+    'Acesso',
+  ],
+  [RadioRoles.cpe]: [
+    'Resumo',
+    'Enlace',
+    'Cliente',
+    'Roteador',
+    'Configuração',
+    'Acesso',
+  ],
+  [RadioRoles.ptp]: ['Resumo', 'Enlace', 'Configuração', 'Acesso'],
   other: ['Resumo', 'Acesso'],
 };
 function AccessTab({ p }: { p: Props }) {
@@ -147,6 +171,7 @@ function SheetContent({
   pppTab: import('../../features/pppoe/pppoe-state').PPPoETab;
   onPPP: (tab: import('../../features/pppoe/pppoe-state').PPPoETab) => void;
 }) {
+  if (tab === 'Configuração') return <ConfigTab />;
   if (tab === 'Acesso') return <AccessTab p={p} />;
   if (tab === 'Resumo' && driverOwners[p.selected.role || ''])
     return (
@@ -205,11 +230,7 @@ export function EquipmentDetailPane(p: Props) {
     useState<import('../../features/pppoe/pppoe-state').PPPoETab>('sessions');
   const { detailSurfaceRef } = p;
   const [tab, setTab] = useState(
-    p.sessionTarget?.deviceID === p.selected.id
-      ? 'PPP'
-      : sessionRoute?.returnOrigin === p.selected.id
-        ? 'Cliente'
-        : 'Resumo',
+    initialEquipmentTab(p, sessionRoute?.returnOrigin),
   );
   useEffect(() => {
     if (sessionRoute?.returnOrigin === p.selected.id)
@@ -223,80 +244,84 @@ export function EquipmentDetailPane(p: Props) {
   const isRadio = [RadioRoles.ap, RadioRoles.cpe, RadioRoles.ptp].some(
     (r) => r === role,
   );
-  const noDriver = Boolean(driverOwners[role]);
-  useSummaryRefresh(p, tab, isRadio || noDriver);
+  useSummaryRefresh(p, tab, isRadio || Boolean(driverOwners[role]));
   const back = createEquipmentBack(p);
   useLayoutEffect(() => {
     p.onBackReady?.(back);
     return () => p.onBackReady?.();
   });
   return (
-    <section
-      ref={detailSurfaceRef}
-      tabIndex={-1}
-      className="equipment-sheet"
-      aria-label="Ficha do equipamento"
-    >
-      <div hidden={sessionRoute?.active}>
-        <EquipmentSheetHeader
-          p={p}
-          tab={tab}
-          isRadio={isRadio}
-          back={back}
-          setRadioActions={setRadioActions}
-        />
-        <div className="chain" ref={setChainHost}>
-          {!isRadio && (
-            <EquipmentChain
-              device={device}
-              devices={p.devices}
-              open={p.openById}
-            />
-          )}
-        </div>
-        <EquipmentQueryFailure state={p} tab={tab} isRadio={isRadio} />
-        <Tabs
-          label="Ficha do equipamento"
-          items={(TABS[role] || TABS.other).map((t) => [t, t])}
-          value={tab}
-          onChange={setTab}
-        />
-      </div>
-      <HeaderActionHost value={radioActions}>
-        {isRadio && (
-          <RadioEquipment
-            key={[p.profile, p.activation, device.id, device.revision].join(
-              '|',
-            )}
-            profile={p.profile}
-            activation={p.activation}
-            device={device}
-            blocked={p.locked || !p.vault || !device.active}
-            refreshAvailable={p.connected && p.vault && !p.locked}
-            refreshDecision={radioRefreshDecision}
-            tab={tab}
-            actionHost={radioActions}
-            chainHost={chainHost}
-            devices={p.devices}
-            onAccess={() => setTab('Acesso')}
-            openEquipment={p.openById}
-            openSession={p.openSession}
-          />
-        )}
-        {(!isRadio || tab === 'Acesso' || tab === 'Roteador') && (
-          <SheetContent
+    <EquipmentConfigProvider p={p} open={() => setTab('Configuração')}>
+      <section
+        ref={detailSurfaceRef}
+        tabIndex={-1}
+        className="equipment-sheet"
+        aria-label="Ficha do equipamento"
+      >
+        <div hidden={sessionRoute?.active}>
+          <EquipmentSheetHeader
             p={p}
             tab={tab}
-            onTab={setTab}
-            pppTab={pppTab}
-            onPPP={(sub) => {
-              setPPPTab(sub);
-              setTab('PPP');
-            }}
+            isRadio={isRadio}
+            back={back}
+            setRadioActions={setRadioActions}
           />
-        )}
-      </HeaderActionHost>
-    </section>
+          <div className="chain" ref={setChainHost}>
+            {!isRadio && (
+              <EquipmentChain
+                device={device}
+                devices={p.devices}
+                open={p.openById}
+              />
+            )}
+          </div>
+          <EquipmentQueryFailure state={p} tab={tab} isRadio={isRadio} />
+          <Tabs
+            label="Ficha do equipamento"
+            items={(TABS[role] || TABS.other).map((t) => [t, t])}
+            value={tab}
+            onChange={setTab}
+          />
+        </div>
+        <HeaderActionHost value={radioActions}>
+          {isRadio && tab !== 'Configuração' && (
+            <RadioEquipment
+              key={[p.profile, p.activation, device.id, device.revision].join(
+                '|',
+              )}
+              profile={p.profile}
+              activation={p.activation}
+              device={device}
+              blocked={p.locked || !p.vault || !device.active}
+              refreshAvailable={p.connected && p.vault && !p.locked}
+              refreshDecision={radioRefreshDecision}
+              tab={tab}
+              actionHost={radioActions}
+              chainHost={chainHost}
+              devices={p.devices}
+              onAccess={() => setTab('Acesso')}
+              openEquipment={p.openById}
+              openSession={p.openSession}
+            />
+          )}
+          {(!isRadio ||
+            tab === 'Acesso' ||
+            tab === 'Roteador' ||
+            tab === 'Configuração') && (
+            <SheetContent
+              p={p}
+              tab={tab}
+              onTab={setTab}
+              pppTab={pppTab}
+              onPPP={(sub) => {
+                setPPPTab(sub);
+                setTab('PPP');
+              }}
+            />
+          )}
+        </HeaderActionHost>
+      </section>
+    </EquipmentConfigProvider>
   );
 }
 
@@ -317,4 +342,40 @@ function createEquipmentBack(p: Props) {
       row?.focus({ preventScroll: true });
     });
   };
+}
+
+function EquipmentConfigProvider({
+  p,
+  open,
+  children,
+}: {
+  p: Props;
+  open: () => void;
+  children: ReactNode;
+}) {
+  const { profile, activation, selected, connected, locked, vault } = p;
+  return (
+    <ConfigProvider
+      key={[profile, activation, selected.id].join('|')}
+      profile={profile}
+      activation={activation}
+      device={selected.id}
+      source={[
+        selected.result?.family,
+        selected.result?.version,
+        selected.radio_summary?.family,
+        selected.radio_summary?.version,
+      ].join('|')}
+      blocked={!connected || locked || !vault || !selected.active}
+      open={open}
+    >
+      {children}
+    </ConfigProvider>
+  );
+}
+
+function initialEquipmentTab(p: Props, returnOrigin?: string) {
+  if (p.sessionTarget?.deviceID === p.selected.id) return 'PPP';
+  if (returnOrigin === p.selected.id) return 'Cliente';
+  return 'Resumo';
 }

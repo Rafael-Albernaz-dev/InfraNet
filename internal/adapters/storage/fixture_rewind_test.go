@@ -3,7 +3,7 @@ package storage
 import "testing"
 
 // latestCompanySchema is the newest company migration the synthetic fixtures know.
-const latestCompanySchema = 19
+const latestCompanySchema = 20
 
 func dropRadioFixtureSchema(t *testing.T, j *journey) {
 	dropPulseFixtureSchema(t, j)
@@ -57,7 +57,8 @@ func dropPulseFixtureSchema(t *testing.T, j *journey) {
 	if _, err := j.st.unit.Exec("DROP VIEW IF EXISTS pppoe_row_values"); err != nil {
 		t.Fatal(err)
 	}
-	for _, table := range []string{"cpe_logins", "ppp_interface_aps", "ppp_catalog", "device_presence",
+	for _, table := range []string{"config_versions", "config_backup_status", "cpe_logins", "ppp_interface_aps",
+		"ppp_catalog", "device_presence",
 		"device_pulse_events",
 		"device_boot_checkpoint",
 		"device_identity_checkpoint",

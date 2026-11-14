@@ -1,7 +1,5 @@
-import {
-  SummaryAccess,
-  SummaryPending,
-} from '../../features/equipment/equipment-summary-common';
+import { SummaryAccess } from '../../features/equipment/equipment-summary-common';
+import { ConfigSummary } from '../../features/equipment/config-backup';
 import type { Props } from './equipment-detail';
 import { EquipmentReading } from '../../features/equipment/equipment-reading';
 import { queryFailureOwnsDetail } from '../../features/equipment/equipment-query-failure';
@@ -53,7 +51,7 @@ export function SummaryTab({
             onSessions={onSessions}
             onServers={onServers}
           />
-          <SummaryPending title="Configuração" slice="L-CFG" />
+          <ConfigSummary />
           <SummaryAccess
             device={p.selected}
             edit={onAccess}

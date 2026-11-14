@@ -24,6 +24,9 @@ func ListenAccess(dir string, uid uint32, svc *access.Service, identity foundati
 }
 func (s *Server) dispatchAccess(ctx context.Context, uid uint32, q Request, owner string) Response {
 	r := Response{Version: 1, RequestID: q.RequestID, Code: foundation.Invalid}
+	if isConfig(q.Op) {
+		return s.dispatchConfig(ctx, uid, q, owner)
+	}
 	if isRadio(q.Op) {
 		return s.dispatchRadio(ctx, uid, q, owner)
 	}

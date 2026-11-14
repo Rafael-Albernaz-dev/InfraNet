@@ -219,6 +219,7 @@ function inspect(name, code) {
         n.moduleSpecifier.text === "../../../wailsjs/go/presentation/App"
       ) {
         const approved = new Set([
+          "ListConfig", "SaveConfig", "CompareConfig", "DownloadConfig",
           "RegistrationStatus",
           "ConfirmRegistration",
           "EquipmentGroups",
