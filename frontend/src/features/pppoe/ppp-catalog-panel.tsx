@@ -1,3 +1,4 @@
+import { PPPServerAPs } from './ppp-server-aps';
 import { PPPExportActions } from './ppp-export-actions';
 import { usePPPPageSamples } from './ppp-page-samples';
 import type { Device } from '../equipment/equipment-api';
@@ -12,8 +13,31 @@ import { DataTable } from '../../shared/ui/DataTable';
 import type { PPPEntry } from '../../platform/wails/ppp-catalog';
 import { PPP_SCREENS, pppValue } from './ppp-columns';
 import { usePPPTable, type PPPTableInput } from './use-ppp-table';
-export function PPPCatalogPanel(p: PPPTableInput & { devices?: Device[] }) {
-  const table = usePPPTable(p);
+type CatalogPanelInput = PPPTableInput & {
+  devices?: Device[];
+  linkageOnly?: boolean;
+  highlightInterface?: string;
+  concentratorName?: string;
+  openEquipment?: (id: string) => void;
+};
+export function PPPCatalogPanel(p: CatalogPanelInput) {
+  const loaded = usePPPTable(p);
+  const compact = ['interface', 'vlan', 'name', 'online', 'aps'].flatMap((id) =>
+    loaded.columns.filter((c) => c.id === id),
+  );
+  const table = p.linkageOnly
+    ? {
+        ...loaded,
+        columns: compact,
+        preference: {
+          ...loaded.preference,
+          state: {
+            ...loaded.preference.state,
+            columns: ['vlan', 'name', 'online', 'aps'],
+          },
+        },
+      }
+    : loaded;
   const navigation = useContext(SessionRoute);
   const data = table.result?.data || table.previous?.data;
   const entries = data?.entries || [];
@@ -47,7 +71,11 @@ export function PPPCatalogPanel(p: PPPTableInput & { devices?: Device[] }) {
   );
   return (
     <DataBlock
-      title={PPP_SCREENS.find(([id]) => id === p.screen)?.[1] || 'PPP'}
+      title={
+        p.linkageOnly
+          ? 'VLANs e interfaces PPPoE do ' + (p.concentratorName || p.device)
+          : PPP_SCREENS.find(([id]) => id === p.screen)?.[1] || 'PPP'
+      }
       source={p.device ? 'SSH' : 'SSH · todos os concentradores'}
       age={readingAge(dates[0])}
       data={tableData(table, content, entries.length > 0)}
@@ -60,14 +88,14 @@ function PPPTable({
   entries,
   open,
 }: {
-  p: PPPTableInput;
+  p: CatalogPanelInput;
   table: ReturnType<typeof usePPPTable>;
   entries: PPPEntry[];
   open: (e: PPPEntry) => void;
 }) {
   const [policy, setPolicy] = useState({ threshold: 50, minimum: 5 });
   const data = table.result?.data || table.previous?.data;
-  const filters = pppFilters(p.screen);
+  const filters = pppFilters(p.screen, p.linkageOnly);
   if (!p.device) filters.push('concentrator');
   return (
     <>
@@ -78,7 +106,7 @@ function PPPTable({
           counts={data?.counts}
         />
       )}
-      {p.screen === 'servers' && (
+      {p.screen === 'servers' && !p.linkageOnly && (
         <PPPServerPolicy
           onChange={(threshold, minimum) => setPolicy({ threshold, minimum })}
         />
@@ -122,6 +150,8 @@ function PPPTable({
                 <td key={c.id} data-value={pppValue(e, c.id)}>
                   <PPPTableCell
                     entry={e}
+                    context={p}
+                    changed={table.retry}
                     column={c.id}
                     primary={i === 0}
                     policy={policy}
@@ -154,7 +184,8 @@ function tableData(
     };
   return { state: 'ready', content };
 }
-function pppFilters(screen: PPPTableInput['screen']) {
+function pppFilters(screen: PPPTableInput['screen'], linkageOnly = false) {
+  if (linkageOnly) return [];
   if (screen === 'sessions')
     return ['state', 'profile', 'vlan', 'service', 'duplicates'];
   if (screen === 'servers') return ['state', 'aps'];
@@ -163,12 +194,16 @@ function pppFilters(screen: PPPTableInput['screen']) {
   return [];
 }
 function PPPTableCell({
+  context,
+  changed,
   entry,
   column,
   primary,
   policy,
   open,
 }: {
+  context: CatalogPanelInput;
+  changed: () => void;
   entry: PPPEntry;
   column: string;
   primary: boolean;
@@ -182,6 +217,14 @@ function PPPTableCell({
       </Button>
     );
   const value = pppValue(entry, column);
+  if (column === 'interface' && context.highlightInterface === entry.interface)
+    return (
+      <>
+        <b>{value}</b> <span className="muted">· interface deste cliente</span>
+      </>
+    );
+  if (column === 'aps' && entry.kind === 'server' && entry.invalid !== true)
+    return <PPPServerAPs entry={entry} context={context} changed={changed} />;
   if (
     column === 'drop' &&
     entry.drop !== undefined &&

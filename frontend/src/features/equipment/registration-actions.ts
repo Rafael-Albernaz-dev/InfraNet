@@ -52,7 +52,7 @@ export async function confirmFailedRegistration(
       `Cadastrado com aviso: ${s.contact.code}. O nome fica ${s.contact.address} até a primeira leitura.`,
     );
     s.setCompleted(true);
-    p.saved(false);
+    p.saved(false, s.ids.device);
   } finally {
     s.lock.current = false;
   }

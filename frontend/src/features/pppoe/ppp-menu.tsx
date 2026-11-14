@@ -46,6 +46,7 @@ export function PPPMenu(p: Props) {
               screen={key}
               active={key === screen && !navigation?.active}
               devices={p.devices}
+              openEquipment={p.openEquipment}
               refresh={catalog.refresh}
             />
           </div>

@@ -101,6 +101,7 @@ export function PPPoEWorkspace(p: WorkspaceProps) {
           activation={s.activation}
           device={s.device.id}
           screen={catalogScreen}
+          openEquipment={p.openEquipment}
           refresh={catalog.refresh}
         />
       ) : (

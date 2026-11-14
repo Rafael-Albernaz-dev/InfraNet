@@ -58,7 +58,7 @@ function acceptEnrollment(
     p.reloadCredentials((n) => n + 1);
     s.setRetry(false);
     s.setIDs({ device: id(), operation: id() });
-    p.saved(input.another);
+    p.saved(input.another, result.data?.device?.id || s.ids.device);
   }
 }
 export async function saveEnrollment(
@@ -149,7 +149,7 @@ function completeReconciledEnrollment(p: EnrollmentProps, s: EnrollmentState) {
   s.setUncertain(false);
   s.setCompleted(true);
   p.reloadCredentials((n) => n + 1);
-  p.saved(false);
+  p.saved(false, s.ids.device);
 }
 
 async function recoverRegistrationJob(

@@ -47,6 +47,7 @@ export function Dialog({
   dismissOnBackdrop = true,
   inactive = false,
   showClose = true,
+  wide = false,
 }: {
   title: string;
   children: ReactNode;
@@ -55,6 +56,7 @@ export function Dialog({
   dismissOnBackdrop?: boolean;
   inactive?: boolean;
   showClose?: boolean;
+  wide?: boolean;
 }) {
   const host = useContext(DialogHost);
   const ref = useRef<HTMLElement>(null);
@@ -81,7 +83,7 @@ export function Dialog({
     >
       <section
         ref={ref}
-        className="dialog dlg"
+        className={wide ? 'dialog dlg larga' : 'dialog dlg'}
         role="dialog"
         inert={inactive}
         aria-hidden={inactive || undefined}

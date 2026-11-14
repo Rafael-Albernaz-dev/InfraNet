@@ -12,7 +12,7 @@ export type EnrollmentProps = {
   setErrors: (errors: Record<string, string>) => void;
   profile: string;
   activation: string;
-  saved: (another: boolean) => void;
+  saved: (another: boolean, device?: string) => void;
 };
 
 export function useEnrollmentState(key: string) {

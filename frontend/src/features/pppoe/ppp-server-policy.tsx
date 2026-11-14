@@ -36,10 +36,6 @@ export function PPPServerPolicy({
         />
         <span className="muted">Pico entre amostras salvas.</span>
       </div>
-      <p className="muted">
-        APs ligados mostram os vínculos já salvos. Ligar AP: ainda não existe
-        (L-ENLACE).
-      </p>
     </>
   );
 }
