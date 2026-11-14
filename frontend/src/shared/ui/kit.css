@@ -1395,3 +1395,8 @@ p.import-status-error {
 .diff .rem {
   color: var(--erro);
 }
+.msg-erro {
+  color: var(--erro);
+  font-weight: 600;
+  margin: 0 0 8px;
+}
