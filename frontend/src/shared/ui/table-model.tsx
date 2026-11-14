@@ -28,7 +28,6 @@ export type TableColumn = {
   className?: string;
 };
 export type TableFilter = {
-  optionalColumn?: boolean;
   id: string;
   label: string;
   options: { value: string; label: string }[];

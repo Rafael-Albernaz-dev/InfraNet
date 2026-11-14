@@ -5,7 +5,7 @@ import type { InventoryState } from '../inventory/inventory-selection-state';
 import { Summary } from './equipment-summary-blocks';
 import type { Device } from './equipment-api';
 
-it('keeps permission failures unknown in list and summary and orders/filters known metrics numerically', () => {
+it('keeps permission failures unknown in list and summary and orders known metrics numerically without latency/loss dropdowns', () => {
   const devices = [
     { id: 'blocked', name: 'Sem permissão', active: true, pulse: {} },
     {
@@ -57,10 +57,9 @@ it('keeps permission failures unknown in list and summary and orders/filters kno
   ).not.toHaveTextContent('99%');
   fireEvent.click(screen.getByRole('button', { name: 'Latência' }));
   expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Rápido');
-  fireEvent.change(screen.getByRole('combobox', { name: 'Perda' }), {
-    target: { value: '10' },
-  });
-  expect(within(table).getAllByRole('row')).toHaveLength(2);
+  for (const name of ['Latência', 'Perda'])
+    expect(screen.queryByRole('combobox', { name })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Latência' }));
   expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Lento');
   view.unmount();
   render(

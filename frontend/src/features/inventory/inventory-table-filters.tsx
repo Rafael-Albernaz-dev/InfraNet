@@ -1,4 +1,3 @@
-import { collectorMetric } from '../equipment/collector-metrics';
 import { groupTreeOptions, groupContains } from '../equipment/groups';
 import type { InventoryState } from './inventory-selection-state';
 import type { TableFilter } from '../../shared/ui/table-model';
@@ -7,7 +6,6 @@ export function inventoryFilters(p: InventoryState): TableFilter[] {
   const options = (values: string[]) =>
     values.map((value) => ({ value, label: value }));
   return [
-    ...collectorFilters(p),
     {
       id: 'status',
       label: 'Estado',
@@ -57,26 +55,4 @@ export function inventoryFilters(p: InventoryState): TableFilter[] {
       matches: (r, v) => v === 'all' || r.props['data-active'] === true,
     },
   ];
-}
-
-function collectorFilters(p: InventoryState): TableFilter[] {
-  return (
-    [
-      ['latency', 'Latência', 'latency_ms'],
-      ['loss', 'Perda', 'loss_percent'],
-    ] as const
-  ).map(([id, label, field]) => ({
-    id,
-    label,
-    optionalColumn: true,
-    options: [
-      ...new Set(
-        p.devices
-          .map((d) => collectorMetric(d, field))
-          .filter((v) => v !== undefined),
-      ),
-    ]
-      .sort((a, b) => a - b)
-      .map((v) => ({ value: String(v), label: String(v) })),
-  }));
 }
