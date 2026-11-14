@@ -66,7 +66,7 @@ func dial(ctx context.Context, d equipment.Device) (net.Conn, func(), equipment.
 	return dialBudget(ctx, d, equipment.QueryBudget)
 }
 func dialBudget(ctx context.Context, d equipment.Device, budget time.Duration) (net.Conn, func(), equipment.Code) {
-	if budget <= 0 || budget > 60*time.Second {
+	if budget <= 0 || budget > equipment.PingWindowBudget {
 		return nil, func() {}, equipment.Invalid
 	}
 	ctx, cancel := context.WithTimeout(ctx, budget)

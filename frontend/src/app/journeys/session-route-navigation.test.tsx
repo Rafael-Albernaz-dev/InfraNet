@@ -499,33 +499,37 @@ it('rejects a detail response whose login does not match the route target', asyn
 });
 
 it('runs ping only for the selected session from the information tab', async () => {
-  vi.mocked(pppoeDiagnosticAPI.ping).mockResolvedValue(
-    pp({ job: { id: 'ping-fixture', state: 'RUNNING', code: 'OK' }, total: 0 }),
+  vi.mocked(pppoeReadAPI.start).mockImplementation(async (...args) =>
+    pp({ job: { id: args[4], state: 'RUNNING', code: 'OK' }, total: 0 }),
   );
-  vi.mocked(pppoeDiagnosticAPI.status).mockResolvedValue(
-    pp({
-      job: {
-        id: 'ping-fixture',
-        state: 'FAILED',
-        code: 'OBSERVATION_INCOMPATIBLE',
-      },
-      total: 0,
-    }),
+  vi.mocked(pppoeReadAPI.status).mockResolvedValue(
+    pp({ job: { id: 'ping-window', state: 'RUNNING', code: 'OK' }, total: 0 }),
   );
   await openFirstSession();
   fireEvent.click(screen.getByRole('tab', { name: 'Resumo' }));
   const ping = await screen.findByRole('button', { name: 'Ping' });
   await waitFor(() => expect(ping).toBeEnabled());
   fireEvent.click(ping);
+  await screen.findByRole('dialog');
   await waitFor(() =>
-    expect(pppoeDiagnosticAPI.ping).toHaveBeenCalledWith(
+    expect(pppoeReadAPI.start).toHaveBeenCalledWith(
       'company',
       'activation',
       'ccr-fixture',
-      'obs',
-      'row-0',
       expect.any(String),
+      'ping-window',
+      'obs',
+      ['row-0'],
       1,
+    ),
+  );
+  expect(pppoeDiagnosticAPI.ping).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Fechar' }));
+  await waitFor(() =>
+    expect(pppoeReadAPI.cancel).toHaveBeenCalledWith(
+      'company',
+      'activation',
+      'ping-window',
     ),
   );
 });

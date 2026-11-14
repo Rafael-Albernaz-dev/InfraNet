@@ -180,7 +180,11 @@ type PPReadCost struct {
 	CPUEnd     *uint64 `json:"cpu_end,omitempty"`
 }
 
+const PingWindowScope = "ping-window"
+const PingWindowBudget = 15 * time.Minute
+
 type PPReadResult struct {
+	PingSummary       string            `json:"ping_summary,omitempty"`
 	CatalogLimited    bool              `json:"catalog_limited,omitempty"`
 	FailureReason     string            `json:"-"`
 	VersionDivergence *bool             `json:"version_divergence,omitempty"`
@@ -204,6 +208,7 @@ type PPReadResult struct {
 }
 
 type PPReadTarget struct {
+	Ping        *PPPingTarget
 	Observation PPObservation
 	Rows        []PPRow
 	Age         PPInterval

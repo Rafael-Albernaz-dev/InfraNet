@@ -18,6 +18,10 @@ func (Adapter) ReadPP(
 	defer func() {
 		returned = normalizePPReadFailure(returned, code)
 	}()
+	if scope == equipment.PingWindowScope {
+		req.User, req.Secret = user, secret
+		return readPingWindow(ctx, req)
+	}
 	if handled, res, c := dispatchDirectReadScope(ctx, ppReadOptions{d, user, secret, scope, target}, check); handled {
 		return res, c
 	}

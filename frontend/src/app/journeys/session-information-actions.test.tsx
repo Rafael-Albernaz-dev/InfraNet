@@ -1,13 +1,7 @@
 import { RadioModes } from '../../features/equipment/radio-contract';
 import type { PPRow } from '../../platform/wails/presentation';
 import { createRef } from 'react';
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { PPPoESessionDetail } from '../../features/pppoe/pppoe-session-screen';
 import {
@@ -86,59 +80,55 @@ beforeEach(() => {
     response() as never,
   );
 });
-it('reopens the stored ping, checks uncertain progress and cancels the exact session job', async () => {
-  vi.mocked(pppoeDiagnosticAPI.ping).mockResolvedValue(
-    response({
-      job: { id: 'ping-fixture', state: 'RUNNING', code: 'OK' },
-    }) as never,
+it('reopens stored ping and cancels the exact terminal after an uncertain poll', async () => {
+  vi.mocked(pppoeReadAPI.start).mockImplementation(
+    async (...args) =>
+      response({ job: { id: args[4], state: 'RUNNING', code: 'OK' } }) as never,
   );
-  vi.mocked(pppoeDiagnosticAPI.status)
-    .mockRejectedValueOnce(new Error('synthetic status'))
-    .mockResolvedValue(
-      response({
-        job: { id: 'ping-fixture', state: 'RUNNING', code: 'OK' },
-      }) as never,
-    );
-  renderInformation();
-  const panel = await screen.findByRole('region', {
-    name: 'Sondagem da sessão pelo concentrador',
+  vi.mocked(pppoeReadAPI.status).mockImplementation(async (_p, _a, job) => {
+    if (job === 'ping-window') throw new Error('synthetic status');
+    return response({
+      job: { id: job, state: 'SUCCEEDED', code: 'OK' },
+    }) as never;
   });
+  renderInformation();
   fireEvent.click(
-    await within(panel).findByRole('button', {
-      name: 'Reabrir sondagem armazenada',
-    }),
+    await screen.findByRole('button', { name: 'Reabrir sondagem armazenada' }),
   );
   await waitFor(() =>
     expect(pppoeDiagnosticAPI.current).toHaveBeenCalledTimes(2),
   );
-  fireEvent.click(await within(panel).findByRole('button', { name: 'Ping' }));
-  await within(panel).findByRole('button', { name: 'Conferir andamento' });
-  fireEvent.click(
-    within(panel).getByRole('button', { name: 'Conferir andamento' }),
-  );
+  fireEvent.click(screen.getByRole('button', { name: 'Ping' }));
+  await screen.findByRole('dialog');
   await waitFor(() =>
-    expect(pppoeDiagnosticAPI.status).toHaveBeenCalledTimes(2),
-  );
-  fireEvent.click(
-    within(panel).getByRole('button', { name: 'Cancelar sondagem' }),
-  );
-  await waitFor(() =>
-    expect(pppoeDiagnosticAPI.cancel).toHaveBeenCalledWith(
+    expect(pppoeReadAPI.start).toHaveBeenCalledWith(
       'company',
       'active',
-      'ping-fixture',
+      'router-fixture',
+      expect.any(String),
+      'ping-window',
+      'obs-fixture',
+      ['row-fixture'],
+      1,
     ),
   );
-  expect(pppoeDiagnosticAPI.ping).toHaveBeenCalledWith(
-    'company',
-    'active',
-    'router-fixture',
-    'obs-fixture',
-    'row-fixture',
-    expect.any(String),
-    1,
+  await screen.findByRole('alert');
+  expect(
+    vi
+      .mocked(pppoeReadAPI.status)
+      .mock.calls.filter((args) => args[2] === 'ping-window'),
+  ).toHaveLength(1);
+  fireEvent.click(screen.getByRole('button', { name: 'Fechar' }));
+  await waitFor(() =>
+    expect(pppoeReadAPI.cancel).toHaveBeenCalledWith(
+      'company',
+      'active',
+      'ping-window',
+    ),
   );
+  expect(pppoeDiagnosticAPI.ping).not.toHaveBeenCalled();
 });
+
 it('starts log and secret evidence from the new session screen for its selected row', async () => {
   vi.mocked(pppoeReadAPI.start).mockImplementation(
     async (...args) =>

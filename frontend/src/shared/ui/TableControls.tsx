@@ -100,7 +100,7 @@ export function TableControls(p: Props) {
         onChange={(e) => p.change({ ...p.state, search: e.target.value })}
       />
       {p.filters
-        .filter((f) => !f.checkbox)
+        .filter((f) => !f.checkbox && filterIsVisible(f, p.state))
         .map((f) => (
           <Select
             key={f.id}
@@ -209,5 +209,13 @@ export function TablePager(p: {
         </Select>
       </label>
     </div>
+  );
+}
+
+function filterIsVisible(filter: TableFilter, state: TablePreference) {
+  return (
+    !filter.optionalColumn ||
+    state.columns.includes(filter.id) ||
+    Boolean(state.filters[filter.id])
   );
 }

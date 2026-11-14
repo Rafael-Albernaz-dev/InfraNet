@@ -18,7 +18,8 @@ type ipcPulse struct{ id string }
 
 func (p ipcPulse) Snapshot(string, time.Time) (pulse.Snapshot, bool) {
 	return pulse.Snapshot{Network: pulse.NetworkOK, Devices: map[string]pulse.DeviceStatus{
-		p.id: {State: pulse.Online, Address: "127.0.0.1", CheckedAt: time.Now()},
+		p.id: {State: pulse.Online, Address: "127.0.0.1", CheckedAt: time.Now(),
+			LatencyLoss: pulse.LatencyMetrics{Known: true, Latency: 6 * time.Millisecond, LossPercent: 10}},
 	}}, true
 }
 func TestInventoryPulseNeverPublishedWithoutSession(t *testing.T) {
@@ -32,6 +33,10 @@ func TestInventoryPulseNeverPublishedWithoutSession(t *testing.T) {
 	if r.Code != foundation.OK || r.Data == nil || len(r.Data.Equipment.Devices) != 1 ||
 		r.Data.Equipment.Devices[0].Pulse == nil || r.Data.Equipment.Devices[0].Pulse.State != "ONLINE" {
 		t.Fatal("authorized pulse missing", r.Code)
+	}
+	metrics := r.Data.Equipment.Devices[0].Pulse
+	if metrics.LatencyMS == nil || *metrics.LatencyMS != 6 || metrics.LossPercent == nil || *metrics.LossPercent != 10 {
+		t.Fatal("collector metrics lost across IPC", metrics)
 	}
 	q := Request{Op: "inventory.list", Capability: j.server.capability, Profile: j.client.profile, Activation: j.client.activation,
 		ExpectedProfile: j.client.profile, ExpectedActivation: j.client.activation, Equipment: &EquipmentInput{}}

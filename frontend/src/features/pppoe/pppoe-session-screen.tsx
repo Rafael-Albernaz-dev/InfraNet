@@ -1,3 +1,4 @@
+import { RadioModes } from '../equipment/radio-contract';
 import { usePPReadState, type ReadState } from './pppoe-read-state';
 import { ReadPanelBody } from './pppoe-read-panel-body';
 import { SessionHistory } from './session-history';
@@ -23,6 +24,8 @@ type SessionInformationTabProps = {
   disabled: boolean;
   fastTrack?: number;
   openEquipment?: (id: string) => void;
+  beforePing?: () => Promise<void>;
+  afterPing?: () => void;
 };
 function SessionInformationTab(p: SessionInformationTabProps) {
   const { selected, current, profile, activation, device, disabled } = p;
@@ -45,9 +48,12 @@ function SessionInformationTab(p: SessionInformationTabProps) {
           device={device}
           observation={current.observation_id}
           row={selected.row_id}
+          address={selected.address}
           uptime={selected.uptime}
           disabled={disabled}
           isOffline={isOffline}
+          beforePing={p.beforePing}
+          afterPing={p.afterPing}
           openEquipment={p.openEquipment}
         />
       </div>
@@ -165,6 +171,11 @@ function SessionDetailContent(
       activation={activation}
       device={device}
       disabled={disabled}
+      beforePing={p.live.cancel}
+      afterPing={() => {
+        if (!disabled && selected.state !== 'OFFLINE')
+          void p.live.start(RadioModes.live);
+      }}
       fastTrack={fastTrack}
       openEquipment={openEquipment}
     />

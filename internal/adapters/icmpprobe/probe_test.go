@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"infradesktop/internal/modules/pulse"
 )
@@ -21,7 +22,7 @@ func TestPingClassifiesProbeFailureSeparatelyFromUnreachable(t *testing.T) {
 		err          error
 		want         pulse.Outcome
 	}{
-		{"reply", "", nil, pulse.Reply},
+		{"reply", "64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.125 ms", nil, pulse.Reply},
 		{"lost", "", errors.New("exit 1"), pulse.NoReply},
 		{"route", "ping: connect: Network is unreachable", errors.New("exit 2"), pulse.NoReply},
 		{"permission", "ping: socket: Operation not permitted", errors.New("exit 2"), pulse.ProbeUnavailable},
@@ -36,8 +37,12 @@ func TestPingClassifiesProbeFailureSeparatelyFromUnreachable(t *testing.T) {
 				}
 				return []byte(tc.output), tc.err
 			})}
-			if got := p.Probe(context.Background(), "127.0.0.1"); got != tc.want {
-				t.Fatalf("got %s want %s", got, tc.want)
+			sample := p.ProbeSample(context.Background(), "127.0.0.1")
+			if sample.Outcome != tc.want {
+				t.Fatalf("got %s want %s", sample.Outcome, tc.want)
+			}
+			if tc.want == pulse.Reply && sample.RTT != 125*time.Microsecond {
+				t.Fatal("RTT not retained", sample)
 			}
 		})
 	}

@@ -185,7 +185,7 @@ func validPPReadRowIDs(scope string, rowIDs []string) bool {
 	if len(rowIDs) == 0 || len(rowIDs) > limit {
 		return false
 	}
-	if (scope == "log" || scope == "secret") && len(rowIDs) != 1 {
+	if (scope == "log" || scope == "secret" || scope == equipment.PingWindowScope) && len(rowIDs) != 1 {
 		return false
 	}
 	seen := map[string]bool{}

@@ -81,7 +81,7 @@ func collectorNamesIn(f *ast.File) []string {
 		if !ast.IsExported(name) || !strings.HasSuffix(name, "Command") {
 			return
 		}
-		if name == "BuildPDPingCommand" {
+		if name == "BuildPDPingCommand" || name == "BuildPingWindowCommand" {
 			name += "-v7"
 		}
 		names = append(names, name)

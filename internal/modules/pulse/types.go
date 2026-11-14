@@ -32,11 +32,12 @@ const (
 )
 
 type DeviceStatus struct {
-	Address   string    `json:"-"`
-	State     State     `json:"state"`
-	Since     time.Time `json:"since"`
-	LastReply time.Time `json:"last_reply"`
-	CheckedAt time.Time `json:"checked_at"`
+	LatencyLoss LatencyMetrics `json:"-"`
+	Address     string         `json:"-"`
+	State       State          `json:"state"`
+	Since       time.Time      `json:"since"`
+	LastReply   time.Time      `json:"last_reply"`
+	CheckedAt   time.Time      `json:"checked_at"`
 }
 type Snapshot struct {
 	Devices map[string]DeviceStatus

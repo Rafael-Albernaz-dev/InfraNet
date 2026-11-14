@@ -75,7 +75,7 @@ func applyUniqueTunnelContexts(rows []PPRow, tunnels []PPTunnel, matches, uses [
 
 func PPReadScope(scope string) bool {
 	switch scope {
-	case "ppp-catalog", "traffic", "operations", "bandwidth", "live", "top", "log", "health", "secret":
+	case equipment.PingWindowScope, "ppp-catalog", "traffic", "operations", "bandwidth", "live", "top", "log", "health", "secret":
 		return true
 	default:
 		return false
@@ -83,6 +83,9 @@ func PPReadScope(scope string) bool {
 }
 
 func PPReadBudget(scope string) time.Duration {
+	if scope == equipment.PingWindowScope {
+		return equipment.PingWindowBudget
+	}
 	if scope == "live" || scope == "traffic" {
 		return 60 * time.Second
 	}

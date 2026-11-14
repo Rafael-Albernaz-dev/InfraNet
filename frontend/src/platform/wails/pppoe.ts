@@ -142,7 +142,8 @@ const readBindings = {
   status: async (...args: Parameters<typeof PPPoEReadStatus>) => {
     const first = await PPPoEReadStatus(...args);
     if (
-      first.data?.job?.state !== 'SUCCEEDED' ||
+      (first.data?.job?.state !== 'SUCCEEDED' &&
+        first.data?.read?.scope !== 'ping-window') ||
       first.data?.read?.scope === 'ppp-catalog'
     )
       return first;

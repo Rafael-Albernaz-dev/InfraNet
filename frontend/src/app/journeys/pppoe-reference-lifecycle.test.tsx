@@ -474,7 +474,9 @@ it('fields, offline reason and previous page use stored data', async () => {
   expect(screen.getByText('Há quanto tempo (pelo menos)')).toBeInTheDocument();
   expect(screen.getByText(/1 min 30 s/)).toBeInTheDocument();
   clock.mockRestore();
-  expect(screen.getByRole('button', { name: 'Ping' })).toBeDisabled();
+  expect(
+    screen.queryByRole('button', { name: 'Ping' }),
+  ).not.toBeInTheDocument();
   expect(
     screen.queryByText(/Identidade local da linha/),
   ).not.toBeInTheDocument();

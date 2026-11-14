@@ -8,6 +8,7 @@ import (
 )
 
 type RunningJob struct {
+	PingPage           *PPReadResult
 	Radio              *RadioView
 	RadioInput         RadioInput
 	RadioDevices       []Device

@@ -1,5 +1,7 @@
 @import './vivo.css';
 :root {
+  --terminal-background: #0b1418;
+  --terminal-foreground: #cfeef7;
   color-scheme: light;
   --g00: #000000;
   --g11: #111111;

@@ -1,3 +1,4 @@
+import { collectorMetricText } from './collector-metrics';
 import { EquipmentStateLabel } from './equipment-state-label';
 import { Fragment } from 'react';
 import type { ReactNode } from 'react';
@@ -81,7 +82,7 @@ export function Summary({
             <dt>Tensão</dt>
             <dd>Não informado nesta leitura</dd>
             <dt>Latência / perda</dt>
-            <dd>Ainda não existe (L-PULSO-5)</dd>
+            <dd title="Do ping do coletor">{collectorMetricText(device)}</dd>
           </dl>,
           status && { ...status, error: undefined },
         )}

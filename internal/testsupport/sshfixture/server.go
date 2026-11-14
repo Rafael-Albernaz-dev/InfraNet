@@ -9,6 +9,7 @@ import (
 	"infradesktop/internal/adapters/routerssh"
 	"infradesktop/internal/adapters/routerssh/deviceparse"
 	"infradesktop/internal/adapters/routerssh/pppoeparse"
+	"io"
 	"net"
 	"strconv"
 	"sync"
@@ -19,6 +20,7 @@ import (
 const Password = "local-fixture-only"
 
 type Config struct {
+	Stream                      func(string, io.ReadWriteCloser) bool
 	OnHandshake                 func()
 	OnPassword                  func()
 	Family, Mode                string
@@ -163,51 +165,7 @@ func (s *Server) handle(conn net.Conn) {
 		}
 	}()
 
-	for channel := range channels {
-		if channel.ChannelType() != "session" {
-			channel.Reject(ssh.Prohibited, "only session")
-			continue
-		}
-		ch, reqs, e := channel.Accept()
-		if e != nil {
-			continue
-		}
-		func() {
-			defer ch.Close()
-			for req := range reqs {
-				if req.Type != "exec" {
-					req.Reply(false, nil)
-					continue
-				}
-				var exec struct{ Command string }
-				if ssh.Unmarshal(req.Payload, &exec) != nil {
-					req.Reply(false, nil)
-					return
-				}
-				s.Commands.Add(1)
-				req.Reply(true, nil)
-				if s.config.Hold != nil {
-					select {
-					case <-s.config.Hold:
-					case <-s.closed:
-						return
-					}
-				}
-				if s.config.DisconnectCommand != nil && s.config.DisconnectCommand(exec.Command) {
-					return
-				}
-				out, ok := s.output(exec.Command)
-				status := s.config.ExitStatus
-				if !ok {
-					status = 1
-				}
-				_, _ = ch.Stderr().Write([]byte(s.config.Stderr))
-				_, _ = ch.Write([]byte(out))
-				_, _ = ch.SendRequest("exit-status", false, ssh.Marshal(struct{ Status uint32 }{status}))
-				return
-			}
-		}()
-	}
+	s.handleChannels(channels)
 }
 func (s *Server) output(command string) (string, bool) {
 	if s.config.Command != nil {

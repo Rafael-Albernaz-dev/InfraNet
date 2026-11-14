@@ -49,6 +49,14 @@ func (s *Service) withPulse(devices []Device, profile string, v *View) []Device 
 			State: string(status.State), Since: pulseTime(status.Since),
 			LastReply: reply, CheckedAt: pulseTime(status.CheckedAt),
 		}
+		if status.LatencyLoss.Known {
+			loss := status.LatencyLoss.LossPercent
+			d.Pulse.LossPercent = &loss
+			if loss < 100 && status.LatencyLoss.Latency > 0 {
+				ms := float64(status.LatencyLoss.Latency) / float64(time.Millisecond)
+				d.Pulse.LatencyMS = &ms
+			}
+		}
 	}
 	return out
 }

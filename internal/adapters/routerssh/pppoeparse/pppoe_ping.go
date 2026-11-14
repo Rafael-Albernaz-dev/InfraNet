@@ -90,3 +90,24 @@ func BuildPDPingCommand(target *equipment.PPPingTarget) (string, bool) {
 
 	return command, true
 }
+
+// BuildPingWindowCommand keeps the exact session/context guards of the finite
+// diagnostic, changing only the ICMP command and its finite packet count.
+func BuildPingWindowCommand(target *equipment.PPPingTarget) (string, bool) {
+	command, ok := BuildPDPingCommand(target)
+	if !ok {
+		return "", false
+	}
+	// Only the final command suffix is rewritten: a login is opaque data and
+	// may itself contain these words inside its escaped RouterOS string.
+	start := strings.LastIndex(command, "/tool ping address=")
+	if start >= 0 {
+		command = command[:start] + strings.Replace(command[start:], "/tool ping address=", "/ping address=", 1)
+	}
+	start = strings.LastIndex(command, " count=3 interval=200ms")
+	if start < 0 {
+		return "", false
+	}
+	command = command[:start] + strings.Replace(command[start:], " count=3 interval=200ms", " interval=1s", 1)
+	return command, true
+}

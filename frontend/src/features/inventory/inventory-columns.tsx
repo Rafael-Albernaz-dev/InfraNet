@@ -1,3 +1,4 @@
+import { collectorMetric } from '../equipment/collector-metrics';
 import './inventory-pulse.css';
 import type { Device, Credential } from '../equipment/equipment-api';
 import { equipmentType } from '../equipment/equipment-layout';
@@ -130,6 +131,16 @@ export const columns: Column[] = [
       );
     },
   },
+  {
+    id: 'latency',
+    label: 'Latência',
+    cell: ({ device }) => metric(collectorMetric(device, 'latency_ms'), 'ms'),
+  },
+  {
+    id: 'loss',
+    label: 'Perda',
+    cell: ({ device }) => metric(collectorMetric(device, 'loss_percent'), '%'),
+  },
   { id: 'memory', label: 'Memória', cell: ({ device }) => memory(device) },
   {
     id: 'temperature',
@@ -201,6 +212,8 @@ function pulseCell({ device }: Context) {
 
 // Values are typed per metric; IPs, versions and names always keep text ordering.
 const sortMetrics: Record<string, (c: Context) => number | string> = {
+  latency: ({ device }) => collectorMetric(device, 'latency_ms') ?? '',
+  loss: ({ device }) => collectorMetric(device, 'loss_percent') ?? '',
   last_online: ({ device }) =>
     device.pulse?.last_reply ? Date.parse(device.pulse.last_reply) : '',
   last_reboot: ({ device }) =>

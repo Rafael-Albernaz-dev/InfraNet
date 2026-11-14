@@ -37,6 +37,11 @@ func diagnosticCommands(t *testing.T) map[string]string {
 		"BuildPPLogCommand": log, "BuildPPSecretCommand": secret}
 	for _, family := range []string{"6", "7"} {
 		out["BuildPDPingCommand-v"+family] = diagnosticPingCommand(t, family)
+		window, ok := pppoeparse.BuildPingWindowCommand(diagnosticPingTarget(t, family))
+		if !ok {
+			t.Fatal("ping window target", family)
+		}
+		out["BuildPingWindowCommand-v"+family] = window
 	}
 	return out
 }
@@ -55,14 +60,19 @@ func TestSyntaxDiagnosticsAreStructural(t *testing.T) {
 	}
 }
 
-func diagnosticPingCommand(t *testing.T, family string) string {
+func diagnosticPingTarget(t *testing.T, family string) *equipment.PPPingTarget {
+	t.Helper()
 	o, c := pppoeparse.ParsePPPoE("H\t1\t1\t" + family + ".14.3\t2d1h1s\nR\t*1\t1\tlab-user\t198.51.100.1\t02:00:00:00:00:01\t1h1s" +
 		"\nZ\t1\tcomplete\t2d1h1s\n")
 	if c != equipment.OK {
 		t.Fatal("ping observation")
 	}
-	body, ok := pppoeparse.BuildPDPingCommand(&equipment.PPPingTarget{Observation: *o, Row: o.Rows[0],
-		Age: equipment.PPInterval{Known: true, Max: int64(100 * time.Millisecond)}, Prepared: time.Now()})
+	return &equipment.PPPingTarget{Observation: *o, Row: o.Rows[0],
+		Age: equipment.PPInterval{Known: true, Max: int64(100 * time.Millisecond)}, Prepared: time.Now()}
+}
+func diagnosticPingCommand(t *testing.T, family string) string {
+	t.Helper()
+	body, ok := pppoeparse.BuildPDPingCommand(diagnosticPingTarget(t, family))
 	if !ok {
 		t.Fatal("ping target", family)
 	}

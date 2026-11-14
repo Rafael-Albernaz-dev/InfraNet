@@ -18,6 +18,11 @@ func ppStamp(kind string, in PPInput) string {
 }
 func (s *Service) HandlePP(ctx context.Context, q Command, in PPInput) (PPView, Code) {
 	v := PPView{}
+	if q.Op == "pppoe.read-start" && in.Scope == equipment.PingWindowScope {
+		if code := s.releaseLiveForPing(ctx, q, in); code != OK {
+			return v, code
+		}
+	}
 	c := s.inv.Authorized(ctx, q, func(version uint64) Code {
 		q.Authority = version
 		return s.dispatchPPP(ctx, q, in, &v)

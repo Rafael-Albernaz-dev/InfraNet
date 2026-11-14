@@ -177,6 +177,7 @@ export type PPReadRow = {
   tx_drops?: string;
 };
 export type PPReadResult = {
+  ping_summary?: string;
   version_divergence?: boolean;
   package_divergence?: boolean;
   compared_devices?: number;

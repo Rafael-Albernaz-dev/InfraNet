@@ -105,10 +105,12 @@ type Observation struct {
 }
 
 type PulseStatus struct {
-	State     string `json:"state"`
-	Since     string `json:"since"`
-	LastReply string `json:"last_reply"`
-	CheckedAt string `json:"checked_at"`
+	LatencyMS   *float64 `json:"latency_ms,omitempty"`
+	LossPercent *float64 `json:"loss_percent,omitempty"`
+	State       string   `json:"state"`
+	Since       string   `json:"since"`
+	LastReply   string   `json:"last_reply"`
+	CheckedAt   string   `json:"checked_at"`
 }
 
 type LiveReading struct {

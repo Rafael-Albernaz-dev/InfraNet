@@ -20,14 +20,16 @@ func slotHash(id string, slots int) int {
 }
 
 type Collector struct {
-	mu        sync.Mutex
-	inventory Inventory
-	prober    Prober
-	slots     chan struct{}
-	profile   string
-	targets   []Target
-	tracker   *Tracker
-	presence  PresenceStore
+	mu            sync.Mutex
+	inventory     Inventory
+	prober        Prober
+	slots         chan struct{}
+	profile       string
+	targets       []Target
+	tracker       *Tracker
+	presence      PresenceStore
+	samples       map[string][]Sample
+	sampleTargets map[string]Target
 }
 
 func NewCollector(inv Inventory, prober Prober, limit int) *Collector {
@@ -44,6 +46,7 @@ func (c *Collector) refresh(ctx context.Context) {
 	if profile != c.profile {
 		c.tracker = NewTracker()
 	}
+	c.syncSamples(targets, profile)
 	c.profile, c.targets = profile, targets
 	c.tracker.Sync(targets)
 	if c.presence != nil && profile != "" {
@@ -86,9 +89,11 @@ func (c *Collector) probeSlot(ctx context.Context, second int, now func() time.T
 		go func(target Target) {
 			defer wg.Done()
 			defer func() { <-c.slots }()
-			outcome := c.prober.Probe(ctx, target.Address)
+			sample := c.probe(ctx, target.Address)
 			if ctx.Err() == nil {
-				tracker.Record(target, outcome, now())
+				at := now()
+				sample.At = at
+				c.recordSample(tracker, target, sample)
 			}
 		}(target)
 	}
@@ -111,7 +116,14 @@ func (c *Collector) Snapshot(profile string, now time.Time) (Snapshot, bool) {
 	if profile == "" || profile != c.profile {
 		return Snapshot{}, false
 	}
-	return c.tracker.Snapshot(now), true
+	snap := c.tracker.Snapshot(now)
+	for id, status := range snap.Devices {
+		if !stale(status.CheckedAt, now) {
+			status.LatencyLoss = LatencyLoss(c.samples[id], now)
+		}
+		snap.Devices[id] = status
+	}
+	return snap, true
 }
 func (c *Collector) Run(ctx context.Context) {
 	ticker := time.NewTicker(time.Second)

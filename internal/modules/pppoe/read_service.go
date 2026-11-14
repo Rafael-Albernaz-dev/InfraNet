@@ -83,6 +83,7 @@ func (s *Service) readJobPageOrCancel(ctx context.Context, q Command, in PPInput
 	}
 	if op == "pppoe.read-cancel" {
 		j.Read = nil
+		j.PingPage = nil
 		return OK
 	}
 	var user, secret string
@@ -90,6 +91,9 @@ func (s *Service) readJobPageOrCancel(ctx context.Context, q Command, in PPInput
 		j.Read = nil
 		j.Cancel()
 		return c
+	}
+	if j.PPInput.Scope == equipment.PingWindowScope && op == "pppoe.read-status" {
+		j.PingPage = j.Read
 	}
 	return paginateReadResult(j, in.Offset, v)
 }
@@ -99,6 +103,9 @@ func paginateReadResult(j *RunningJob, offset int, v *PPView) Code {
 		return OK
 	}
 	source := j.Read
+	if j.PPInput.Scope == equipment.PingWindowScope && j.PingPage != nil {
+		source = j.PingPage
+	}
 	v.Total = len(source.Rows)
 	if offset > v.Total {
 		return CursorInvalid
@@ -119,6 +126,17 @@ func paginateReadResult(j *RunningJob, offset int, v *PPView) Code {
 func (s *Service) preparePPRead(
 	ctx context.Context, q Command, in PPInput, t PPTarget,
 ) (*PPReadTarget, Code) {
+	if in.Scope == equipment.PingWindowScope {
+		if len(in.RowIDs) != 1 {
+			return nil, Invalid
+		}
+		in.RowID = in.RowIDs[0]
+		ping, code := s.preparePPPing(ctx, q, in, t)
+		if code != OK {
+			return nil, code
+		}
+		return &PPReadTarget{Ping: ping, Prepared: time.Now()}, OK
+	}
 	if in.Scope == "top" || in.Scope == "health" || in.Scope == "operations" || in.Scope == equipment.PPPCatalogScope {
 		if in.ObservationID != "" || len(in.RowIDs) != 0 {
 			return nil, Invalid
@@ -290,6 +308,9 @@ func (s *Service) admitStartPPRead(ctx context.Context, q Command, in PPInput) (
 func (s *Service) findOrAdmitPPReadJobLocked(q Command, in PPInput, d Device) (*Job, Code) {
 	active := 0
 	for _, j := range s.inv.Jobs {
+		if anotherPingWindow(j, q, in) {
+			return nil, access.Busy
+		}
 		if j.View.State == "RUNNING" &&
 			inventory.SameScope(q, j.Command) &&
 			j.Command.Operation == in.Operation {
@@ -427,6 +448,9 @@ func (s *Service) finishPPReadJob(
 }
 
 func retainTrafficOnError(j *RunningJob, c Code) bool {
+	if j.PPInput.Scope == equipment.PingWindowScope && c == CodeDeadlineExceeded {
+		return true
+	}
 	if j.PPInput.Scope != "traffic" {
 		return false
 	}

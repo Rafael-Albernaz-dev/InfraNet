@@ -1,6 +1,6 @@
 import type { Device } from '../equipment/equipment-api';
 import { readingAge } from '../equipment/equipment-reading-format';
-import { PPPoEPing } from './pppoe-diagnostics';
+import { SessionPing } from './session-ping';
 import type { SessionAuthInfoProps } from './pppoe-session-auth-content';
 import { SessionAuthContent } from './pppoe-session-auth-content';
 import type { PPInterval } from '../../platform/wails/pppoe-types';
@@ -32,9 +32,12 @@ type SessionConnectivityTabProps = {
   observation: string;
   row: string;
   uptime: PPInterval;
+  address: string;
   disabled: boolean;
   isOffline: boolean;
   openEquipment?: (id: string) => void;
+  beforePing?: () => Promise<void>;
+  afterPing?: () => void;
 };
 export function SessionConnectivityTab(p: SessionConnectivityTabProps) {
   return (
@@ -45,15 +48,18 @@ export function SessionConnectivityTab(p: SessionConnectivityTabProps) {
         state: 'ready',
         content: (
           <>
-            <PPPoEPing
+            <SessionPing
               key={p.observation + '|' + p.row}
               profile={p.profile}
               activation={p.activation}
               device={p.device}
-              compact
+              address={p.address}
+              beforeOpen={p.beforePing}
+              afterClose={p.afterPing}
               observation={p.observation}
               row={p.row}
               blocked={p.disabled || p.isOffline}
+              offline={p.isOffline}
             />
             {p.isOffline && <p>Sem leitura: sessão OFFLINE</p>}
           </>

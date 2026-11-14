@@ -1,0 +1,6 @@
+SEQ HOST SIZE TTL TIME STATUS
+0 198.51.100.1 56 64 3ms
+1 198.51.100.1 56 64 7ms
+2 198.51.100.1 timeout
+3 198.51.100.1 timeout
+sent=4 received=2 packet-loss=50% min-rtt=3ms avg-rtt=5ms max-rtt=7ms

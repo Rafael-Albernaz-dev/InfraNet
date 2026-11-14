@@ -13,6 +13,7 @@ import (
 )
 
 type ppConnection struct {
+	stream        func(string, func(string) equipment.Code) equipment.Code
 	catalogBudget func()
 	legacy        []string
 	run           func(string) (string, equipment.Code)
@@ -70,6 +71,7 @@ func openPPConnection(ctx context.Context,
 		budget.maximum = equipment.PPPCatalogBytes
 		budget.limit = equipment.PPPCatalogBytes
 	}, legacy: legacyNegotiated(cc),
+		stream:  runner.stream,
 		run:     runner.run,
 		metrics: runner.metrics,
 		close: func() {

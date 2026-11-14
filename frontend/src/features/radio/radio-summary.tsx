@@ -1,3 +1,4 @@
+import { collectorMetricText } from '../equipment/collector-metrics';
 import { EquipmentStateLabel } from '../equipment/equipment-state-label';
 import { RadioAPPPP } from './radio-ap-ppp';
 import { RadioCPEClient } from './radio-cpe-client';
@@ -67,7 +68,7 @@ export function RadioSummary({ state }: { state: Ready }) {
           ['Memória em uso', metric(r, 'memory')],
           ['Temperatura', metric(r, 'temperature')],
           ['Tensão', metric(r, 'voltage')],
-          ['Latência / perda', 'Ainda não existe (L-PULSO-5)'],
+          ['Latência / perda', collectorMetricText(d)],
         ]}
       />
       <RadioSummaryWireless state={state} age={age} />

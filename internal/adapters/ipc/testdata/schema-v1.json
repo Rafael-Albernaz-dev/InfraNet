@@ -474,7 +474,9 @@
         "state": "ONLINE, OFFLINE or empty",
         "since": "RFC3339 or empty",
         "last_reply": "RFC3339 or empty",
-        "checked_at": "RFC3339 or empty"
+        "checked_at": "RFC3339 or empty",
+        "latency_ms": "optional mean reply RTT in ms; at least 3 probes in last 5min; memory only",
+        "loss_percent": "optional 0..100; no_reply only; unavailable/inactive/Enlace CPE omitted"
       },
       "pulse_network": "ok, no_response or probe_blocked; memory only, authorized inventory.list",
       "live": {
@@ -679,7 +681,9 @@
     },
     "session_context": "optional stable context; unique login/caller/IP/uptime association; no rates; migration8 additive index; unavailable never zero; optional enrichment yields to base sessions at SSH/row/observation/company budgets; observation.context_omitted=true marks omission; context-counts returns current marker without asserting groups; CSV contexto column discloses omission; secret_state active/disabled/ambiguous/none/unavailable; profile for the unique local secret, active or disabled, or the unique active one; profile rate-limit as profile_upload_limit/profile_download_limit; dynamic queue limit upload/download order; legacy missing state never attributes active profile",
     "limited_reads": {
+      "ping_window": "scope ping-window on read-start/status/page/cancel; one window globally; exact validated row and PingContextSafe; /ping without count; same pinned connection and channel closed on cancel; 900s domain deadline, explicit Continue; read.rows[].value and read.ping_summary; no SQL",
       "scopes": [
+        "ping-window",
         "bandwidth",
         "live",
         "top",
