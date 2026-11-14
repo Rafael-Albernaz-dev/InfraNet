@@ -71,10 +71,23 @@ function renderLink(open = vi.fn()) {
       openEquipment={open}
     />,
   );
+  fireEvent.click(screen.getByText('Vínculo manual (casos especiais)'));
   return open;
 }
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(radioAPI.enlace).mockResolvedValue(
+    response({
+      enlace: {
+        state: 'unlinked',
+        stage: 0,
+        interface: 'vlan1004',
+        login: selected.login,
+        address: selected.address,
+        ap_ids: [],
+      },
+    }) as never,
+  );
   vi.mocked(radioAPI.link).mockResolvedValue(response({ link }) as never);
   vi.mocked(radioAPI.current).mockResolvedValue(response() as never);
   vi.mocked(radioAPI.cancel).mockResolvedValue(response() as never);
@@ -133,6 +146,7 @@ it('opens the linked equipment and gates live behind load testing from the sessi
 });
 it('reopens an unavailable stored link from the session', async () => {
   vi.mocked(radioAPI.link)
+    .mockResolvedValueOnce(response({ link }) as never)
     .mockResolvedValueOnce({
       ...response(),
       code: 'SERVICE_UNAVAILABLE',

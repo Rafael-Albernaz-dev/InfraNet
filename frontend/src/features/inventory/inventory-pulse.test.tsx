@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { Equipment } from '../../app/pages/equipment';
 import { equipmentAPI } from '../equipment/equipment-api';
 import type { Device, EquipmentResult } from '../equipment/equipment-api';
+import { RadioRoles } from '../equipment/radio-contract';
 
 vi.mock('../../platform/wails/presentation', async (importOriginal) =>
   (await import('../../shared/testing/presentation-mock')).presentationMock(
@@ -309,4 +310,75 @@ it('updates live metrics and credential faults on the existing poll without a cl
   });
   expect(within(row).getByText('SENHA INCORRETA')).toHaveClass('st-off');
   expect(screen.getByText(device.name).closest('tr')).toBe(row);
+});
+
+it('shows session-derived CPE presence and last online through renewals and state filters', async () => {
+  const response = result('');
+  const cpe = {
+    ...device,
+    role: RadioRoles.cpe,
+    cpe_login: {
+      login: 'client',
+      origin: 'enlace',
+      created_at: '2026-11-06T09:00:00Z',
+    },
+    pulse: undefined,
+  } as Device;
+  response.data!.devices = [cpe];
+  vi.mocked(equipmentAPI.list).mockResolvedValue(response);
+  open();
+  await flush();
+  expect(cpe.pulse).toBeUndefined();
+  const row = () => screen.getByText(device.name).closest('tr')!;
+  expect(within(row()).getByText('Nunca respondeu')).toBeVisible();
+  const checked = '2026-11-06T11:50:00Z';
+  const pulse = {
+    state: 'ONLINE',
+    since: '2026-11-06T10:00:00Z',
+    checked_at: checked,
+    last_reply: checked,
+  };
+  const projected = (value: typeof pulse) => ({
+    ...response,
+    data: { ...response.data!, devices: [{ ...cpe, pulse: value }] },
+  });
+  vi.mocked(equipmentAPI.list).mockResolvedValue(projected(pulse));
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(5000);
+  });
+  expect(within(row()).getByText('ONLINE')).toHaveClass('st-on');
+  expect(within(row()).getByText('ONLINE')).toHaveAttribute(
+    'title',
+    expect.stringMatching(/^Sessão lida há/),
+  );
+  const lastSeen = within(row()).getByRole('cell', {
+    name: /06\/11/,
+  }).textContent!;
+  fireEvent.change(screen.getByLabelText('Estado'), {
+    target: { value: 'ONLINE' },
+  });
+  expect(screen.getByText(device.name)).toBeVisible();
+  vi.mocked(equipmentAPI.list).mockResolvedValue(
+    projected({ ...pulse, state: 'OFFLINE' }),
+  );
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(5000);
+  });
+  expect(screen.queryByText(device.name)).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Estado'), {
+    target: { value: 'OFFLINE' },
+  });
+  expect(within(row()).getByText('OFFLINE')).toHaveClass('st-off');
+  expect(within(row()).getByText(lastSeen)).toBeVisible();
+  vi.mocked(equipmentAPI.list).mockResolvedValue(
+    projected({ ...pulse, state: '', checked_at: '' }),
+  );
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(5000);
+  });
+  expect(screen.queryByText(device.name)).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Estado'), {
+    target: { value: 'unknown' },
+  });
+  expect(screen.getByText(device.name)).toBeVisible();
 });

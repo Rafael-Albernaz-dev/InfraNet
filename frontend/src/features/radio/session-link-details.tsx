@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react';
 import { equipmentAPI, radioAPI } from '../../platform/wails/presentation';
+import type { Device } from '../equipment/equipment-api';
 import type { RadioReading } from '../equipment/radio-api';
 import type { RadioLinkState } from './radio-link-state';
 
 export function useSessionLinkDetails(state: RadioLinkState, enabled: boolean) {
   const ap = state.link?.ap_id || '',
     cpe = state.link?.cpe_id || '';
-  const key = [state.profile, state.activation, ap, cpe].join('|');
+  const key = [
+    state.profile,
+    state.activation,
+    ap,
+    cpe,
+    state.observation,
+  ].join('|');
   const [saved, setSaved] = useState<{
     key: string;
     names: Record<string, string>;
+    cpe?: Device;
     reading?: RadioReading;
   }>();
   useEffect(() => {
@@ -51,6 +59,13 @@ export function useSessionLinkDetails(state: RadioLinkState, enabled: boolean) {
       setSaved({
         key,
         names,
+        cpe: devices.find(
+          (r) =>
+            r?.code === 'OK' &&
+            r.profile_id === state.profile &&
+            r.activation_id === state.activation &&
+            r.data?.device?.id === cpe,
+        )?.data?.device,
         reading:
           reading?.device_id === cpe && reading.compatible
             ? reading
@@ -62,7 +77,7 @@ export function useSessionLinkDetails(state: RadioLinkState, enabled: boolean) {
     };
   }, [key, state.profile, state.activation, ap, cpe, enabled]);
   const current = state.radio.view?.cpe_reading;
-  const value = saved?.key === key ? saved : { key, names: {} };
+  const value = saved?.key === key ? saved : { key, names: {}, cpe: undefined };
   return saved?.key === key && current?.device_id === cpe && current.compatible
     ? { ...value, reading: current }
     : value;

@@ -44,6 +44,11 @@ function memory(d: Device) {
     : '—';
 }
 export const columns: Column[] = [
+  {
+    id: 'client_login',
+    label: 'Login do cliente',
+    cell: ({ device }) => device.cpe_login?.login || '—',
+  },
   { id: 'status', label: 'Estado', cell: pulseCell },
   {
     id: 'last_online',
@@ -182,8 +187,11 @@ function pulseCell({ device }: Context) {
     ? Math.max(0, (Date.now() - Date.parse(p.checked_at)) / 1000)
     : undefined;
   const state = equipmentPulseState(device);
-  const title =
-    age === undefined ? 'Ainda sem ping' : `Ping há ${formatDuration(age)}`;
+  const source = device.cpe_login ? 'Sessão lida' : 'Ping';
+  let title = device.cpe_login
+    ? 'Ainda sem leitura da sessão'
+    : 'Ainda sem ping';
+  if (age !== undefined) title = `${source} há ${formatDuration(age)}`;
   return (
     <span className={pulseColors[state || '']} title={title}>
       {state || '—'}

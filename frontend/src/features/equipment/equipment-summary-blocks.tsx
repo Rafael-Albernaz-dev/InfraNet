@@ -1,7 +1,9 @@
+import { EquipmentStateLabel } from './equipment-state-label';
 import { Fragment } from 'react';
 import type { ReactNode } from 'react';
 import type { Device } from './equipment-api';
 import {
+  formatEquipmentRole,
   formatMetric,
   formatDate,
   formatRouterDuration,
@@ -22,12 +24,12 @@ export function Summary({
   status?: ReadingUpdateStatus;
 }) {
   const r = device.result!;
-  const pairs = [
+  const pairs: [string, ReactNode][] = [
     ['Nome', device.identity || r.identity || device.name],
     ['IP', device.address],
-    ['Tipo', device.role],
+    ['Tipo', formatEquipmentRole(device.role)],
     ['Grupo', device.group_path || 'Sem grupo'],
-    ['Estado', device.pulse?.state || 'Não informado nesta leitura'],
+    ['Estado', <EquipmentStateLabel value={device.pulse?.state} />],
     ['Modelo', r.board],
     ['Versão', r.version],
     ['Ligado há', formatRouterDuration(r.uptime)],
@@ -90,7 +92,7 @@ export function Summary({
 }
 
 function lastSeen(device: Device) {
-  if (device.pulse?.state === 'ONLINE') return 'agora';
+  if (device.pulse?.state === 'ONLINE' && !device.cpe_login) return 'agora';
   if (device.pulse?.last_reply) return formatDate(device.pulse.last_reply);
   return 'Nunca respondeu';
 }

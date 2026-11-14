@@ -1,7 +1,6 @@
 import { groupTreeOptions, groupContains } from '../equipment/groups';
 import type { InventoryState } from './inventory-selection-state';
 import type { TableFilter } from '../../shared/ui/table-model';
-import { rowCells, cellValue } from '../../shared/ui/table-model';
 import { roleGroups } from '../equipment/equipment-role-options';
 export function inventoryFilters(p: InventoryState): TableFilter[] {
   const options = (values: string[]) =>
@@ -15,8 +14,7 @@ export function inventoryFilters(p: InventoryState): TableFilter[] {
         { value: 'OFFLINE', label: 'OFFLINE' },
         { value: 'unknown', label: 'Sem estado' },
       ],
-      matches: (r, v) =>
-        String(cellValue(rowCells(r)[2])) === (v === 'unknown' ? '—' : v),
+      matches: (r, v) => r.props['data-pulse'] === (v === 'unknown' ? '—' : v),
     },
     {
       id: 'role',

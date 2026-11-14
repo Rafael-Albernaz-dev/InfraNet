@@ -68,7 +68,7 @@ export function Desktop(
     },
   };
   return (
-    <PPPMenuProvider>
+    <PPPMenuProvider navigate={() => navigationProps.navigate('pppoe')}>
       <SessionRoute.Provider value={session}>
         <DialogHost value={host}>
           <DetailTitle value={setDetailTitle}>

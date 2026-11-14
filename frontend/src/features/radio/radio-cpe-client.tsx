@@ -1,3 +1,4 @@
+import { sessionPlan } from '../pppoe/pppoe-plan';
 import type { PPRow } from '../../platform/wails/presentation';
 import { useEffect, useState } from 'react';
 import { equipmentMessage } from '../equipment/equipment-api';
@@ -138,47 +139,69 @@ function LinkedSessionValues({
   target,
   row,
   name,
+  summary = false,
 }: {
   state: RadioEquipmentState;
   target: LinkedSessionTarget;
   row: PPRow;
   name?: string;
+  summary?: boolean;
 }) {
   return (
     <KeyValues
-      rows={[
+      rows={
         [
-          'Usuário',
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              state.openSession?.(target);
-            }}
-          >
-            {row.login}
-          </a>,
-        ],
-        ['IP', row.address || 'Não informado nesta leitura'],
-        [
-          'Concentrador',
-          <a
-            href={`#ficha/${target.deviceID}`}
-            onClick={(e) => {
-              e.preventDefault();
-              state.openEquipment?.(target.deviceID);
-            }}
-          >
-            {name}
-          </a>,
-        ],
-      ]}
+          [
+            summary ? 'Login' : 'Usuário',
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                state.openSession?.(target);
+              }}
+            >
+              {row.login}
+            </a>,
+          ],
+          ['Cliente', row.client || 'Não informado nesta leitura'],
+          [
+            'IP da sessão',
+            <>
+              {row.address || 'Não informado nesta leitura'}{' '}
+              {summary && <span className="muted">· é o IP desta CPE</span>}
+            </>,
+          ],
+          ['Plano', sessionPlan(row.context)],
+          [
+            'Estado',
+            <span className={row.state === 'OFFLINE' ? 'st-off' : 'st-on'}>
+              {row.state}
+            </span>,
+          ],
+          [
+            'Concentrador',
+            <a
+              href={`#ficha/${target.deviceID}`}
+              onClick={(e) => {
+                e.preventDefault();
+                state.openEquipment?.(target.deviceID);
+              }}
+            >
+              {name}
+            </a>,
+          ],
+        ].filter(([label]) => !summary || label !== 'Concentrador') as [
+          string,
+          React.ReactNode,
+        ][]
+      }
     />
   );
 }
 function localSessionData(
   state: RadioEquipmentState,
   projection: ReturnType<typeof useLinkedSession>,
+  summary = false,
 ): DataState {
   const { link, view, retry } = projection;
   if (state.loading) return { state: 'loading' };
@@ -206,14 +229,21 @@ function localSessionData(
         target={target}
         row={view.row}
         name={view.name}
+        summary={summary}
       />
     ),
   };
 }
-export function RadioCPEClient({ state }: { state: RadioEquipmentState }) {
+export function RadioCPEClient({
+  state,
+  summary = false,
+}: {
+  state: RadioEquipmentState;
+  summary?: boolean;
+}) {
   const projection = useLinkedSession(state);
   const view = projection.view;
-  let data = localSessionData(state, projection);
+  let data = localSessionData(state, projection, summary);
   if (state.radio.error)
     data = {
       state: 'failed',
@@ -224,7 +254,7 @@ export function RadioCPEClient({ state }: { state: RadioEquipmentState }) {
     };
   return (
     <DataBlock
-      title="Sessão PPPoE vinculada"
+      title={summary ? 'Cliente' : 'Sessão PPPoE vinculada'}
       source={view?.name ? `SSH (${view.name})` : 'cadastro local'}
       age={readingAge(view?.at)}
       data={data}

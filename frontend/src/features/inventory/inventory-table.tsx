@@ -4,6 +4,7 @@ import {
   columns,
   defaultColumns,
   inventorySortValue,
+  equipmentPulseState,
 } from './inventory-columns';
 import { inventoryFilters } from './inventory-table-filters';
 import { Checkbox } from '../../shared/ui/Checkbox';
@@ -20,6 +21,7 @@ export function InventoryTable({ p }: { p: InventoryState }) {
     });
   return (
     <div className="inventory-standard">
+      {p.total >= 5000 && <p role="status">Limite de 5.000 equipamentos</p>}
       <DataTable
         tableId="equipment"
         emptyMessage={emptyInventoryMessage}
@@ -48,6 +50,7 @@ export function InventoryTable({ p }: { p: InventoryState }) {
               data-device-id={d.id}
               data-row-id={d.id}
               data-active={d.active}
+              data-pulse={equipmentPulseState(d, p.displayNow) || '—'}
               data-role={d.role}
               data-group={d.group_id || ''}
               data-model={d.result?.board || d.radio_summary?.model || ''}
@@ -71,6 +74,9 @@ export function InventoryTable({ p }: { p: InventoryState }) {
               </td>
               <td>
                 {d.name}
+                {d.cpe_login?.origin === 'enlace' && (
+                  <span className="muted"> · criada pelo Enlace</span>
+                )}
                 {!d.active && <span className="muted"> (inativo)</span>}
               </td>
               {definitions.map((column) => (

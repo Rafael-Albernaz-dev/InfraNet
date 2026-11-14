@@ -4,6 +4,7 @@ export const PPPMenuNavigation = createContext<
   | {
       screen: PPPScreen;
       setScreen: (screen: PPPScreen) => void;
+      open?: (screen: PPPScreen) => void;
     }
   | undefined
 >(undefined);

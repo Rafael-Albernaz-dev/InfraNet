@@ -40,11 +40,15 @@ export function RadioLinkContent({
           Vínculo não confirmado agora. O cadastro foi preservado.
         </p>
       )}
-      <RadioIndexRefresh state={state} />
-      <RadioIndexCredentialErrors state={state} />
-      <RadioIndexTable state={state} />
-      <RadioLinkMatchReason state={state} />
-      <RadioLinkProposal state={state} />
+      {!session && (
+        <>
+          <RadioIndexRefresh state={state} />
+          <RadioIndexCredentialErrors state={state} />
+          <RadioIndexTable state={state} />
+          <RadioLinkMatchReason state={state} />
+          <RadioLinkProposal state={state} />
+        </>
+      )}
       {session ? (
         <div className="actions">
           <RadioLinkRunActions state={state} part="update" />
@@ -53,8 +57,12 @@ export function RadioLinkContent({
       ) : (
         <RadioLinkEditActions state={state} />
       )}
-      <RadioLegacySuggestions state={state} />
-      <RadioManualLinkForm state={state} />
+      {(!session || state.editing) && (
+        <>
+          <RadioLegacySuggestions state={state} />
+          <RadioManualLinkForm state={state} />
+        </>
+      )}
       <RadioLinkRunActions
         state={state}
         part={session ? 'measurement' : 'all'}
@@ -63,9 +71,18 @@ export function RadioLinkContent({
       <RadioLastMeasurement state={state} />
       <RadioLinkBusyStatus state={state} />
       <RadioTickSeries state={state} />
-      {(!session ||
-        state.radio.view?.reading ||
-        state.radio.view?.cpe_reading) && <RadioLinkReadings state={state} />}
+      <RadioLinkSavedReadings state={state} session={session} />
     </>
   );
+}
+
+function RadioLinkSavedReadings({
+  state,
+  session,
+}: {
+  state: RadioLinkState;
+  session: boolean;
+}) {
+  if (session) return null;
+  return <RadioLinkReadings state={state} />;
 }

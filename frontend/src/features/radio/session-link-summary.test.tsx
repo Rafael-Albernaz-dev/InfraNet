@@ -36,5 +36,16 @@ it('marks absent or incompatible radio readings as not informed', () => {
       reading={undefined}
     />,
   );
-  expect(screen.getAllByText('Não informado nesta leitura')).toHaveLength(5);
+  for (const label of [
+    'Sinal',
+    'SNR',
+    'CCQ',
+    'Taxas (TX/RX)',
+    'CPE',
+    'IP da CPE',
+  ]) {
+    expect(
+      screen.getByText(label, { selector: 'dt' }).nextElementSibling,
+    ).toHaveTextContent('Não informado nesta leitura');
+  }
 });

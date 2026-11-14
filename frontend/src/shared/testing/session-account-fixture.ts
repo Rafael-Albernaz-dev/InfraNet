@@ -60,3 +60,22 @@ export const sessionEquipment = {
     vault_available: true,
   },
 };
+
+export const sessionEnlace = {
+  code: 'OK',
+  profile_id: 'company',
+  activation_id: 'activation',
+  data: {
+    total: 0,
+    more: false,
+    next_offset: 0,
+    enlace: {
+      state: 'unlinked',
+      stage: 0,
+      interface: 'vlan1004',
+      login: 'primeiro',
+      address: '192.0.2.1',
+      ap_ids: [],
+    },
+  },
+};

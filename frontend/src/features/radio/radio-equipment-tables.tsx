@@ -13,10 +13,12 @@ export function RadioClients({ state }: { state: Ready }) {
       <thead>
         <tr>
           <th>CPE</th>
+          <th>Login do cliente</th>
           <th>Sinal</th>
           <th>CCQ</th>
           <th>Taxas (TX/RX)</th>
           <th>Ocupação</th>
+          <th>MAC</th>
         </tr>
       </thead>
       <tbody>

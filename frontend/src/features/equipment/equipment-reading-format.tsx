@@ -8,7 +8,9 @@ import {
 export const id = () => crypto.randomUUID();
 
 export const readingAge = (at?: string, now = Date.now()) =>
-  at ? `há ${formatDuration((now - Date.parse(at)) / 1000)}` : '';
+  at && Number.isFinite(Date.parse(at)) && Date.parse(at) <= now
+    ? `há ${formatDuration((now - Date.parse(at)) / 1000)}`
+    : '';
 export const stamp = (d: Device) => readingAge(d.result?.observed_at);
 
 export function liveReading(d: Device, now = Date.now()) {
@@ -80,5 +82,6 @@ export function equipmentPulseState(device: Device, now = Date.now()) {
   const at = device.pulse?.checked_at;
   if (!device.active || !at) return '';
   const age = (now - Date.parse(at)) / 1000;
-  return Number.isFinite(age) && age <= 90 ? device.pulse?.state || '' : '';
+  const fresh = device.cpe_login ? age >= 0 && age < 24 * 60 * 60 : age <= 90;
+  return Number.isFinite(age) && fresh ? device.pulse?.state || '' : '';
 }

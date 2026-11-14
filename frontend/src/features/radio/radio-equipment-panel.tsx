@@ -1,3 +1,4 @@
+import { useAPClientLinksRefresh } from './ap-client-links-refresh';
 import { RadioCPEClient } from './radio-cpe-client';
 import type { RefreshOpeningRef } from '../equipment/use-refresh-on-open';
 import { useRadioTabRefresh } from './automatic-tab-refresh';
@@ -198,6 +199,11 @@ export function RadioEquipment(props: RadioEquipmentViewProps) {
   const { rootRef, ...state } = useRadioEquipmentState(props);
   useStoredEquipmentRadio(state);
   useCompletedEquipmentRefresh(state);
+  useAPClientLinksRefresh(
+    state,
+    props.tab === 'Clientes' && props.device.role === RadioRoles.ap,
+    rootRef,
+  );
   const { radio } = state;
   const start = () => {
     state.setOffset(0);

@@ -1,3 +1,6 @@
+import { EquipmentStateLabel } from '../equipment/equipment-state-label';
+import { RadioAPPPP } from './radio-ap-ppp';
+import { RadioCPEClient } from './radio-cpe-client';
 import { equipmentRadioError } from './radio-equipment-status';
 import { RadioModes, RadioFamilies } from '../equipment/radio-contract';
 import { RadioRoles } from '../equipment/radio-contract';
@@ -10,6 +13,7 @@ import {
 } from '../equipment/equipment-summary-common';
 import { EquipmentSummaryRestarts } from '../equipment/equipment-summary-restarts';
 import {
+  formatEquipmentRole,
   formatDate,
   formatRouterDuration,
   formatMetric,
@@ -29,7 +33,7 @@ export function RadioSummary({ state }: { state: Ready }) {
   const d = state.device,
     r = state.reading;
   const age = readingAge(r.observed_at);
-  const ap = state.devices?.find((d) => d.id === state.radio.view?.link?.ap_id);
+
   return (
     <div className="grid">
       <SummaryValues
@@ -39,10 +43,10 @@ export function RadioSummary({ state }: { state: Ready }) {
         rows={[
           ['Nome', d.name],
           ['IP', d.address],
-          ['Tipo', d.role],
+          ['Tipo', formatEquipmentRole(d.role)],
           ['Modelo', r.model || 'Não informado nesta leitura'],
           ['Versão', r.version || 'Não informado nesta leitura'],
-          ['Estado', d.pulse?.state || 'Não informado nesta leitura'],
+          ['Estado', <EquipmentStateLabel value={d.pulse?.state} />],
           ['Ligado há', formatRouterDuration(r.device_uptime)],
           [
             'Último reinício',
@@ -52,6 +56,7 @@ export function RadioSummary({ state }: { state: Ready }) {
           ],
           ['Visto online por último', radioLastSeen(d)],
           ['Grupo', d.group_path || 'Sem grupo'],
+          ...cpeOriginRows(d),
         ]}
       />
       <SummaryValues
@@ -65,34 +70,9 @@ export function RadioSummary({ state }: { state: Ready }) {
           ['Latência / perda', 'Ainda não existe (L-PULSO-5)'],
         ]}
       />
-      <SummaryValues
-        title="Rádio"
-        age={age}
-        rows={
-          d.role === RadioRoles.ap
-            ? [
-                ['Clientes', metric(r, 'clients')],
-                ['Frequência', metric(r, 'frequency')],
-                ['SSID', metric(r, 'ssid')],
-                ['Sinal médio', metric(r, 'signal')],
-                ['CCQ médio', metric(r, 'ccq')],
-                ['Ruído', metric(r, 'noise')],
-              ]
-            : [
-                ['AP', ap?.name || 'Não informado nesta leitura'],
-                ['Sinal', metric(r, 'signal')],
-                ['SNR', metric(r, 'snr')],
-                ['CCQ', metric(r, 'ccq')],
-                ['Taxas (TX/RX)', radioRatePair(r.metrics)],
-              ]
-        }
-      />
-      {d.role === RadioRoles.ap && (
-        <SummaryPending title="Ligado ao PPPoE" slice="L-ENLACE" />
-      )}
-      {d.role === RadioRoles.cpe && (
-        <SummaryPending title="Cliente" slice="L-ENLACE" />
-      )}
+      <RadioSummaryWireless state={state} age={age} />
+      {d.role === RadioRoles.ap && <RadioAPPPP state={state} />}
+      {d.role === RadioRoles.cpe && <RadioCPEClient state={state} summary />}
       {d.role === RadioRoles.ptp && (
         <SummaryPending title="Lado B" slice="L07-DRV" />
       )}
@@ -108,7 +88,7 @@ export function RadioSummary({ state }: { state: Ready }) {
 }
 
 function radioLastSeen(d: Ready['device']) {
-  if (d.pulse?.state === 'ONLINE') return 'agora';
+  if (d.pulse?.state === 'ONLINE' && !d.cpe_login) return 'agora';
   if (d.pulse?.last_reply) return formatDate(d.pulse.last_reply);
   return 'Nunca respondeu';
 }
@@ -122,4 +102,48 @@ function radioSummaryStatus(state: Ready) {
       void state.radio.start(RadioModes.once, RadioFamilies.standalone),
     disabled: state.blocked,
   };
+}
+
+function RadioSummaryWireless({ state, age }: { state: Ready; age: string }) {
+  const d = state.device,
+    r = state.reading;
+  const ap = state.devices?.find((d) => d.id === state.radio.view?.link?.ap_id);
+  return (
+    <SummaryValues
+      title="Rádio"
+      age={age}
+      rows={
+        d.role === RadioRoles.ap
+          ? [
+              ['Clientes', metric(r, 'clients')],
+              ['Frequência', metric(r, 'frequency')],
+              ['SSID', metric(r, 'ssid')],
+              ['Sinal médio', metric(r, 'signal')],
+              ['CCQ médio', metric(r, 'ccq')],
+              ['Ruído', metric(r, 'noise')],
+            ]
+          : [
+              ['AP', ap?.name || 'Não informado nesta leitura'],
+              ['Sinal', metric(r, 'signal')],
+              ['SNR', metric(r, 'snr')],
+              ['CCQ', metric(r, 'ccq')],
+              ['Taxas (TX/RX)', radioRatePair(r.metrics)],
+            ]
+      }
+    />
+  );
+}
+
+function cpeOriginRows(d: Ready['device']): [string, React.ReactNode][] {
+  if (!d.cpe_login) return [];
+  const origin =
+    d.cpe_login.origin === 'enlace'
+      ? 'Criada pelo Enlace em ' +
+        formatDate(d.cpe_login.created_at) +
+        ' · segue o login'
+      : 'Segue o login';
+  return [
+    ['Origem', origin],
+    ['Leitura', 'Ronda leve a cada 15–30 min; completa ao abrir o cliente'],
+  ];
 }

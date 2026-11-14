@@ -67,8 +67,18 @@ export function EquipmentSummaryStatistics(
   const clients = (
     <KeyValues
       rows={[
-        ['Online', value?.online ?? 'Não informado nesta leitura'],
-        ['Offline (24 h)', value?.offline ?? 'Não informado nesta leitura'],
+        [
+          'Online',
+          <span className="st-on">
+            {value?.online ?? 'Não informado nesta leitura'}
+          </span>,
+        ],
+        [
+          'Offline (24 h)',
+          <span className="st-off">
+            {value?.offline ?? 'Não informado nesta leitura'}
+          </span>,
+        ],
         ['Quedas hoje', value?.drops_today ?? 'Não informado nesta leitura'],
         ['Planos em uso', value?.plans ?? 'Não informado nesta leitura'],
       ]}

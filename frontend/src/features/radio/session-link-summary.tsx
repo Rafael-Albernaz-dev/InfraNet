@@ -1,3 +1,6 @@
+import type { Device } from '../equipment/equipment-api';
+import type { EnlaceView } from '../equipment/radio-api';
+import { formatDate } from '../equipment/network-format';
 import { KeyValues } from '../../shared/ui/KeyValues';
 import type {
   RadioLink,
@@ -28,11 +31,17 @@ function rates(reading?: RadioReading) {
 }
 export function SessionLinkSummary({
   link,
+  enlace,
+  device: cpe,
+  concentrator,
   names,
   reading,
   open,
 }: {
   link: RadioLink;
+  enlace?: EnlaceView;
+  device?: Device;
+  concentrator?: string;
   names: Record<string, string>;
   reading?: RadioReading;
   open?: (id: string) => void;
@@ -54,12 +63,47 @@ export function SessionLinkSummary({
   return (
     <KeyValues
       rows={[
-        ['AP', device(link.ap_id)],
-        ['CPE', device(link.cpe_id)],
+        [
+          'Caminho',
+          <>
+            {concentrator || device(link.concentrator_id)} ›{' '}
+            {enlace?.interface ||
+              link.ppp_interface ||
+              'Não informado nesta leitura'}{' '}
+            › {device(link.ap_id)} › {device(link.cpe_id)}
+          </>,
+        ],
+        ['CPE', <EnlaceCPEDescription cpe={cpe} reading={reading} />],
+        [
+          'IP da CPE',
+          <>
+            {enlace?.address || cpe?.address || missing} · é o IP desta sessão
+          </>,
+        ],
         ['Sinal', metricText(metric(reading, 'signal'))],
+        ['SNR', metricText(metric(reading, 'snr'))],
         ['CCQ', metricText(metric(reading, 'ccq'))],
         ['Taxas (TX/RX)', rates(reading)],
       ]}
     />
+  );
+}
+
+function EnlaceCPEDescription({
+  cpe,
+  reading,
+}: {
+  cpe?: Device;
+  reading?: RadioReading;
+}) {
+  return (
+    <>
+      {reading?.model || cpe?.result?.board || missing} ·{' '}
+      {reading?.version || cpe?.result?.version || missing}
+      {cpe?.cpe_login?.origin === 'enlace' && (
+        <> · criada pelo Enlace em {formatDate(cpe.cpe_login.created_at)}</>
+      )}{' '}
+      · segue o login
+    </>
   );
 }

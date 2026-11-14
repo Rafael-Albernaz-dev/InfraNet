@@ -38,14 +38,23 @@ export function RadioClientRow({
             : 'Nome observado; sem vínculo confirmado'
         }
       >
-        {ClientName({ client, name, navigate })}
+        {client.creating ? (
+          <span className="spin">Criando a CPE…</span>
+        ) : (
+          ClientName({ client, name, navigate })
+        )}
+        {client.origin === 'enlace' && (
+          <span className="muted"> · criada pelo Enlace</span>
+        )}
       </td>
+      <td>{client.login || '—'}</td>
       {renderClientMetric(client, 'signal')}
       {renderClientMetric(client, 'ccq', 'ccq_tx')}
       <td data-value={radioMetric(client.metrics, 'rate_tx')?.value ?? ''}>
         {radioRatePair(client.metrics)}
       </td>
       {renderClientMetric(client, 'occupancy')}
+      <td>{client.mac}</td>
     </tr>
   );
 }

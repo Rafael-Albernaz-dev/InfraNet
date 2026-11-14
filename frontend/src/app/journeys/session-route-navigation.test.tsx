@@ -1,5 +1,6 @@
 import {
   sessionAccount as account,
+  sessionEnlace,
   sessionDevice as device,
   sessionRows as rows,
   sessionPP as pp,
@@ -58,6 +59,7 @@ vi.mock('../../platform/wails/presentation', async (importOriginal) =>
 );
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(radioAPI.enlace).mockResolvedValue(sessionEnlace);
   vi.mocked(access.status).mockResolvedValue(account());
   vi.mocked(access.selectCompany).mockImplementation(async (id) => account(id));
   vi.mocked(access.getBrand).mockResolvedValue(account());
@@ -346,6 +348,7 @@ it('keeps link review and manual fields available in the session screen', async 
   fireEvent.click(screen.getByRole('button', { name: /Detalhar primeiro/ }));
   await screen.findByRole('heading', { name: 'primeiro' });
   fireEvent.click(screen.getByRole('tab', { name: 'Enlace' }));
+  fireEvent.click(screen.getByText('Vínculo manual (casos especiais)'));
   fireEvent.click(
     await screen.findByRole('button', { name: 'Revisar vínculo' }),
   );
@@ -409,6 +412,7 @@ it('pages the AP index for the exact session without a new remote read', async (
   });
   await openFirstSession();
   fireEvent.click(screen.getByRole('tab', { name: 'Enlace' }));
+  fireEvent.click(screen.getByText('Vínculo manual (casos especiais)'));
   await screen.findByRole('group', { name: 'Tabela de AP' });
   const table = within(screen.getByRole('group', { name: 'Tabela de AP' }));
   fireEvent.change(

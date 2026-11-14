@@ -5,7 +5,11 @@ import { equipmentAPI } from '../equipment/equipment-api';
 import { useDisplayNow } from '../equipment/equipment-snapshot';
 import type { RadioLinkChoice, RadioResult } from '../equipment/radio-api';
 import { radioAPI as api } from '../equipment/radio-api';
-import { RadioModes, RadioRoles } from '../equipment/radio-contract';
+import {
+  RadioModes,
+  RadioRoles,
+  RadioFamilies,
+} from '../equipment/radio-contract';
 import type { RadioLinkPanelProps } from './radio-link-props';
 import { radioMessage } from './radio-messages';
 import { useRadio } from './radio-observation';
@@ -14,7 +18,7 @@ export type { RadioLinkPanelProps } from './radio-link-props';
 
 type LinkContext = Pick<
   RadioLinkPanelProps,
-  'profile' | 'activation' | 'device' | 'observation' | 'row'
+  'profile' | 'activation' | 'device' | 'observation' | 'row' | 'refreshOnOpen'
 >;
 type RadioController = Omit<ReturnType<typeof useRadio>, 'root'>;
 type ContextLife = RefObject<object>;
@@ -24,7 +28,8 @@ function useRadioLinkLoad(
   blocked: boolean,
   radio: RadioController,
 ) {
-  const { profile, activation, device, observation, row } = context;
+  const { profile, activation, device, observation, row, refreshOnOpen } =
+    context;
   const [loading, setLoading] = useState(true),
     [reload, setReload] = useState(0);
   const latestRef = useLatestRef({ radio, blocked });
@@ -46,13 +51,11 @@ function useRadioLinkLoad(
           return;
         }
         radio.setView(result.data);
-        if (
-          !latestRef.current.blocked &&
-          !result.data?.link &&
-          !result.data?.index &&
-          result.data?.match_reason
-        )
-          await latestRef.current.radio.start(RadioModes.index);
+        await refreshOpenedLink(
+          result,
+          refreshOnOpen || false,
+          latestRef.current,
+        );
       } catch {
         if (alive) radio.setError('Não foi possível abrir o vínculo salvo.');
       } finally {
@@ -63,7 +66,16 @@ function useRadioLinkLoad(
       alive = false;
     };
     // Same scalar context owns this stored-link read and explicit reload.
-  }, [profile, activation, device.id, observation, row, reload, latestRef]);
+  }, [
+    profile,
+    activation,
+    device.id,
+    observation,
+    row,
+    reload,
+    latestRef,
+    refreshOnOpen,
+  ]);
   const changed = () => {
     radio.setError('');
     setReload((value) => value + 1);
@@ -276,3 +288,15 @@ export type RadioLinkState = Omit<
   ReturnType<typeof useRadioLinkState>,
   'rootRef'
 >;
+
+async function refreshOpenedLink(
+  result: RadioResult,
+  refresh: boolean,
+  context: { radio: RadioController; blocked: boolean },
+) {
+  if (context.blocked) return;
+  if (!result.data?.link && !result.data?.index && result.data?.match_reason)
+    await context.radio.start(RadioModes.index);
+  else if (refresh && result.data?.link)
+    await context.radio.start(RadioModes.once, RadioFamilies.automatic);
+}
