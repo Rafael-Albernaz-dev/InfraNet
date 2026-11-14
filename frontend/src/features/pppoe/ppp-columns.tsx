@@ -19,7 +19,7 @@ export function pppColumns(screen: PPPScreen, all: boolean): Column[] {
   const cols: Record<PPPScreen, Column[]> = {
     sessions: [
       column('name', 'Usuário'),
-      column('client', 'Cliente', true),
+      column('client', 'Cliente'),
       column('address', 'IP'),
       column('profile', 'Plano'),
       column('download', 'Download'),

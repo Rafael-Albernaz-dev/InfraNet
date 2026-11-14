@@ -21,14 +21,11 @@ function readLifetime(
     l.activeJob = '';
     l.privateJob = '';
     l.operation = '';
-    if (id)
-      void Promise.resolve()
-        .then(() => api.cancel(profile, activation, id))
-        .catch(() => {});
-    else if (op)
-      void Promise.resolve()
-        .then(() => api.cancelOperation(profile, activation, deviceId, op))
-        .catch(() => {});
+    // Dispatch before returning cleanup; the bridge can throw before returning a promise.
+    void (async () => {
+      if (id) await api.cancel(profile, activation, id);
+      else if (op) await api.cancelOperation(profile, activation, deviceId, op);
+    })().catch(() => {});
   };
 }
 export function useReadLifetime(c: ReadContext, p: PPReadPanelProps) {

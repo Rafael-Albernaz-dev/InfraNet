@@ -42,8 +42,11 @@ it('shows missing rates for OFFLINE even if its saved observation has numeric ra
   const cells = within(
     screen.getByRole('row', { name: /fixture-0/ }),
   ).getAllByRole('cell');
-  expect(cells[3]).toHaveTextContent('—');
-  expect(cells[4]).toHaveTextContent('—');
+  const headers = within(screen.getByRole('table', { name: 'Sessões PPPoE' }))
+    .getAllByRole('columnheader')
+    .map((h) => h.textContent);
+  expect(cells[headers.indexOf('Download')]).toHaveTextContent('—');
+  expect(cells[headers.indexOf('Upload')]).toHaveTextContent('—');
 });
 it('starts one live read for only the fifty visible ONLINE rows and cancels on leaving', async () => {
   calls.start.mockResolvedValue({

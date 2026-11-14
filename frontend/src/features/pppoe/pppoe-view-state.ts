@@ -1,3 +1,4 @@
+import { SESSION_DEFAULT_COLUMNS } from './session-table-control';
 import { useTablePreference } from '../../shared/ui/table-preferences';
 import { useLayoutEffect, useState } from 'react';
 import { acceptEquipmentAuthority } from '../access/equipment-receipts';
@@ -58,18 +59,7 @@ function usePPPoEPageStatus() {
 }
 function usePPPoEListState() {
   const tablePreference = useTablePreference('sessions', {
-    columns: [
-      'address',
-      'plan',
-      'download',
-      'upload',
-      'uptime',
-      'state',
-      'vlan',
-      'service',
-      'mtu',
-      'linked_device',
-    ],
+    columns: SESSION_DEFAULT_COLUMNS,
     filters: {},
     search: '',
     sort: null,

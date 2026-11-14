@@ -16,7 +16,8 @@ export type SessionTableControl = {
   options: Record<string, string[]>;
   pageState: string;
 };
-const columns = [
+export const SESSION_DEFAULT_COLUMNS = [
+  'client',
   'address',
   'plan',
   'download',
@@ -46,7 +47,7 @@ export function useSessionTable(control: SessionTableControl | undefined) {
   const fallback = useTablePreference(
     control?.tablePreference ? '' : 'sessions',
     {
-      columns,
+      columns: SESSION_DEFAULT_COLUMNS,
       filters: {},
       search: '',
       sort: null,

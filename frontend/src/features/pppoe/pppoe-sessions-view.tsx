@@ -5,6 +5,7 @@ import { usePPReadState } from './pppoe-read-state';
 import { cloneElement } from 'react';
 import {
   useSessionTable,
+  SESSION_DEFAULT_COLUMNS,
   type SessionTableControl,
 } from './session-table-control';
 import { sessionPlan, planDiffers, appliedSpeed } from './pppoe-plan';
@@ -59,10 +60,17 @@ export function PPPoEObsActions(p: {
   return (
     <>
       <div className="bar">
+        <b>
+          <span className="st-on">{online} ONLINE</span> ·{' '}
+          <span className="st-off">{offline} OFFLINE</span>
+        </b>
+        <span className="ch-vivo on">
+          <i />
+          Ao vivo
+        </span>
         <span className="muted">
-          <span>{online} ONLINE</span> · <span>{offline} OFFLINE</span> ·{' '}
-          <span className="st-on">Ao vivo</span> · leitura de{' '}
-          {formatDate(current.provenance.ended_at)}
+          Lista relida a cada 60 s. Download e Upload: média de 60 s para todos
+          e, nas linhas desta página, o instante a cada 2 s.
         </span>
         <span className="grow" />
         <Button
@@ -92,10 +100,6 @@ export function PPPoEObsActions(p: {
           Exportar JSON sanitizado
         </Button>
       </div>
-      <p className="muted">
-        Lista relida a cada 60 s. Download e Upload: média de 60 s para todos e,
-        nas linhas desta página, o instante a cada 2 s
-      </p>
       {current.context_omitted && (
         <p role="status">
           Contexto não incluído por limite. As sessões e seus estados foram
@@ -253,18 +257,7 @@ function SessionsTable(p: SessionsTableProps) {
         preference={table.preference}
         service={table.service}
         filters={table.filters}
-        defaultColumns={[
-          'address',
-          'plan',
-          'download',
-          'upload',
-          'uptime',
-          'state',
-          'vlan',
-          'service',
-          'mtu',
-          'linked_device',
-        ]}
+        defaultColumns={SESSION_DEFAULT_COLUMNS}
       >
         <thead>
           <tr>

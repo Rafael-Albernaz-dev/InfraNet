@@ -32,6 +32,12 @@ export function PPPExportActions(p: {
             <span className="st-off">{p.counts.OFFLINE} OFFLINE</span>
           </b>
         )}
+        {p.counts && (
+          <span className="ch-vivo on">
+            <i />
+            Ao vivo
+          </span>
+        )}
         <span className="muted">
           Lista relida a cada 60 s. Download e Upload: média de 60 s para todos
           e, nas linhas desta página, o instante a cada 2 s.
