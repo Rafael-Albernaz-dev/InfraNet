@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Rebuild InfraDesktop icons from shared geometry; requires Pillow (no downloads)."""
+"""Rebuild InfraNet icons from shared geometry; requires Pillow (no downloads)."""
 from __future__ import annotations
 import argparse
 import hashlib
 import json
 from pathlib import Path
-from xml.sax.saxutils import escape
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / 'packaging/linux/assets'
@@ -15,43 +14,26 @@ SIZES = (512, 256, 128, 64, 48, 32)
 CANVAS = 36
 TURQUOISE = '#0e7490'
 FOREGROUND = '#ffffff'
-# Original reference mark: a 26px SVG (viewBox 0 0 32 32), centered in 36px.
-GLYPH_SCALE = 26 / 32
-GLYPH_OFFSET = 5
-STROKE = 1.6 * GLYPH_SCALE
-NODES = ((12, 3, 8, 7), (3, 22, 8, 7), (21, 22, 8, 7))
-LINES = (((16, 10), (16, 16)), ((7, 22), (7, 16), (25, 16), (25, 22)))
-
-
-def coord(value):
-    return GLYPH_OFFSET + value * GLYPH_SCALE
-
-
-def shared_geometry():
-    rects = [(coord(x), coord(y), w * GLYPH_SCALE, h * GLYPH_SCALE, GLYPH_SCALE)
-             for x, y, w, h in NODES]
-    paths = [[(coord(x), coord(y)) for x, y in line] for line in LINES]
-    return rects, paths
+# A — Fenda, selected by the user on 2026-11-16; viewBox coordinates.
+POLYGONS = (
+    ((5, 29), (5, 12), (11, 5), (16, 5), (29, 24), (24, 31), (20, 25), (11, 13), (11, 29)),
+    ((25, 5), (31, 5), (31, 18), (25, 12)),
+)
 
 
 def svg():
-    rects, paths = shared_geometry()
-    f = lambda x: f'{x:g}'
     parts = [
         '<?xml version="1.0" encoding="UTF-8"?>',
-        '<!-- InfraDesktop original geometric network mark; see ORIGIN.md. -->',
+        '<!-- InfraNet A — Fenda; see ORIGIN.md. -->',
         '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 36 36" role="img" aria-labelledby="title desc">',
-        '<title id="title">InfraDesktop</title>',
-        '<desc id="desc">Three rectangular network nodes joined by an orthogonal branch on a turquoise rounded square.</desc>',
+        '<title id="title">InfraNet</title>',
+        '<desc id="desc">White N with a diagonal opening on a turquoise rounded square.</desc>',
         f'<rect width="36" height="36" rx="5" fill="{TURQUOISE}"/>',
-        f'<g fill="none" stroke="{FOREGROUND}" stroke-width="{f(STROKE)}" stroke-linecap="butt" stroke-linejoin="miter">',
     ]
-    for x, y, w, h, r in rects:
-        parts.append(f'<rect x="{f(x)}" y="{f(y)}" width="{f(w)}" height="{f(h)}" rx="{f(r)}"/>')
-    for line in paths:
-        path = 'M' + ' L'.join(f'{f(x)} {f(y)}' for x, y in line)
-        parts.append(f'<path d="{escape(path)}"/>')
-    return '\n'.join(parts + ['</g>', '</svg>', ''])
+    for points in POLYGONS:
+        path = 'M' + ' L'.join(f'{x} {y}' for x, y in points) + ' Z'
+        parts.append(f'<path d="{path}" fill="{FOREGROUND}" fill-rule="evenodd"/>')
+    return '\n'.join(parts + ['</svg>', ''])
 
 
 def png(size):
@@ -62,27 +44,8 @@ def png(size):
     d = ImageDraw.Draw(im)
     d.rounded_rectangle((0, 0, resolution - 1, resolution - 1), radius=5 * scale,
                         fill=TURQUOISE)
-    rects, paths = shared_geometry()
-    stroke = max(1, round(STROKE * scale))
-    for x, y, w, h, r in rects:
-        # Pillow strokes inside; enlarge boundary by half stroke to center it like SVG.
-        half = stroke / 2
-        bounds = (x * scale - half, y * scale - half,
-                  (x + w) * scale + half, (y + h) * scale + half)
-        d.rounded_rectangle(bounds, radius=r * scale + half, outline=FOREGROUND,
-                            width=stroke)
-    for path in paths:
-        points = [(x * scale, y * scale) for x, y in path]
-        half = stroke / 2
-        # Orthogonal stroke rectangles with square joins reproduce SVG miter joins.
-        for (x1, y1), (x2, y2) in zip(points, points[1:]):
-            if x1 == x2:
-                bounds = (x1 - half, min(y1, y2), x1 + half, max(y1, y2))
-            else:
-                bounds = (min(x1, x2), y1 - half, max(x1, x2), y1 + half)
-            d.rectangle(bounds, fill=FOREGROUND)
-        for x, y in points[1:-1]:
-            d.rectangle((x - half, y - half, x + half, y + half), fill=FOREGROUND)
+    for polygon in POLYGONS:
+        d.polygon([(x * scale, y * scale) for x, y in polygon], fill=FOREGROUND)
     result = im.resize((size, size), Image.Resampling.LANCZOS)
     # Remove a one-level Lanczos halo outside the rounded square.
     alpha = result.getchannel('A').point(lambda value: 0 if value <= 1 else value)

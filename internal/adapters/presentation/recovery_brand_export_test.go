@@ -49,7 +49,7 @@ func testFlowRecoveryFile(t *testing.T, app *App, recovery string) {
 		t.Fatal("save failed")
 	}
 	b, e := os.ReadFile(path)
-	expected := recovery + "\n\nCódigo de recuperação InfraDesktop. Guarde offline em local seguro.\n"
+	expected := recovery + "\n\nCódigo de recuperação InfraNet. Guarde offline em local seguro.\n"
 	if e != nil || string(b) != expected {
 		t.Fatal("file differs from issued secret")
 	}

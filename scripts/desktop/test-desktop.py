@@ -417,7 +417,7 @@ def main():
             button=wait_for('native save button',lambda:chooser_button(panel,('Save','Salvar')))
             assert button.get_action_iface().do_action(0)
             wait_for('native saved file',lambda:target.exists());wait_text('Arquivo salvo.')
-            assert target.read_text()==code.replace('-','')+'\n\nCódigo de recuperação InfraDesktop. Guarde offline em local seguro.\n'
+            assert target.read_text()==code.replace('-','')+'\n\nCódigo de recuperação InfraNet. Guarde offline em local seguro.\n'
             assert target.stat().st_mode&0o777==0o600
             assert recovery_code()==code,'save acknowledged code'
             target.unlink()

@@ -110,7 +110,7 @@ const NETWORK_BADGES: Record<
     state: 'parado',
     text: 'Serviço parado',
     title:
-      'O serviço do InfraDesktop não está respondendo; os dados não se atualizam.',
+      'O serviço do InfraNet não está respondendo; os dados não se atualizam.',
   },
 };
 export function NetworkBadge({ connected }: { connected: boolean }) {

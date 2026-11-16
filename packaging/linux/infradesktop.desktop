@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=InfraDesktop
+Name=InfraNet
 Comment=Ambiente local para operação de provedores
 Exec=/usr/bin/infradesktop
 Icon=infradesktop

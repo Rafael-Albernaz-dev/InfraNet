@@ -99,6 +99,10 @@ func writeRecovery(path, code string) string {
 			_ = unix.Unlinkat(dir, stage, unix.AT_REMOVEDIR)
 		}
 	}()
+	return writeRecoveryAt(dir, source, filepath.Base(path), code)
+}
+
+func writeRecoveryAt(dir, source int, destination, code string) string {
 	temp := "code"
 	fd, e := unix.Openat(source, temp, unix.O_WRONLY|unix.O_CREAT|unix.O_EXCL|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0600)
 	if e != nil {
@@ -119,13 +123,14 @@ func writeRecovery(path, code string) string {
 	if e = f.Chmod(0600); e != nil {
 		return "SAVE_UNAVAILABLE"
 	}
-	if _, e = f.WriteString(code + "\n\nCódigo de recuperação InfraDesktop. Guarde offline em local seguro.\n"); e != nil {
+	// ignored: WriteString reports a short write as an error; only the error is needed.
+	if _, e = f.WriteString(code + "\n\nCódigo de recuperação InfraNet. Guarde offline em local seguro.\n"); e != nil {
 		return "SAVE_UNAVAILABLE"
 	}
 	if e = f.Sync(); e != nil {
 		return "SAVE_UNAVAILABLE"
 	}
-	e = unix.Renameat2(source, temp, dir, filepath.Base(path), unix.RENAME_NOREPLACE)
+	e = unix.Renameat2(source, temp, dir, destination, unix.RENAME_NOREPLACE)
 	if errors.Is(e, unix.EEXIST) {
 		return "SAVE_EXISTS"
 	}

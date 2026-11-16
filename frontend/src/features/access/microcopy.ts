@@ -41,7 +41,7 @@ export function message(code: string, intent: Intent, reason?: string): string {
     ADMIN_AUTH_CANCELLED: 'A autorização foi cancelada.',
     ADMIN_AUTH_UNAVAILABLE:
       'Não foi possível abrir a autorização de administrador neste computador.',
-    VERSION_INCOMPATIBLE: 'Atualize o InfraDesktop para abrir esta instalação.',
+    VERSION_INCOMPATIBLE: 'Atualize o InfraNet para abrir esta instalação.',
     TRY_LATER: 'Aguarde alguns instantes e tente novamente.',
     BUSY: 'Há uma operação em andamento. Aguarde e tente novamente.',
     ACCOUNT_EXISTS:

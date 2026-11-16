@@ -89,7 +89,7 @@ it.each([
   [
     'COLLECTOR_DEFECT',
     'O:syntax',
-    'Falha do coletor do InfraDesktop neste firmware.',
+    'Falha do coletor do InfraNet neste firmware.',
   ],
   [
     'PARTIAL',

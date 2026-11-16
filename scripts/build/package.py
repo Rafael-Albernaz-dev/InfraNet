@@ -45,7 +45,7 @@ if licenses.exists():
     for item in license_dest.rglob('*'):
         if item.is_file():item.chmod(0o644)
 (work / 'debian').mkdir(parents=True)
-(work / 'debian/control').write_text('Source: infradesktop\nSection: net\nPriority: optional\nMaintainer: InfraDesktop <noreply@localhost>\nStandards-Version: 4.6.2\n\nPackage: infradesktop\nArchitecture: amd64\nDescription: Local foundation for ISP technicians\n')
+(work / 'debian/control').write_text('Source: infradesktop\nSection: net\nPriority: optional\nMaintainer: InfraNet <noreply@localhost>\nStandards-Version: 4.6.2\n\nPackage: infradesktop\nArchitecture: amd64\nDescription: Local foundation for ISP technicians\n')
 for binary in ['infradesktop', 'infradesktopd']:
     subprocess.run(['ldd', str(root / 'build/bin' / binary)], check=True)
 deps = subprocess.check_output(['dpkg-shlibdeps', '-O', '-S' + str(stage), '-e' + str(stage / 'usr/bin/infradesktop'), '-e' + str(stage / 'usr/lib/infradesktop/infradesktopd')], cwd=work, text=True).strip()
@@ -53,7 +53,7 @@ if not deps.startswith('shlibs:Depends='):
     raise RuntimeError('Could not determine runtime dependencies')
 deps = deps.split('=', 1)[1] + ', python3'
 (stage / 'DEBIAN').mkdir()
-(stage / 'DEBIAN/control').write_text(f'Package: infradesktop\nVersion: {version}\nSection: net\nPriority: optional\nArchitecture: amd64\nMaintainer: InfraDesktop <noreply@localhost>\nDepends: {deps}, systemd\nDescription: Local ISP workspace with local account and persistence\n Local account, company inventory, encrypted credentials and on-demand SSH reads.\n')
+(stage / 'DEBIAN/control').write_text(f'Package: infradesktop\nVersion: {version}\nSection: net\nPriority: optional\nArchitecture: amd64\nMaintainer: InfraNet <noreply@localhost>\nDepends: {deps}, systemd\nDescription: Local ISP workspace with local account and persistence\n Local account, company inventory, encrypted credentials and on-demand SSH reads.\n')
 # Verify a named non-root instantiated unit against the actual staged binary.
 unit = (root / 'packaging/linux/infradesktopd@.service').read_text().replace('/usr/lib/infradesktop/infradesktopd', str(root / 'build/bin/infradesktopd'))
 verify = work / 'infradesktopd@.service'

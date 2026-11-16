@@ -1,5 +1,5 @@
 [Unit]
-Description=InfraDesktop local service for %i
+Description=InfraNet local service for %i
 After=local-fs.target
 StartLimitIntervalSec=60
 StartLimitBurst=3

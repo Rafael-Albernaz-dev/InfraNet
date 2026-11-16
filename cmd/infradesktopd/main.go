@@ -17,7 +17,7 @@ func main() {
 	version := flag.Bool("version", false, "print product version")
 	flag.Parse()
 	if *version {
-		fmt.Println("InfraDesktop " + ipc.ProductVersion)
+		fmt.Println("InfraNet " + ipc.ProductVersion)
 		return
 	}
 	os.Setenv("INFRADESKTOP_STATE", *state)
@@ -32,7 +32,7 @@ func main() {
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
-	fmt.Println("InfraDesktop local service ready")
+	fmt.Println("InfraNet local service ready")
 	if e = server.Serve(ctx); e != nil {
 		fmt.Fprintln(os.Stderr, "daemon transport stopped")
 		os.Exit(1)

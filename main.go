@@ -23,7 +23,7 @@ var icon []byte
 func main() {
 	app := composition.Desktop()
 	var cancel context.CancelFunc
-	err := wails.Run(&options.App{Title: "InfraDesktop", Width: 1440, Height: 860, MinWidth: 720, MinHeight: 600,
+	err := wails.Run(&options.App{Title: "InfraNet", Width: 1440, Height: 860, MinWidth: 720, MinHeight: 600,
 		Linux:       &linux.Options{Icon: icon},
 		AssetServer: &assetserver.Options{Assets: assets}, Bind: []interface{}{app},
 		OnStartup: func(ctx context.Context) {
